@@ -1,7 +1,7 @@
 # Return to Earth
 
 Jogo de sobrevivência e terraformação em primeira pessoa, inspirado em *The Planet Crafter*.
-Unity **6000.6.2f1**, URP, Input System.
+Unity **6000.6.2f1**, HDRP, Input System.
 
 ## Como rodar
 
