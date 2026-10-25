@@ -1,0 +1,11 @@
+{
+    "name": "Planetcraft.Editor",
+    "rootNamespace": "Planetcraft.EditorTools",
+    "references": [
+        "Planetcraft.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "autoReferenced": false
+}

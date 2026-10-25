@@ -1,0 +1,8 @@
+{
+    "name": "Planetcraft.Runtime",
+    "rootNamespace": "Planetcraft",
+    "references": [
+        "Unity.InputSystem"
+    ],
+    "autoReferenced": true
+}

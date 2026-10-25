@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d05df1c84e3d59143983b32ed329f720, type: 3}
+  m_Name: heater_t3
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
+  id: heater_t3
+  displayName: Aquecedor III
+  description: Calor +400/s. Consome 15 kW.
+  prefab: {fileID: 6197339572603907739, guid: 507882cd59683404cbf21d5fe69d9995, type: 3}
+  cost:
+  - item: {fileID: 11400000, guid: 74e3b37d99edd1a479d4cce1e91e41e4, type: 2}
+    amount: 4
+  - item: {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}
+    amount: 2
+  requiredTi: 500000
+  powerGeneration: 0
+  powerDemand: 15
+  terraformRates:
+  - parameter: 1
+    perSecond: 400

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc484397a3df20349852cd69c0cc7f2b, type: 3}
+  m_Name: StageDatabase
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StageDatabase
+  stages:
+  - {fileID: 11400000, guid: 964200fd823a8da489617bab8a66943f, type: 2}
+  - {fileID: 11400000, guid: 4d29ff9e8fea74043ae26674948bba46, type: 2}
+  - {fileID: 11400000, guid: 90de45adb5640c2459e3d2f3f5ff62db, type: 2}
+  - {fileID: 11400000, guid: a287533d2d64d054387e3482f2411c58, type: 2}
+  - {fileID: 11400000, guid: 376d04e6a8e12fa4ba3b00b7a187e5ca, type: 2}
+  - {fileID: 11400000, guid: a22a3d33e4e6fa44cb31b3826e5851f3, type: 2}
+  - {fileID: 11400000, guid: 7e80d7f003be7f146be31731b1be84b1, type: 2}
+  - {fileID: 11400000, guid: 39914d05e3cb9dc4981fa9d559d69438, type: 2}
+  - {fileID: 11400000, guid: 6d712d09884e1384b9bc468befb2676f, type: 2}
+  - {fileID: 11400000, guid: 5bff9808c11364944a211154abf0d31e, type: 2}

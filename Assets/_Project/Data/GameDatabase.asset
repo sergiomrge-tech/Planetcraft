@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d70db93fe3c75b44b2cf9b243413ecb, type: 3}
+  m_Name: GameDatabase
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Data.GameDatabase
+  items:
+  - {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
+  - {fileID: 11400000, guid: 992d46b4fabab2a4eafbbaf792fb73d9, type: 2}
+  - {fileID: 11400000, guid: 74e3b37d99edd1a479d4cce1e91e41e4, type: 2}
+  - {fileID: 11400000, guid: 4cf5c134c5af81f46a390125011d3308, type: 2}
+  - {fileID: 11400000, guid: 783a5425aa2cbe44295a50439d650d9e, type: 2}
+  - {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}
+  - {fileID: 11400000, guid: 8df24d248906dc54ab5dafb5a1719455, type: 2}
+  - {fileID: 11400000, guid: 37147624ef6608e41b14f43b8f53d748, type: 2}
+  - {fileID: 11400000, guid: 2ebf10a21cafb27458949ef86328ae7e, type: 2}
+  recipes:
+  - {fileID: 11400000, guid: a36d199561e581b4f93ef8da32dd7963, type: 2}
+  - {fileID: 11400000, guid: 420697a94957efc4f91de703a27ab180, type: 2}
+  - {fileID: 11400000, guid: a0dbe9df5524f764b8eb86f4fe3c8b4a, type: 2}
+  - {fileID: 11400000, guid: b678bcc44f2c4ed4b87b6dce6a0d2343, type: 2}
+  buildables:
+  - {fileID: 11400000, guid: fc31631a87bb89a4a87b99c35c031151, type: 2}
+  - {fileID: 11400000, guid: 55646c03a70a78b4b8f98eb34f4348fc, type: 2}
+  - {fileID: 11400000, guid: ba1681815aa39a7458256d9c888be507, type: 2}
+  - {fileID: 11400000, guid: d1bf29c0c4c6f994c8d5f92b1a5e716f, type: 2}
+  - {fileID: 11400000, guid: 8f02f074adc41fd42af5e470277bb66b, type: 2}
+  - {fileID: 11400000, guid: 63090fe4911c54547ae0223d922211c2, type: 2}
+  - {fileID: 11400000, guid: d1a4224bc6ef06e4ea404101f9382a05, type: 2}
+  - {fileID: 11400000, guid: 20f126fa420350c409143ff5c82b80e3, type: 2}
+  - {fileID: 11400000, guid: dff3b87ded5fefb4899c8b7c7ad57ccf, type: 2}
+  - {fileID: 11400000, guid: 48a11405a83ee654685af691c52a4061, type: 2}

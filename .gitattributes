@@ -1,0 +1,17 @@
+* text=auto eol=lf
+*.cs diff=csharp
+*.unity text eol=lf linguist-generated
+*.prefab text eol=lf linguist-generated
+*.asset text eol=lf linguist-generated
+*.mat text eol=lf linguist-generated
+*.meta text eol=lf linguist-generated
+
+*.png binary
+*.jpg binary
+*.tga binary
+*.psd binary
+*.fbx binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.terrainlayer text eol=lf

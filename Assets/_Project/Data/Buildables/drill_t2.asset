@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d05df1c84e3d59143983b32ed329f720, type: 3}
+  m_Name: drill_t2
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
+  id: drill_t2
+  displayName: Perfuratriz II
+  description: "Press\xE3o +10/s. Consome 4 kW."
+  prefab: {fileID: 3914230684930526064, guid: 70ceec9175acb0b4aa2250140b9ed3e3, type: 3}
+  cost:
+  - item: {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
+    amount: 3
+  - item: {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}
+    amount: 1
+  requiredTi: 5000
+  powerGeneration: 0
+  powerDemand: 4
+  terraformRates:
+  - parameter: 2
+    perSecond: 10

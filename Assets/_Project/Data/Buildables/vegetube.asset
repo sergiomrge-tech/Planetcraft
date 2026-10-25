@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d05df1c84e3d59143983b32ed329f720, type: 3}
+  m_Name: vegetube
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
+  id: vegetube
+  displayName: Vegetubo
+  description: "Oxig\xEAnio +0.3/s. Consome 0.5 kW."
+  prefab: {fileID: 7234867197166853691, guid: 995a38fde4d056b458da7f432ec59c0c, type: 3}
+  cost:
+  - item: {fileID: 11400000, guid: 4cf5c134c5af81f46a390125011d3308, type: 2}
+    amount: 1
+  - item: {fileID: 11400000, guid: 992d46b4fabab2a4eafbbaf792fb73d9, type: 2}
+    amount: 1
+  requiredTi: 50
+  powerGeneration: 0
+  powerDemand: 0.5
+  terraformRates:
+  - parameter: 0
+    perSecond: 0.3
