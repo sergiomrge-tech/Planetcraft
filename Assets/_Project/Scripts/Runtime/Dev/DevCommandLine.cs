@@ -31,6 +31,9 @@ namespace Planetcraft.Dev
             var tm = TerraformManager.Instance;
             if (player != null && Value(args, "-pc-screenshot") != null) player.LookEnabled = false;
 
+            // -pc-quiet: sem banner/flash de estágio (o salto de Ti dispara vários e clareia as capturas).
+            if (HasFlag(args, "-pc-quiet"))
+                foreach (var feedback in FindObjectsByType<StageFeedback>(FindObjectsSortMode.None)) feedback.enabled = false;
             if (tm != null && TryNumber(args, "-pc-ti", out double ti))
                 for (int i = 0; i < TerraformParameters.Count; i++) tm.Add((TerraformParameter)i, ti / TerraformParameters.Count);
             if (weather != null && HasFlag(args, "-pc-rain")) weather.ForceRain();
@@ -92,9 +95,46 @@ namespace Planetcraft.Dev
                 var cam = player.GetComponentInChildren<Camera>();
                 Debug.Log($"[Dev] player={player.transform.position} camEuler={(cam != null ? cam.transform.eulerAngles : Vector3.zero)} ti={(tm != null ? tm.Ti : 0)}");
             }
+            if (HasFlag(args, "-pc-diag")) LogVegetation();
             ScreenCapture.CaptureScreenshot(shot);
             yield return new WaitForSecondsRealtime(1f);
             Application.Quit();
+        }
+
+        // Diagnóstico: por camada de vegetação, quantos itens estão ativos e o tamanho/altura de uma amostra.
+        static void LogVegetation()
+        {
+            var root = GameObject.Find("Vegetação");
+            if (root == null)
+            {
+                Debug.Log("[Diag] sem objeto Vegetação");
+                return;
+            }
+            var terrain = Terrain.activeTerrain;
+            foreach (Transform layer in root.transform)
+            {
+                int active = 0;
+                Transform sample = null;
+                foreach (Transform item in layer)
+                {
+                    if (!item.gameObject.activeInHierarchy) continue;
+                    active++;
+                    if (sample == null) sample = item;
+                }
+                string detail = "";
+                if (sample != null)
+                {
+                    var renderers = sample.GetComponentsInChildren<Renderer>();
+                    var b = renderers.Length > 0 ? renderers[0].bounds : new Bounds(sample.position, Vector3.zero);
+                    foreach (var r in renderers) b.Encapsulate(r.bounds);
+                    float ground = terrain != null ? terrain.SampleHeight(sample.position) : 0f;
+                    var mats = string.Join(",", renderers.SelectMany(r => r.sharedMaterials).Where(m => m != null)
+                        .Select(m => m.shader != null ? m.shader.name : "null").Distinct());
+                    detail = $" amostra pos={sample.position} chão={ground:0.0} escala={sample.localScale.x:0.00} " +
+                             $"renderers={renderers.Length} ativos={renderers.Count(r => r.enabled)} bounds={b.size} shaders={mats}";
+                }
+                Debug.Log($"[Diag] {layer.name}: {active}/{layer.childCount} ativos{detail}");
+            }
         }
 
         // Coloca o jogador a ~14 m do destroço n (ordem dos terminais de registro), olhando para ele.

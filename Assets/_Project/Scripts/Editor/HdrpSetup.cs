@@ -107,6 +107,11 @@ namespace Planetcraft.EditorTools
             fog.maximumHeight.Override(220f);
             fog.albedo.Override(new Color(0.55f, 0.45f, 0.38f));
 
+            // Sem este override a água recebe só metade da luz ambiente e fica quase preta.
+            var water = Add<WaterRendering>(profile);
+            water.enable.Override(true);
+            water.ambientProbeDimmer.Override(1f);
+
             var exposure = Add<Exposure>(profile);
             exposure.mode.Override(ExposureMode.Automatic);
             exposure.limitMin.Override(9f);

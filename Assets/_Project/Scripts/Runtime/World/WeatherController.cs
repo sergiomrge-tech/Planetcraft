@@ -24,7 +24,7 @@ namespace Planetcraft.World
         [SerializeField] AudioSource rainAudio;
         [SerializeField] Transform followTarget;
         [SerializeField] float rainHeight = 25f;
-        [SerializeField] float maxRainRate = 2500f;
+        [SerializeField] float maxRainRate = 1400f;
         [SerializeField, Range(0f, 1f)] float maxRainVolume = 0.5f;
         [SerializeField] Vector2 rainDuration = new(40f, 90f);
         [SerializeField] Vector2 dryDuration = new(60f, 180f);

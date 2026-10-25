@@ -2,24 +2,30 @@ using UnityEngine;
 
 namespace Planetcraft.World
 {
-    // Faz o verde se espalhar pelo terreno: começa nas partes baixas e planas (beira da água)
-    // e sobe as encostas conforme o Ti cresce. Pinta a camada `greenLayer` nos alphamaps.
+    // Pinta o solo pelos alphamaps: rocha nas encostas íngremes (sempre), solo queimado no resto e o
+    // verde se espalhando — começa nas partes baixas e planas (beira da água) e sobe conforme o Ti cresce.
     public class GroundReactor : TerraformReactor
     {
         [SerializeField] Terrain terrain;
-        [SerializeField] int greenLayer = 1;
+        [SerializeField] int deadLayer = 0;
+        [SerializeField] int rockLayer = 1;
+        [SerializeField] int greenLayer = 2;
+        [Tooltip("Inclinação (graus) em que a rocha começa / domina.")]
+        [SerializeField] Vector2 rockSlope = new(26f, 38f);
         [SerializeField, Range(0.01f, 0.5f)] float edgeSoftness = 0.08f;
         [Tooltip("Reaplica os alphamaps só quando o progresso muda pelo menos isso.")]
         [SerializeField, Range(0.001f, 0.1f)] float applyStep = 0.01f;
 
         TerrainData data;
         float[,] mask;
+        float[,] rock;
         float[,,] maps;
         float lastApplied = -1f;
 
         protected override void Start()
         {
-            if (terrain == null || terrain.terrainData == null || terrain.terrainData.alphamapLayers <= greenLayer)
+            if (terrain == null || terrain.terrainData == null ||
+                terrain.terrainData.alphamapLayers <= Mathf.Max(greenLayer, rockLayer, deadLayer))
             {
                 enabled = false;
                 return;
@@ -30,24 +36,28 @@ namespace Planetcraft.World
             terrain.terrainData = data;
             if (terrain.TryGetComponent<TerrainCollider>(out var col)) col.terrainData = data;
 
-            BuildMask();
+            BuildMasks();
             base.Start();
         }
 
-        // Valor baixo = fica verde primeiro: altura baixa, pouca inclinação, com ruído para bordas orgânicas.
-        void BuildMask()
+        // mask: valor baixo = fica verde primeiro (baixo, plano, com ruído para bordas orgânicas).
+        // rock: peso da rocha pela inclinação, com ruído para a transição não ficar em faixas.
+        void BuildMasks()
         {
             int res = data.alphamapResolution;
             mask = new float[res, res];
+            rock = new float[res, res];
             maps = new float[res, res, data.alphamapLayers];
             for (int y = 0; y < res; y++)
             for (int x = 0; x < res; x++)
             {
                 float u = x / (float)(res - 1), v = y / (float)(res - 1);
                 float h = data.GetInterpolatedHeight(u, v) / data.size.y;
-                float steep = data.GetSteepness(u, v) / 90f;
+                float slope = data.GetSteepness(u, v);
                 float noise = Mathf.PerlinNoise(u * 14f + 3.1f, v * 14f + 8.7f);
-                mask[y, x] = Mathf.Clamp01(h * 1.5f + steep * 0.9f + (noise - 0.5f) * 0.3f);
+                mask[y, x] = Mathf.Clamp01(h * 1.5f + slope / 90f * 0.9f + (noise - 0.5f) * 0.3f);
+                float jitter = (Mathf.PerlinNoise(u * 40f + 1.7f, v * 40f + 5.3f) - 0.5f) * 8f;
+                rock[y, x] = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(rockSlope.x, rockSlope.y, slope + jitter));
             }
         }
 
@@ -65,10 +75,12 @@ namespace Planetcraft.World
             for (int y = 0; y < res; y++)
             for (int x = 0; x < res; x++)
             {
-                float green = t <= 0f ? 0f : Mathf.Clamp01((threshold - mask[y, x]) / edgeSoftness);
+                float r = rock[y, x];
+                float green = t <= 0f ? 0f : Mathf.Clamp01((threshold - mask[y, x]) / edgeSoftness) * (1f - r);
                 for (int l = 0; l < layers; l++) maps[y, x, l] = 0f;
-                maps[y, x, 0] = 1f - green;
+                maps[y, x, rockLayer] = r;
                 maps[y, x, greenLayer] = green;
+                maps[y, x, deadLayer] = Mathf.Max(0f, 1f - r - green);
             }
             data.SetAlphamaps(0, 0, maps);
         }

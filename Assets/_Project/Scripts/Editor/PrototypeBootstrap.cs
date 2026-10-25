@@ -36,12 +36,14 @@ namespace Planetcraft.EditorTools
 
         const float TerrainSize = 500f;
         const float TerrainHeight = 60f;
-        const int HeightmapRes = 257;
+        const int HeightmapRes = 513;
+        const string PolyHavenDir = "Assets/ThirdParty/PolyHaven";
 
         [MenuItem("Planetcraft/Gerar Protótipo")]
         public static void Build()
         {
             HdrpSetup.Configure();
+            PolyHavenMaterials.Setup();
             foreach (var dir in new[] { DataDir + "/Stages", DataDir + "/Items", DataDir + "/Recipes", DataDir + "/Buildables", DataDir + "/Logs", PrefabDir, MatDir, TerrainDir, SceneDir })
                 Directory.CreateDirectory(dir);
             AssetDatabase.Refresh();
@@ -344,6 +346,18 @@ namespace Planetcraft.EditorTools
             return go;
         }
 
+        // Instancia um modelo do Poly Haven otimizado (tools/optimize_polyhaven.py).
+        static GameObject PolyHaven(string id, Transform parent)
+        {
+            string path = $"{PolyHavenDir}/Models/{id}/{id}.fbx";
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (asset == null) throw new Exception($"Modelo não encontrado: {path} (rode tools/fetch_polyhaven.py e optimize_polyhaven.py)");
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(asset, parent);
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            return go;
+        }
+
         static GameObject SavePrefab(BuildableDefinition def, bool isMachine, bool pressurized, string model, float scale, bool storage)
         {
             string path = $"{PrefabDir}/{def.id}.prefab";
@@ -430,7 +444,7 @@ namespace Planetcraft.EditorTools
             shape.shapeType = ParticleSystemShapeType.Sphere;
             shape.radius = 600f;
             shape.radiusThickness = 0f;
-            stars.GetComponent<ParticleSystemRenderer>().sharedMaterial = RainMaterial();
+            stars.GetComponent<ParticleSystemRenderer>().sharedMaterial = StarMaterial();
 
             var camGo = new GameObject("Câmera") { tag = "MainCamera" };
             var cam = camGo.AddComponent<Camera>();
@@ -550,8 +564,9 @@ namespace Planetcraft.EditorTools
             surface.largeWindSpeed = 6f;
             surface.largeChaos = 0.6f;
             surface.ripplesWindSpeed = 5f;
-            surface.refractionColor = new Color(0.1f, 0.42f, 0.5f);
-            surface.scatteringColor = new Color(0.02f, 0.2f, 0.2f);
+            // Água clara de lago: cores de espalhamento mais altas evitam o aspecto de piche visto de longe.
+            surface.refractionColor = new Color(0.45f, 0.78f, 0.8f);
+            surface.scatteringColor = new Color(0.16f, 0.5f, 0.5f);
             surface.absorptionDistance = 6f;
             surface.caustics = true;
             var waterReactor = water.AddComponent<WaterReactor>();
@@ -578,20 +593,35 @@ namespace Planetcraft.EditorTools
             // Vegetação por estágio
             var rng = new System.Random(4242);
             var vegetation = new GameObject("Vegetação");
-            AddVegetationLayer(vegetation.transform, "Musgo", stages["moss"].requiredTi, stages["flora"].requiredTi, 350, rng, terrain, center, (p, r) =>
-                Scaled(Model("Nature/moss", p), 0.6f + (float)r.NextDouble() * 0.8f));
-            AddVegetationLayer(vegetation.transform, "Flora", stages["flora"].requiredTi, stages["forest"].requiredTi, 200, rng, terrain, center, (p, r) =>
-                Scaled(Model("Nature/bush", p), 0.7f + (float)r.NextDouble() * 0.7f));
-            AddVegetationLayer(vegetation.transform, "Florestas", stages["forest"].requiredTi, stages["fauna"].requiredTi * 2, 260, rng, terrain, center, (p, r) =>
+            // Modelos fotoescaneados do Poly Haven (CC0), otimizados para jogo com LOD.
+            // Densidade de paisagem real: samambaias e arbustos em tufos, árvores formando bosques. Nada nasce
+            // abaixo do nível final da água nem em encostas de rocha.
+            AddVegetationLayer(vegetation.transform, "Musgo", stages["moss"].requiredTi, stages["flora"].requiredTi, 2600, rng, terrain, center, (p, r) =>
+                Scaled(PolyHaven(Variant(r, "fern_02", 4), p), 0.8f + (float)r.NextDouble() * 0.7f), maxSlope: 32f, clustering: 0.5f);
+            AddVegetationLayer(vegetation.transform, "Flora", stages["flora"].requiredTi, stages["forest"].requiredTi, 1500, rng, terrain, center, (p, r) =>
+                Scaled(PolyHaven(Variant(r, "shrub_02", 4), p), 0.7f + (float)r.NextDouble() * 0.7f), maxSlope: 30f, clustering: 0.6f);
+            AddVegetationLayer(vegetation.transform, "Florestas", stages["forest"].requiredTi, stages["fauna"].requiredTi * 2, 900, rng, terrain, center, (p, r) =>
             {
-                string kind = r.NextDouble() < 0.4 ? $"Nature/tree_conifer_{r.Next(2)}" : $"Nature/tree_broad_{r.Next(3)}";
-                var tree = Scaled(Model(kind, p), 0.8f + (float)r.NextDouble() * 0.7f);
+                var tree = Scaled(PolyHaven("island_tree_01", p), 0.8f + (float)r.NextDouble() * 0.6f);
                 var trunk = tree.AddComponent<CapsuleCollider>();
-                trunk.radius = 0.3f;
-                trunk.height = 3f;
-                trunk.center = new Vector3(0f, 1.5f, 0f);
+                trunk.radius = 0.35f;
+                trunk.height = 4f;
+                trunk.center = new Vector3(0f, 2f, 0f);
                 return tree;
-            }, minRadius: 110f, maxRadius: 225f);
+            }, minRadius: 40f, maxRadius: 235f, maxSlope: 26f, clustering: 0.8f);
+
+            // Restos da Terra morta (sempre visíveis): rochas, troncos secos e tocos fossilizados.
+            var remains = new GameObject("Restos da Terra").transform;
+            string[] remainKinds = { "boulder_01", "namaqualand_boulder_02", "namaqualand_boulder_05", "boulder_01",
+                                     "dead_tree_trunk", "dead_tree_trunk_02", "tree_stump_01" };
+            for (int i = 0; i < 150; i++)
+            {
+                string kind = remainKinds[rng.Next(remainKinds.Length)];
+                bool rockKind = kind.Contains("boulder");
+                var piece = Scaled(PolyHaven(kind, remains), rockKind ? 0.5f + (float)rng.NextDouble() * 1.4f : 0.8f + (float)rng.NextDouble() * 0.5f);
+                piece.transform.position = RandomPointInRing(rng, center, 15f, 235f, terrain) - Vector3.up * (rockKind ? 0.3f : 0.05f);
+                piece.transform.rotation = Quaternion.Euler(0f, rng.Next(0, 360), 0f);
+            }
 
             // Fauna: herbívoros e saltadores que passeiam fora d'água
             var fauna = new GameObject("Fauna");
@@ -833,16 +863,32 @@ namespace Planetcraft.EditorTools
             return root;
         }
 
+        // Altura final da água (WaterReactor.maxHeight) mais uma margem de praia.
+        const float VegetationMinHeight = 17f;
+
+        static string Variant(System.Random rng, string id, int count) => $"{id}_{(char)('a' + rng.Next(count))}";
+
         static void AddVegetationLayer(Transform parent, string name, double tiStart, double tiEnd, int count, System.Random rng,
-            Terrain terrain, Vector3 center, Func<Transform, System.Random, GameObject> make, float minRadius = 60f, float maxRadius = 210f)
+            Terrain terrain, Vector3 center, Func<Transform, System.Random, GameObject> make, float minRadius = 30f, float maxRadius = 235f,
+            float maxSlope = 35f, float clustering = 0.5f)
         {
             var layer = new GameObject(name);
             layer.transform.SetParent(parent, false);
-            for (int i = 0; i < count; i++)
+            // Ruído próprio da camada: `clustering` alto = manchas densas separadas por clareiras.
+            float noiseOffset = (float)rng.NextDouble() * 1000f;
+            for (int i = 0, tries = 0; i < count && tries < count * 40; tries++)
             {
+                var pos = RandomPointInRing(rng, center, minRadius, maxRadius, terrain);
+                if (pos.y < VegetationMinHeight) continue;
+                var local = pos - terrain.transform.position;
+                var size = terrain.terrainData.size;
+                if (terrain.terrainData.GetSteepness(local.x / size.x, local.z / size.z) > maxSlope) continue;
+                float patch = Mathf.PerlinNoise(pos.x * 0.018f + noiseOffset, pos.z * 0.018f + noiseOffset);
+                if (rng.NextDouble() > Mathf.Lerp(1f, Mathf.SmoothStep(0f, 1f, (patch - 0.3f) / 0.4f), clustering)) continue;
                 var go = make(layer.transform, rng);
-                go.transform.position = RandomPointInRing(rng, center, minRadius, maxRadius, terrain);
+                go.transform.position = pos - Vector3.up * 0.05f;
                 go.transform.rotation = Quaternion.Euler(0f, rng.Next(0, 360), 0f);
+                i++;
             }
 
             var activator = layer.AddComponent<ProgressiveActivator>();
@@ -863,41 +909,152 @@ namespace Planetcraft.EditorTools
             return p;
         }
 
+        // `tint` multiplica a cor da textura (diffuseRemapMax): as gramas escaneadas do Poly Haven são pardas demais
+        // para um mundo que acabou de reverdecer.
+        static TerrainLayer PolyHavenLayer(string id, float tile, float smoothness, Color? tint = null)
+        {
+            string path = $"{TerrainDir}/{id}.terrainlayer";
+            var layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(path);
+            if (layer != null)
+            {
+                layer.diffuseRemapMax = (Vector4)(tint ?? Color.white);
+                EditorUtility.SetDirty(layer);
+                return layer;
+            }
+            string dir = $"{PolyHavenDir}/Textures/{id}";
+            layer = new TerrainLayer
+            {
+                diffuseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{dir}/{id}_diff_2k.jpg"),
+                normalMapTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{dir}/{id}_nor_gl_2k.jpg"),
+                tileSize = new Vector2(tile, tile),
+                smoothness = smoothness,
+                metallic = 0f,
+                diffuseRemapMax = (Vector4)(tint ?? Color.white),
+            };
+            AssetDatabase.CreateAsset(layer, path);
+            return layer;
+        }
+
+        static float Fbm(float x, float y, int octaves)
+        {
+            float sum = 0f, amp = 0.5f, norm = 0f;
+            for (int i = 0; i < octaves; i++)
+            {
+                sum += Mathf.PerlinNoise(x, y) * amp;
+                norm += amp;
+                x = x * 2.03f + 17.1f;
+                y = y * 2.03f + 9.7f;
+                amp *= 0.5f;
+            }
+            return sum / norm;
+        }
+
+        // Erosão hidráulica por gotas: cada gota escorre morro abaixo, arranca sedimento onde acelera e
+        // deposita onde desacelera — cria ravinas, leques de sedimento e encostas naturais.
+        static void Erode(float[,] h, float heightScale, int iterations, int seed)
+        {
+            int n = h.GetLength(0);
+            var map = new float[n * n];
+            for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+                map[y * n + x] = h[y, x] * heightScale;
+
+            const float inertia = 0.05f, capacityFactor = 4f, minCapacity = 0.01f, depositSpeed = 0.3f,
+                erodeSpeed = 0.3f, evaporate = 0.015f, gravity = 4f;
+            const int maxLife = 40, radius = 3;
+            var rng = new System.Random(seed);
+
+            // Pincel de erosão: pesos decrescentes com a distância.
+            var brushOffsets = new List<(int dx, int dy, float w)>();
+            float wSum = 0f;
+            for (int dy = -radius; dy <= radius; dy++)
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                if (dist > radius) continue;
+                float w = 1f - dist / radius;
+                brushOffsets.Add((dx, dy, w));
+                wSum += w;
+            }
+
+            (float height, float gx, float gy) Sample(float px, float py)
+            {
+                int cx = (int)px, cy = (int)py;
+                float fx = px - cx, fy = py - cy;
+                int i = cy * n + cx;
+                float nw = map[i], ne = map[i + 1], sw = map[i + n], se = map[i + n + 1];
+                float gx = (ne - nw) * (1 - fy) + (se - sw) * fy;
+                float gy = (sw - nw) * (1 - fx) + (se - ne) * fx;
+                float hh = nw * (1 - fx) * (1 - fy) + ne * fx * (1 - fy) + sw * (1 - fx) * fy + se * fx * fy;
+                return (hh, gx, gy);
+            }
+
+            for (int it = 0; it < iterations; it++)
+            {
+                float px = (float)rng.NextDouble() * (n - 2), py = (float)rng.NextDouble() * (n - 2);
+                float dirX = 0f, dirY = 0f, speed = 1f, water = 1f, sediment = 0f;
+                for (int life = 0; life < maxLife; life++)
+                {
+                    int nodeX = (int)px, nodeY = (int)py;
+                    float cellX = px - nodeX, cellY = py - nodeY;
+                    var (height, gx, gy) = Sample(px, py);
+                    dirX = dirX * inertia - gx * (1 - inertia);
+                    dirY = dirY * inertia - gy * (1 - inertia);
+                    float len = Mathf.Sqrt(dirX * dirX + dirY * dirY);
+                    if (len < 1e-6f) break;
+                    dirX /= len;
+                    dirY /= len;
+                    px += dirX;
+                    py += dirY;
+                    if (px < 0 || py < 0 || px >= n - 2 || py >= n - 2) break;
+
+                    float deltaH = Sample(px, py).height - height;
+                    float capacity = Mathf.Max(-deltaH * speed * water * capacityFactor, minCapacity);
+                    int i = nodeY * n + nodeX;
+                    if (sediment > capacity || deltaH > 0)
+                    {
+                        float amount = deltaH > 0 ? Mathf.Min(deltaH, sediment) : (sediment - capacity) * depositSpeed;
+                        sediment -= amount;
+                        map[i] += amount * (1 - cellX) * (1 - cellY);
+                        map[i + 1] += amount * cellX * (1 - cellY);
+                        map[i + n] += amount * (1 - cellX) * cellY;
+                        map[i + n + 1] += amount * cellX * cellY;
+                    }
+                    else
+                    {
+                        float amount = Mathf.Min((capacity - sediment) * erodeSpeed, -deltaH);
+                        foreach (var (dx, dy, w) in brushOffsets)
+                        {
+                            int bx = nodeX + dx, by = nodeY + dy;
+                            if (bx < 0 || by < 0 || bx >= n || by >= n) continue;
+                            int j = by * n + bx;
+                            float take = Mathf.Min(map[j], amount * w / wSum);
+                            map[j] -= take;
+                            sediment += take;
+                        }
+                    }
+                    speed = Mathf.Sqrt(Mathf.Max(0f, speed * speed + deltaH * gravity));
+                    water *= 1 - evaporate;
+                }
+            }
+
+            for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+                h[y, x] = Mathf.Clamp01(map[y * n + x] / heightScale);
+        }
+
         static Terrain CreateTerrain()
         {
-            string dataPath = TerrainDir + "/PlanetTerrain.asset";
+            string dataPath = TerrainDir + "/EarthTerrain.asset";
             var td = AssetDatabase.LoadAssetAtPath<TerrainData>(dataPath);
             if (td == null)
             {
-                var tex = new Texture2D(64, 64, TextureFormat.RGBA32, true) { name = "RockAlbedo" };
-                var rnd = new System.Random(7);
-                for (int y = 0; y < 64; y++)
-                for (int x = 0; x < 64; x++)
-                {
-                    float n = 0.85f + (float)rnd.NextDouble() * 0.3f;
-                    // Alfa = suavidade no Terrain Lit do URP: 0 deixa a rocha fosca.
-                    tex.SetPixel(x, y, new Color(0.55f * n, 0.36f * n, 0.26f * n, 0f));
-                }
-                tex.Apply();
-                AssetDatabase.CreateAsset(tex, TerrainDir + "/RockAlbedo.asset");
+                // Camadas PBR (Poly Haven, CC0): 0 solo seco e pedregoso, 1 rocha (encostas), 2 grama (cresce com o Ti).
+                var dead = PolyHavenLayer("dry_ground_rocks", 10f, 0.05f);
+                var rockLayer = PolyHavenLayer("rocky_terrain_02", 12f, 0.1f);
+                var grass = PolyHavenLayer("leafy_grass", 6f, 0.15f, new Color(0.78f, 1.12f, 0.55f));
 
-                var layer = new TerrainLayer { diffuseTexture = tex, tileSize = new Vector2(8f, 8f), smoothness = 0.05f, metallic = 0f };
-                AssetDatabase.CreateAsset(layer, TerrainDir + "/Rock.terrainlayer");
-
-                // Camada verde que o GroundReactor espalha conforme o planeta verdeja.
-                var grassTex = new Texture2D(64, 64, TextureFormat.RGBA32, true) { name = "GrassAlbedo" };
-                for (int y = 0; y < 64; y++)
-                for (int x = 0; x < 64; x++)
-                {
-                    float n = 0.8f + (float)rnd.NextDouble() * 0.4f;
-                    grassTex.SetPixel(x, y, new Color(0.24f * n, 0.42f * n, 0.16f * n, 0f));
-                }
-                grassTex.Apply();
-                AssetDatabase.CreateAsset(grassTex, TerrainDir + "/GrassAlbedo.asset");
-                var grass = new TerrainLayer { diffuseTexture = grassTex, tileSize = new Vector2(6f, 6f), smoothness = 0.1f, metallic = 0f };
-                AssetDatabase.CreateAsset(grass, TerrainDir + "/Grass.terrainlayer");
-
-                td = new TerrainData { heightmapResolution = HeightmapRes, alphamapResolution = 128 };
+                td = new TerrainData { heightmapResolution = HeightmapRes, alphamapResolution = 256 };
                 td.size = new Vector3(TerrainSize, TerrainHeight, TerrainSize);
                 var heights = new float[HeightmapRes, HeightmapRes];
                 var mid = new Vector2(0.5f, 0.5f);
@@ -905,21 +1062,23 @@ namespace Planetcraft.EditorTools
                 for (int x = 0; x < HeightmapRes; x++)
                 {
                     float u = x / (float)(HeightmapRes - 1), v = y / (float)(HeightmapRes - 1);
-                    float noise = Mathf.PerlinNoise(u * 6f + 11.3f, v * 6f + 7.1f) * 0.6f
-                                  + Mathf.PerlinNoise(u * 18f + 3.7f, v * 18f + 1.9f) * 0.15f;
+                    float noise = Fbm(u * 5f + 11.3f, v * 5f + 7.1f, 6) * 0.75f;
+                    float ridges = 1f - Mathf.Abs(Fbm(u * 3f + 2.1f, v * 3f + 9.4f, 4) * 2f - 1f);
                     float d = Vector2.Distance(new Vector2(u, v), mid);
                     float basin = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.12f, 0.32f, d));
                     float rim = Mathf.InverseLerp(0.36f, 0.5f, d);
                     // Fundo da bacia com relevo: a água sobe formando poças e ilhas, não uma lâmina rasa.
-                    heights[y, x] = Mathf.Lerp(0.02f + noise * 0.1f, 0.3f + noise * 0.25f, basin) + rim * 0.35f;
+                    heights[y, x] = Mathf.Lerp(0.02f + noise * 0.1f, 0.3f + noise * 0.25f, basin)
+                                    + rim * (0.25f + ridges * 0.2f);
                 }
+                Erode(heights, TerrainHeight, iterations: 140000, seed: 2026);
                 td.SetHeights(0, 0, heights);
-                td.terrainLayers = new[] { layer, grass };
-                var rockOnly = new float[td.alphamapResolution, td.alphamapResolution, 2];
+                td.terrainLayers = new[] { dead, rockLayer, grass };
+                var deadOnly = new float[td.alphamapResolution, td.alphamapResolution, 3];
                 for (int y = 0; y < td.alphamapResolution; y++)
                 for (int x = 0; x < td.alphamapResolution; x++)
-                    rockOnly[y, x, 0] = 1f;
-                td.SetAlphamaps(0, 0, rockOnly);
+                    deadOnly[y, x, 0] = 1f;
+                td.SetAlphamaps(0, 0, deadOnly);
                 AssetDatabase.CreateAsset(td, dataPath);
             }
 
@@ -953,10 +1112,10 @@ namespace Planetcraft.EditorTools
             main.loop = true;
             main.startLifetime = 1.4f;
             main.startSpeed = 22f;
-            main.startSize = 0.025f;
+            main.startSize = 0.012f;
             main.maxParticles = 5000;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.startColor = new Color(0.8f, 0.88f, 1f, 0.3f);
+            main.startColor = new Color(0.62f, 0.66f, 0.72f, 0.16f);
 
             var emission = ps.emission;
             emission.rateOverTime = 0f;
@@ -967,24 +1126,29 @@ namespace Planetcraft.EditorTools
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             renderer.renderMode = ParticleSystemRenderMode.Stretch;
-            renderer.velocityScale = 0.04f;
-            renderer.lengthScale = 1f;
+            renderer.velocityScale = 0.03f;
+            renderer.lengthScale = 0.6f;
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             return ps;
         }
 
-        static Material RainMaterial()
+        // HDRP/Unlit ignora a cor por vértice das partículas: a cor e a transparência ficam no material.
+        static Material RainMaterial() => ParticleMaterial("Rain", new Color(0.72f, 0.76f, 0.82f, 0.07f));
+
+        static Material StarMaterial() => ParticleMaterial("Stars", new Color(1f, 1f, 1f, 0.9f));
+
+        static Material ParticleMaterial(string name, Color color)
         {
-            string path = MatDir + "/Rain.mat";
+            string path = $"{MatDir}/{name}.mat";
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (mat != null) return mat;
-            // HDRP/Unlit transparente: a cor por partícula vem do vertex color do sistema de partículas.
-            mat = new Material(Shader.Find("HDRP/Unlit"));
-            mat.SetColor("_UnlitColor", new Color(1f, 1f, 1f, 1f));
+            bool created = mat == null;
+            if (created) mat = new Material(Shader.Find("HDRP/Unlit"));
+            mat.SetColor("_UnlitColor", color);
             HDMaterial.SetSurfaceType(mat, true);
             HDMaterial.ValidateMaterial(mat);
-            AssetDatabase.CreateAsset(mat, path);
+            if (created) AssetDatabase.CreateAsset(mat, path);
+            else EditorUtility.SetDirty(mat);
             return mat;
         }
 

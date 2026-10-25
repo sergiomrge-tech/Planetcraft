@@ -13,7 +13,7 @@ namespace Planetcraft.World
         [SerializeField] double tiEnd = 1e9;
         [Tooltip("Fração que já aparece assim que tiStart é alcançado.")]
         [SerializeField, Range(0f, 1f)] float initialFraction = 0.15f;
-        [SerializeField] float activationsPerSecond = 25f;
+        [SerializeField] float activationsPerSecond = 80f;
         [SerializeField] float growDuration = 1.2f;
         [SerializeField] int seed = 1;
 

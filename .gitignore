@@ -38,3 +38,6 @@ crashlytics-build.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Fontes brutas de assets (pesadas); o projeto usa as versões otimizadas
+/ThirdPartySource/
