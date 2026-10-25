@@ -1052,7 +1052,7 @@ namespace Planetcraft.EditorTools
                 // Camadas PBR (Poly Haven, CC0): 0 solo seco e pedregoso, 1 rocha (encostas), 2 grama (cresce com o Ti).
                 var dead = PolyHavenLayer("dry_ground_rocks", 10f, 0.05f);
                 var rockLayer = PolyHavenLayer("rocky_terrain_02", 12f, 0.1f);
-                var grass = PolyHavenLayer("leafy_grass", 6f, 0.15f, new Color(0.78f, 1.12f, 0.55f));
+                var grass = PolyHavenLayer("leafy_grass", 6f, 0.15f, new Color(0.8f, 1.08f, 0.6f));
 
                 td = new TerrainData { heightmapResolution = HeightmapRes, alphamapResolution = 256 };
                 td.size = new Vector3(TerrainSize, TerrainHeight, TerrainSize);

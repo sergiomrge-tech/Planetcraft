@@ -32,7 +32,7 @@ ASSETS = {
     "tree_stump_01": (5000, None, 1.0, False),
     "shrub_02": (0, 0.5, 1.2, True),
     "fern_02": (0, 1.0, 1.0, True),
-    "island_tree_01": (6000, 0.035, 2.7, False),
+    "island_tree_01": (6000, 0.07, 2.1, False),
 }
 LEAF_WORDS = ("leaves", "leaf", "twig", "foliage")
 LOD1_FACTOR = 0.3

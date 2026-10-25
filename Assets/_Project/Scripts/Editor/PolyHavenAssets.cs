@@ -84,7 +84,8 @@ namespace Planetcraft.EditorTools
             var normal = FindTexture(dir, name, "nor_gl");
             bool cutout = diff != null && AssetDatabase.GetAssetPath(diff).EndsWith(".png");
 
-            mat.SetColor("_BaseColor", Color.white);
+            // Folhas levemente puxadas para o verde vivo: os scans ficam escuros e pardos sob o céu do HDRP.
+            mat.SetColor("_BaseColor", cutout ? new Color(1f, 1.1f, 0.85f) : Color.white);
             if (diff != null) mat.SetTexture("_BaseColorMap", diff);
             if (normal != null) mat.SetTexture("_NormalMap", normal);
             mat.SetFloat("_Smoothness", cutout ? 0.35f : 0.22f);
