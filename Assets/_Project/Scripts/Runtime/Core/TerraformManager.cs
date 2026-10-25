@@ -86,6 +86,7 @@ namespace Planetcraft.Core
 
         void Update()
         {
+            PlayClock.Seconds += Time.deltaTime;
             tickTimer += Time.deltaTime;
             if (tickTimer < tickInterval) return;
             float dt = tickTimer * simulationSpeed;

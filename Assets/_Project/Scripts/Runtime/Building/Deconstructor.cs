@@ -51,6 +51,7 @@ namespace Planetcraft.Building
             var cost = placed.Definition.cost;
             if (cost != null)
                 foreach (var c in cost) inventory.Inventory.TryAdd(c.item, c.amount);
+            Sfx.Deconstruct();
             Destroy(placed.gameObject);
         }
     }

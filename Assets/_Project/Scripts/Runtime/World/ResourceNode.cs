@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Planetcraft.Core;
 using Planetcraft.Items;
 using Planetcraft.Player;
 using UnityEngine;
@@ -34,6 +35,7 @@ namespace Planetcraft.World
             if (!interactor.TryGetComponent<InventoryComponent>(out var inv)) return;
             if (!inv.Inventory.TryAdd(item, amount)) return;
             if (!string.IsNullOrEmpty(nodeId)) collectedIds.Add(nodeId);
+            Sfx.Collect();
             Destroy(gameObject);
         }
 

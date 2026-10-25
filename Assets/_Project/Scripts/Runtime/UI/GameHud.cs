@@ -39,6 +39,8 @@ namespace Planetcraft.UI
         }
 
         VisualElement menu, banner, flash, chestColumn, craftColumn, buildColumn, logsColumn, logPanel;
+        VisualElement pausePanel, pauseButtons, pauseOptions, endPanel;
+        Label endStats;
         VisualElement invList, craftList, buildList, chestList, logsList;
         Label logTitle, logBody;
         int logOpenedFrame = -1;
@@ -115,6 +117,40 @@ namespace Planetcraft.UI
             UIState.MenuOpen = false;
         }
 
+        bool PauseOpen => pausePanel != null && pausePanel.style.display == DisplayStyle.Flex;
+        bool EndOpen => endPanel != null && endPanel.style.display == DisplayStyle.Flex;
+
+        public void SetPaused(bool paused)
+        {
+            pausePanel.style.display = paused ? DisplayStyle.Flex : DisplayStyle.None;
+            ShowPauseOptions(false);
+            Time.timeScale = paused ? 0f : 1f;
+            UIState.MenuOpen = paused;
+        }
+
+        void ShowPauseOptions(bool show)
+        {
+            pauseButtons.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
+            pauseOptions.Clear();
+            if (show) pauseOptions.Add(OptionsUi.Build(() => ShowPauseOptions(false)));
+            pauseOptions.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        public void ShowEnding(string stats)
+        {
+            if (UIState.MenuOpen && menu.style.display == DisplayStyle.Flex) ToggleMenu(false);
+            if (LogOpen) CloseLog();
+            endStats.text = stats;
+            endPanel.style.display = DisplayStyle.Flex;
+            UIState.MenuOpen = true;
+        }
+
+        void CloseEnding()
+        {
+            endPanel.style.display = DisplayStyle.None;
+            UIState.MenuOpen = false;
+        }
+
         public void ShowToast(string message, float seconds = 3f)
         {
             toast.text = message;
@@ -144,7 +180,11 @@ namespace Planetcraft.UI
         {
             if (menu == null) return;
             var kb = Keyboard.current;
-            if (kb != null && LogOpen)
+            if (kb != null && (EndOpen || PauseOpen))
+            {
+                if (PauseOpen && kb.escapeKey.wasPressedThisFrame && pauseButtons.style.display == DisplayStyle.Flex) SetPaused(false);
+            }
+            else if (kb != null && LogOpen)
             {
                 // O mesmo E que abriu o registro não pode fechá-lo no mesmo frame.
                 if (Time.frameCount > logOpenedFrame &&
@@ -155,6 +195,9 @@ namespace Planetcraft.UI
             {
                 if (kb.tabKey.wasPressedThisFrame) ToggleMenu(!UIState.MenuOpen);
                 else if (UIState.MenuOpen && kb.escapeKey.wasPressedThisFrame) ToggleMenu(false);
+                else if (!UIState.MenuOpen && kb.escapeKey.wasPressedThisFrame &&
+                         (placer == null || (placer.Selected == null && placer.LastCancelFrame != Time.frameCount)))
+                    SetPaused(true);
                 if (kb.f2Key.wasPressedThisFrame && TerraformManager.Instance != null)
                 {
                     var tm = TerraformManager.Instance;
@@ -274,7 +317,7 @@ namespace Planetcraft.UI
                 }
                 var card = Card(r.output.displayName, CostText(r.ingredients));
                 var recipe = r;
-                var button = MakeButton("Fabricar", () => CraftingService.TryCraft(recipe, inv));
+                var button = MakeButton("Fabricar", () => { if (CraftingService.TryCraft(recipe, inv)) Sfx.Craft(); });
                 button.SetEnabled(inv.Has(r.ingredients));
                 card.Add(button);
                 craftList.Add(card);
@@ -488,6 +531,66 @@ namespace Planetcraft.UI
             logPanel.Add(sheet);
             logPanel.style.display = DisplayStyle.None;
             root.Add(logPanel);
+
+            // Pausa (Esc)
+            pausePanel = FullScreen();
+            pausePanel.pickingMode = PickingMode.Position;
+            pausePanel.style.backgroundColor = new Color(0f, 0f, 0f, 0.6f);
+            pausePanel.style.alignItems = Align.Center;
+            pausePanel.style.justifyContent = Justify.Center;
+            pauseButtons = Panel();
+            pauseButtons.style.width = 340;
+            pauseButtons.style.alignItems = Align.Stretch;
+            var pauseTitle = MakeLabel("Pausado", 28, Accent, bold: true);
+            pauseTitle.style.unityTextAlign = TextAnchor.MiddleCenter;
+            pauseTitle.style.marginBottom = 12;
+            pauseButtons.Add(pauseTitle);
+            pauseButtons.Add(BigButton("Continuar", () => SetPaused(false)));
+            pauseButtons.Add(BigButton("Salvar jogo", () =>
+            {
+                if (saveSystem != null) saveSystem.Save();
+                SetPaused(false);
+            }));
+            pauseButtons.Add(BigButton("Opções", () => ShowPauseOptions(true)));
+            pauseButtons.Add(BigButton("Menu principal", () => Planetcraft.Save.GameSession.ToTitle()));
+            pausePanel.Add(pauseButtons);
+            pauseOptions = new VisualElement();
+            pauseOptions.style.display = DisplayStyle.None;
+            pausePanel.Add(pauseOptions);
+            pausePanel.style.display = DisplayStyle.None;
+            root.Add(pausePanel);
+
+            // Final
+            endPanel = FullScreen();
+            endPanel.pickingMode = PickingMode.Position;
+            endPanel.style.backgroundColor = new Color(0.02f, 0.04f, 0.06f, 0.55f);
+            endPanel.style.alignItems = Align.Center;
+            endPanel.style.justifyContent = Justify.Center;
+            var endSheet = Panel();
+            endSheet.style.width = 680;
+            endSheet.style.alignItems = Align.Center;
+            endSheet.Add(MakeLabel("TERRAFORMAÇÃO CONCLUÍDA", 14, new Color(0.45f, 0.95f, 0.75f), bold: true));
+            var endTitle = MakeLabel("Planeta habitável", 40, Color.white, bold: true);
+            endTitle.style.marginTop = 4;
+            endSheet.Add(endTitle);
+            var endText = MakeLabel(
+                "A nave-mãe Gênese desceu. Quarenta mil colonos acordam do criossono\n" +
+                "para respirar um ar que você ajudou a criar.", 16, new Color(0.88f, 0.9f, 0.92f));
+            endText.style.unityTextAlign = TextAnchor.MiddleCenter;
+            endText.style.marginTop = 10;
+            endText.style.marginBottom = 14;
+            endSheet.Add(endText);
+            endStats = MakeLabel("", 15, Muted);
+            endStats.style.unityTextAlign = TextAnchor.MiddleCenter;
+            endStats.style.marginBottom = 16;
+            endSheet.Add(endStats);
+            var endButtons = Row();
+            endButtons.Add(BigButton("Continuar jogando", CloseEnding));
+            endButtons.Add(BigButton("Menu principal", () => Planetcraft.Save.GameSession.ToTitle()));
+            endSheet.Add(endButtons);
+            endPanel.Add(endSheet);
+            endPanel.style.display = DisplayStyle.None;
+            root.Add(endPanel);
         }
 
         VisualElement Column(string title, out VisualElement list, out Label titleLabel)
@@ -590,9 +693,19 @@ namespace Planetcraft.UI
             return l;
         }
 
+        static Button BigButton(string text, System.Action onClick)
+        {
+            var b = MakeButton(text, onClick);
+            b.style.height = 38;
+            b.style.fontSize = 16;
+            b.style.marginTop = b.style.marginBottom = 4;
+            b.style.minWidth = 200;
+            return b;
+        }
+
         static Button MakeButton(string text, System.Action onClick)
         {
-            var b = new Button(onClick) { text = text };
+            var b = new Button(() => { Sfx.Click(); onClick(); }) { text = text };
             b.style.fontSize = 13;
             b.style.minWidth = 86;
             return b;

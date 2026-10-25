@@ -12,9 +12,9 @@ namespace Planetcraft.Player
         [SerializeField] float sprintSpeed = 9f;
         [SerializeField] float jumpHeight = 1.2f;
         [SerializeField] float gravity = -18f;
-        [SerializeField] float lookSensitivity = 0.12f;
 
         CharacterController controller;
+        Camera cam;
         float pitch;
         float verticalVelocity;
         int ignoreLookUntilFrame;
@@ -30,6 +30,16 @@ namespace Planetcraft.Player
         {
             UIState.MenuOpen = false;
             ignoreLookUntilFrame = Time.frameCount + 5;
+            cam = cameraPivot.GetComponentInChildren<Camera>();
+            Settings.Changed += ApplySettings;
+            ApplySettings();
+        }
+
+        void OnDestroy() => Settings.Changed -= ApplySettings;
+
+        void ApplySettings()
+        {
+            if (cam != null) cam.fieldOfView = Settings.FieldOfView;
         }
 
         void Update()
@@ -43,7 +53,8 @@ namespace Planetcraft.Player
             // Ao travar o cursor o primeiro delta do mouse pode vir enorme; ignora os primeiros frames.
             if (canAct && LookEnabled && Time.frameCount > ignoreLookUntilFrame)
             {
-                Vector2 look = mouse.delta.ReadValue() * lookSensitivity;
+                Vector2 look = mouse.delta.ReadValue() * Settings.MouseSensitivity;
+                if (Settings.InvertY) look.y = -look.y;
                 transform.Rotate(0f, look.x, 0f);
                 pitch = Mathf.Clamp(pitch - look.y, -85f, 85f);
                 cameraPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);

@@ -31,6 +31,7 @@ namespace Planetcraft.EditorTools
         const string TerrainDir = Root + "/Terrain";
         const string SceneDir = Root + "/Scenes";
         const string ScenePath = SceneDir + "/Prototype.unity";
+        const string TitleScenePath = SceneDir + "/Title.unity";
 
         const float TerrainSize = 500f;
         const float TerrainHeight = 60f;
@@ -57,6 +58,12 @@ namespace Planetcraft.EditorTools
             EditorUtility.SetDirty(db);
 
             BuildScene(stageDb, stages, db, items, mats);
+            BuildTitleScene(mats);
+            EditorBuildSettings.scenes = new[]
+            {
+                new EditorBuildSettingsScene(TitleScenePath, true),
+                new EditorBuildSettingsScene(ScenePath, true),
+            };
             AssetDatabase.SaveAssets();
             Debug.Log("[Planetcraft] Protótipo gerado: " + ScenePath);
         }
@@ -78,6 +85,7 @@ namespace Planetcraft.EditorTools
                 ("flora", "Flora", 1_000_000, "Plantas se espalham pelo vale."),
                 ("forest", "Florestas", 2_500_000, "Árvores crescem sozinhas."),
                 ("fauna", "Fauna", 6_000_000, "Os primeiros animais caminham pelo vale."),
+                ("genesis", "Gênese", 15_000_000, "A atmosfera sustenta vida. A nave-mãe Gênese está descendo."),
             };
 
             // A tabela acima é a fonte da verdade dos estágios: sincroniza sempre.
@@ -319,6 +327,84 @@ namespace Planetcraft.EditorTools
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
             return prefab;
+        }
+
+        // Tela de título: planeta enferrujado, nave-mãe em órbita, estrelas e o menu em UI Toolkit.
+        static void BuildTitleScene(MaterialLibrary m)
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var sunGo = new GameObject("Sol");
+            var sun = sunGo.AddComponent<Light>();
+            sun.type = LightType.Directional;
+            sun.intensity = 1.4f;
+            sun.color = new Color(1f, 0.9f, 0.8f);
+            sunGo.transform.rotation = Quaternion.Euler(20f, 120f, 0f);
+            RenderSettings.sun = sun;
+
+            var sky = AssetDatabase.LoadAssetAtPath<Material>(MatDir + "/TitleSky.mat");
+            if (sky == null)
+            {
+                sky = new Material(Shader.Find("Skybox/Procedural"));
+                sky.SetFloat("_AtmosphereThickness", 0.05f);
+                sky.SetFloat("_Exposure", 0.4f);
+                sky.SetColor("_SkyTint", new Color(0.1f, 0.1f, 0.15f));
+                sky.SetColor("_GroundColor", Color.black);
+                AssetDatabase.CreateAsset(sky, MatDir + "/TitleSky.mat");
+            }
+            RenderSettings.skybox = sky;
+            RenderSettings.fog = false;
+            RenderSettings.ambientMode = AmbientMode.Flat;
+            RenderSettings.ambientLight = new Color(0.12f, 0.12f, 0.16f);
+
+            var planet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            planet.name = "Planeta";
+            Object.DestroyImmediate(planet.GetComponent<Collider>());
+            planet.transform.position = new Vector3(0f, -130f, 0f);
+            planet.transform.localScale = Vector3.one * 240f;
+            planet.GetComponent<Renderer>().sharedMaterial = m.Lit("TitlePlanet", new Color(0.55f, 0.3f, 0.2f), 0.15f);
+
+            var shipRoot = new GameObject("Nave");
+            shipRoot.transform.position = new Vector3(0f, 12f, 0f);
+            Model("Sky/mothership", shipRoot.transform).transform.localRotation = Quaternion.Euler(0f, 0f, 8f);
+
+            var stars = new GameObject("Estrelas").AddComponent<ParticleSystem>();
+            stars.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = stars.main;
+            main.loop = false;
+            main.duration = 1f;
+            main.startLifetime = 100000f;
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.6f, 1.8f);
+            main.maxParticles = 1500;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var emission = stars.emission;
+            emission.rateOverTime = 0f;
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 1500) });
+            var shape = stars.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 600f;
+            shape.radiusThickness = 0f;
+            stars.GetComponent<ParticleSystemRenderer>().sharedMaterial = RainMaterial();
+
+            var camGo = new GameObject("Câmera") { tag = "MainCamera" };
+            var cam = camGo.AddComponent<Camera>();
+            cam.farClipPlane = 2000f;
+            // Fundo preto: as estrelas são partículas (o skybox procedural deixa uma faixa no horizonte).
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
+            camGo.AddComponent<AudioListener>();
+            var orbit = camGo.AddComponent<Orbiter>();
+            SetRef(orbit, "target", shipRoot.transform);
+            var orbitSo = new SerializedObject(orbit);
+            orbitSo.FindProperty("lookOffset").vector3Value = new Vector3(0f, -6f, 0f);
+            orbitSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var ui = new GameObject("Menu");
+            ui.AddComponent<UIDocument>().panelSettings = HudPanelSettings();
+            ui.AddComponent<TitleMenu>();
+
+            EditorSceneManager.SaveScene(scene, TitleScenePath);
         }
 
         // PanelSettings + tema padrão de runtime para o HUD em UI Toolkit.
@@ -600,6 +686,7 @@ namespace Planetcraft.EditorTools
                 node.AddComponent<ResourceNode>().EditorSetup($"node_start_{i}", items[nearKinds[i]], 1);
             }
 
+            playerGo.AddComponent<FootstepAudio>();
             var survival = playerGo.AddComponent<SurvivalStats>();
             SetRef(survival, "respawnPoint", respawn);
 
@@ -673,8 +760,21 @@ namespace Planetcraft.EditorTools
             SetRef(dev, "weather", weather);
             SetRef(dev, "database", db);
 
+            // Final: a nave-mãe espera escondida até o estágio Gênese.
+            var final = new GameObject("Final");
+            var ship = Scaled(Model("Sky/mothership", final.transform), 2.5f);
+            var rumble = final.AddComponent<AudioSource>();
+            rumble.playOnAwake = false;
+            rumble.spatialBlend = 0f;
+            var ending = final.AddComponent<EndingDirector>();
+            SetRef(ending, "goalStage", stages["genesis"]);
+            SetRef(ending, "ship", ship.transform);
+            SetRef(ending, "rumble", rumble);
+            var endingSo = new SerializedObject(ending);
+            endingSo.FindProperty("hoverPosition").vector3Value = center + new Vector3(0f, 95f, 0f);
+            endingSo.ApplyModifiedPropertiesWithoutUndo();
+
             EditorSceneManager.SaveScene(scene, ScenePath);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
         }
 
         static GameObject CreateGrazer(Transform parent, System.Random r, MaterialLibrary m)

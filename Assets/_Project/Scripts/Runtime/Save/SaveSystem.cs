@@ -21,18 +21,29 @@ namespace Planetcraft.Save
         [SerializeField] FirstPersonController player;
         [SerializeField] InventoryComponent playerInventory;
         [SerializeField] SurvivalStats playerSurvival;
-        [SerializeField] string fileName = "planetcraft_save.json";
 
         static SaveData pendingLoad;
 
         public string LastMessage { get; private set; }
         public float LastMessageTime { get; private set; }
 
-        string FilePath => Path.Combine(Application.persistentDataPath, fileName);
-        public bool HasSave => File.Exists(FilePath);
+        static string FilePath => Path.Combine(Application.persistentDataPath, "planetcraft_save.json");
+        public static bool HasSaveFile => File.Exists(FilePath);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics() => pendingLoad = null;
+
+        public static void ClearPendingLoad() => pendingLoad = null;
+
+        // Lê o save do disco e agenda para ser aplicado quando a cena de jogo começar.
+        public static bool QueueLoadFromFile()
+        {
+            if (!HasSaveFile) return false;
+            var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(FilePath));
+            if (data == null || data.version > SaveData.CurrentVersion) return false;
+            pendingLoad = data;
+            return true;
+        }
 
         void Start()
         {
@@ -47,7 +58,7 @@ namespace Planetcraft.Save
             var kb = Keyboard.current;
             if (kb == null) return;
             if (kb.f5Key.wasPressedThisFrame) Save();
-            if (kb.f9Key.wasPressedThisFrame) Load();
+            if (kb.f9Key.wasPressedThisFrame && !UIState.MenuOpen) Load();
         }
 
         public void Save()
@@ -60,6 +71,8 @@ namespace Planetcraft.Save
                 oxygen = playerSurvival.Oxygen,
                 water = playerSurvival.Water,
                 food = playerSurvival.Food,
+                playTime = PlayClock.Seconds,
+                endingSeen = EndingDirector.Seen,
             };
 
             WriteSlots(playerInventory.Inventory, data.inventory);
@@ -87,25 +100,20 @@ namespace Planetcraft.Save
 
         public void Load()
         {
-            if (!HasSave)
+            if (!HasSaveFile)
             {
                 Notify("Nenhum save encontrado");
                 return;
             }
-            var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(FilePath));
-            if (data == null || data.version > SaveData.CurrentVersion)
-            {
-                Notify("Save incompatível");
-                return;
-            }
-            pendingLoad = data;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            if (!GameSession.ContinueGame()) Notify("Save incompatível");
         }
 
         void Apply(SaveData data)
         {
             Blueprints.Restore(data.blueprints);
             StoryLogs.Restore(data.logsRead);
+            PlayClock.Seconds = data.playTime;
+            EndingDirector.Seen = data.endingSeen;
             if (data.terraform != null) TerraformManager.Instance.SetValues(data.terraform);
 
             ReadSlots(data.inventory, playerInventory.Inventory);

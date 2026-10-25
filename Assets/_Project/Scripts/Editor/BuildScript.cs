@@ -15,7 +15,7 @@ namespace Planetcraft.EditorTools
             Directory.CreateDirectory(OutputDir);
             var options = new BuildPlayerOptions
             {
-                scenes = new[] { "Assets/_Project/Scenes/Prototype.unity" },
+                scenes = new[] { "Assets/_Project/Scenes/Title.unity", "Assets/_Project/Scenes/Prototype.unity" },
                 locationPathName = OutputDir + "/Planetcraft.exe",
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.None,

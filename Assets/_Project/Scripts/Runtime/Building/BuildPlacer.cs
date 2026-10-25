@@ -26,6 +26,8 @@ namespace Planetcraft.Building
 
         public BuildableDefinition Selected => selected;
         public string Status { get; private set; }
+        // Frame em que Esc/RMB cancelou a construção (para o mesmo Esc não abrir a pausa).
+        public int LastCancelFrame { get; private set; } = -1;
 
         public void Select(BuildableDefinition def)
         {
@@ -54,6 +56,7 @@ namespace Planetcraft.Building
             if (kb.escapeKey.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame)
             {
                 Select(null);
+                LastCancelFrame = Time.frameCount;
                 return;
             }
 
@@ -109,6 +112,7 @@ namespace Planetcraft.Building
         {
             if (!freeBuild && !inventory.Inventory.TryRemoveAll(selected.cost)) return;
             PlacedObject.Spawn(selected, ghost.transform.position, ghost.transform.rotation);
+            Sfx.Build();
         }
 
         void ShowValidity(bool valid)

@@ -50,6 +50,17 @@ namespace Planetcraft.Dev
                 StoryLogs.MarkRead(log.id);
                 if (GameHud.Instance != null) GameHud.Instance.ShowLog(log);
             }
+            if (HasFlag(args, "-pc-ending"))
+            {
+                yield return null;
+                var ending = FindFirstObjectByType<EndingDirector>();
+                if (ending != null) ending.SkipAhead();
+            }
+            if (HasFlag(args, "-pc-pause"))
+            {
+                yield return null;
+                if (GameHud.Instance != null) GameHud.Instance.SetPaused(true);
+            }
             if (HasFlag(args, "-pc-menu"))
             {
                 yield return null; // deixa o HUD montar a UI

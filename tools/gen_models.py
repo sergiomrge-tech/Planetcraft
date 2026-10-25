@@ -103,7 +103,7 @@ class Model:
         bmesh.ops.transform(tmp, matrix=T(*pos) @ R(*rot) @ S(*radii), verts=tmp.verts)
         self._emit(mat, obj, tmp, base)
 
-    def lathe(self, mat, pos, profile, seg=12, smooth=True, base=I4, obj=None):
+    def lathe(self, mat, pos, profile, seg=12, smooth=True, base=I4, obj=None, caps=True):
         tmp = bmesh.new()
         rings = []
         for r, z in profile:
@@ -122,9 +122,9 @@ class Model:
                 if len(quad) >= 3:
                     f = tmp.faces.new(quad)
                     f.smooth = smooth
-        if len(rings[0]) > 1:
+        if caps and len(rings[0]) > 1:
             tmp.faces.new(list(reversed(rings[0])))
-        if len(rings[-1]) > 1:
+        if caps and len(rings[-1]) > 1:
             tmp.faces.new(rings[-1])
         bmesh.ops.transform(tmp, matrix=T(*pos), verts=tmp.verts)
         self._emit(mat, obj, tmp, base)
@@ -639,6 +639,38 @@ def log_terminal():
     return m
 
 
+def mothership():
+    """Nave-mãe Gênese (~64 m). Pivô no centro, comprimento ao longo de +Y (frente)."""
+    m = Model("mothership", "Sky")
+    m.material("hull", (0.78, 0.8, 0.84), 0.45, 0.5)
+    m.material("hull_dark", (0.3, 0.32, 0.36), 0.5, 0.5)
+    m.material("accent", (0.9, 0.5, 0.12), 0.6)
+    m.material("glow_engine", (0.4, 0.8, 1.0), 0.4)
+    m.material("glow_window", (1.0, 0.85, 0.55), 0.4)
+    m.material("glow_landing", (1.0, 0.35, 0.25), 0.4)
+    along = R(-90, 0, 0)  # eixo do torno (Z) passa a apontar para +Y
+    m.lathe("hull", (0, 0, -30), [(0.0, -2), (4.5, 0), (7.5, 8), (8.0, 30), (7.0, 48), (4.0, 58), (0.0, 64)], seg=24, base=along)
+    m.lathe("hull_dark", (0, 0, 6), [(12.5, -1.4), (14.5, -1.4), (14.5, 1.4), (12.5, 1.4), (12.5, -1.4)], seg=32, base=along, caps=False)
+    for i in range(4):
+        a = i * 90 + 45
+        m.box("hull_dark", (0, 0, 0), (1.2, 7.0, 1.6), base=R(0, a, 0) @ T(0, 0, 0) @ R(-90, 0, 0) @ T(0, 6, 10.5) @ R(90, 0, 0))
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            m.cyl("hull_dark", (sx * 3.2, -31, sz * 3.2), 1.8, 2.2, 4.0, seg=16, rot=(90, 0, 0))
+            m.cyl("glow_engine", (sx * 3.2, -33.05, sz * 3.2), 1.6, 1.6, 0.1, seg=16, rot=(90, 0, 0))
+    m.box("hull_dark", (0, 18, 7.6), (5, 12, 2.2), bevel=0.4)
+    for i in range(10):
+        m.box("glow_window", (0, 13 + i * 1.1, 8.75), (3.6, 0.5, 0.1))
+    for i in range(6):
+        y = -18 + i * 7
+        m.box("accent", (0, y, 0), (16.4, 0.8, 0.3), base=T(0, 0, -0.2))
+        for sx in (-1, 1):
+            m.blob("glow_landing", (sx * 5.5, y, -6.8), (0.45, 0.45, 0.45), sub=1, noise=0, seed=i)
+    for sx in (-1, 1):
+        m.box("hull", (sx * 11, -12, 0), (12, 9, 0.8), taper=(1, 1), rot=(0, 0, sx * 8), bevel=0.2)
+    return m
+
+
 # =============================================================================
 BUILDERS = {
     "tree_broad_0": lambda: tree_broad(0), "tree_broad_1": lambda: tree_broad(1), "tree_broad_2": lambda: tree_broad(2),
@@ -655,6 +687,7 @@ BUILDERS = {
     "nuclear_reactor": nuclear_reactor,
     "ore_uranium": lambda: crystals("ore_uranium", (0.25, 0.9, 0.35), (0.6, 1.0, 0.6), 0.3, 0.2, 43, glow=True),
     "wreck_pod": wreck_pod, "chip_crate": chip_crate, "log_terminal": log_terminal,
+    "mothership": mothership,
 }
 
 

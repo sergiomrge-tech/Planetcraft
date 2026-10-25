@@ -23,6 +23,7 @@ namespace Planetcraft.World
         public void Interact(GameObject interactor)
         {
             Blueprints.Unlock(blueprintId);
+            Sfx.Collect();
             Hide();
         }
 
