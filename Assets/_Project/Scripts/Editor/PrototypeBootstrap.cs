@@ -153,7 +153,7 @@ namespace Planetcraft.EditorTools
             var list = new List<BuildableDefinition>();
 
             void Add(string id, string name, string desc, double ti, float gen, float demand, ItemAmount[] cost,
-                TerraformRate[] rates, bool isMachine, Action<Transform, MaterialLibrary> shape, bool pressurized = false)
+                TerraformRate[] rates, bool isMachine, string model, float scale = 1f, bool pressurized = false)
             {
                 var def = Asset<BuildableDefinition>($"{DataDir}/Buildables/{id}.asset", a =>
                 {
@@ -166,64 +166,72 @@ namespace Planetcraft.EditorTools
                     a.cost = cost;
                     a.terraformRates = rates;
                 });
-                if (def.prefab == null)
-                {
-                    def.prefab = SavePrefab(def, isMachine, pressurized, t => shape(t, m), m);
-                    EditorUtility.SetDirty(def);
-                }
+                // Prefab é derivado do modelo: sempre regenera para pegar mudanças do gen_models.py.
+                def.prefab = SavePrefab(def, isMachine, pressurized, model, scale);
+                EditorUtility.SetDirty(def);
                 list.Add(def);
             }
 
             var none = Array.Empty<TerraformRate>();
             Add("base_module", "Módulo de Base", "Abrigo pressurizado: recarrega oxigênio.", 0, 0, 0,
-                new[] { C(it["iron"], 2) }, none, false, ShapeBaseModule, pressurized: true);
+                new[] { C(it["iron"], 2) }, none, false, "Machines/base_module", pressurized: true);
             Add("wind_turbine", "Gerador Eólico", "+1.2 kW", 0, 1.2f, 0,
-                new[] { C(it["iron"], 1), C(it["silicon"], 1) }, none, true, ShapeWindTurbine);
+                new[] { C(it["iron"], 1), C(it["silicon"], 1) }, none, true, "Machines/wind_turbine");
             Add("heater_t1", "Aquecedor", "Calor +1.2/s. Consome 1 kW.", 0, 0, 1f,
-                new[] { C(it["iron"], 1), C(it["titanium"], 1) }, Rates(TerraformParameter.Heat, 1.2), true, (t, mm) => ShapeHeater(t, mm, 1f));
+                new[] { C(it["iron"], 1), C(it["titanium"], 1) }, Rates(TerraformParameter.Heat, 1.2), true, "Machines/heater");
             Add("drill_t1", "Perfuratriz", "Pressão +1/s. Consome 1 kW.", 0, 0, 1f,
-                new[] { C(it["iron"], 2) }, Rates(TerraformParameter.Pressure, 1), true, (t, mm) => ShapeDrill(t, mm, 1f));
+                new[] { C(it["iron"], 2) }, Rates(TerraformParameter.Pressure, 1), true, "Machines/drill");
             Add("vegetube", "Vegetubo", "Oxigênio +0.8/s. Consome 0.5 kW.", 50, 0, 0.5f,
-                new[] { C(it["ice"], 1), C(it["silicon"], 1) }, Rates(TerraformParameter.Oxygen, 0.8), true, ShapeVegetube);
+                new[] { C(it["ice"], 1), C(it["silicon"], 1) }, Rates(TerraformParameter.Oxygen, 0.8), true, "Machines/vegetube");
             Add("solar_panel", "Painel Solar", "+6.5 kW", 300, 6.5f, 0,
-                new[] { C(it["silicon"], 2), C(it["iron"], 1) }, none, true, ShapeSolar);
+                new[] { C(it["silicon"], 2), C(it["iron"], 1) }, none, true, "Machines/solar_panel");
             Add("heater_t2", "Aquecedor II", "Calor +12/s. Consome 4 kW.", 1_000, 0, 4f,
-                new[] { C(it["titanium"], 2), C(it["alloy"], 1) }, Rates(TerraformParameter.Heat, 12), true, (t, mm) => ShapeHeater(t, mm, 1.6f));
+                new[] { C(it["titanium"], 2), C(it["alloy"], 1) }, Rates(TerraformParameter.Heat, 12), true, "Machines/heater", 1.5f);
             Add("drill_t2", "Perfuratriz II", "Pressão +10/s. Consome 4 kW.", 2_500, 0, 4f,
-                new[] { C(it["iron"], 3), C(it["alloy"], 1) }, Rates(TerraformParameter.Pressure, 10), true, (t, mm) => ShapeDrill(t, mm, 1.6f));
+                new[] { C(it["iron"], 3), C(it["alloy"], 1) }, Rates(TerraformParameter.Pressure, 10), true, "Machines/drill", 1.5f);
             Add("algae_farm", "Fazenda de Algas", "Biomassa +25/s, Oxigênio +5/s. Consome 2 kW.", 20_000, 0, 2f,
                 new[] { C(it["ice"], 2), C(it["magnesium"], 1) },
-                new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, ShapeAlgae);
+                new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, "Machines/algae_farm");
             Add("heater_t3", "Aquecedor III", "Calor +400/s. Consome 15 kW.", 60_000, 0, 15f,
-                new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, (t, mm) => ShapeHeater(t, mm, 2.4f));
+                new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "Machines/heater", 2.2f);
             return list;
         }
 
         static TerraformRate[] Rates(TerraformParameter p, double v) => new[] { new TerraformRate(p, v) };
         static ItemAmount C(ItemDefinition item, int amount) => new ItemAmount(item, amount);
 
-        // ---------- Prefabs (primitivas; trocar por modelos depois) ----------
+        // ---------- Prefabs a partir dos modelos de tools/gen_models.py ----------
 
-        static GameObject SavePrefab(BuildableDefinition def, bool isMachine, bool pressurized, Action<Transform> build, MaterialLibrary m)
+        const string ModelDir = Root + "/Models";
+
+        // Instancia um FBX gerado (ex.: "Nature/tree_broad_0") como prefab aninhado.
+        static GameObject Model(string name, Transform parent)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>($"{ModelDir}/{name}.fbx");
+            if (asset == null) throw new Exception($"Modelo não encontrado: {ModelDir}/{name}.fbx (rode tools/gen_models.py)");
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(asset, parent);
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            return go;
+        }
+
+        static GameObject SavePrefab(BuildableDefinition def, bool isMachine, bool pressurized, string model, float scale)
         {
             string path = $"{PrefabDir}/{def.id}.prefab";
-            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return existing;
-
             var root = new GameObject(def.displayName);
-            build(root.transform);
+            var visual = Model(model, root.transform);
+            visual.transform.localScale = Vector3.one * scale;
             var placed = root.AddComponent<PlacedObject>();
             placed.EditorSetDefinition(def);
+
+            var rotor = visual.transform.Find("Rotor");
+            if (rotor != null) rotor.gameObject.AddComponent<Spinner>();
 
             if (isMachine)
             {
                 var machine = root.AddComponent<Machine>();
-                if (def.powerDemand > 0f)
-                {
-                    var indicator = Part(root.transform, PrimitiveType.Sphere, new Vector3(0f, 0.15f, 0.9f), Vector3.one * 0.18f, m.Emissive("Indicator", new Color(0.3f, 1f, 0.4f)), false);
-                    indicator.name = "RunningIndicator";
-                    SetRef(machine, "runningIndicator", indicator);
-                }
+                var indicator = visual.transform.Find("Indicator");
+                if (indicator != null) SetRef(machine, "runningIndicator", indicator.gameObject);
             }
 
             if (pressurized)
@@ -240,63 +248,27 @@ namespace Planetcraft.EditorTools
             return prefab;
         }
 
-        static void ShapeBaseModule(Transform t, MaterialLibrary m)
+        static GameObject Scaled(GameObject go, float scale)
         {
-            var wall = m.Lit("Module", new Color(0.85f, 0.85f, 0.8f));
-            Part(t, PrimitiveType.Cube, new Vector3(0f, 0.1f, 0f), new Vector3(4f, 0.2f, 4f), wall);
-            Part(t, PrimitiveType.Cube, new Vector3(0f, 3f, 0f), new Vector3(4f, 0.2f, 4f), wall);
-            foreach (var x in new[] { -1.9f, 1.9f })
-            foreach (var z in new[] { -1.9f, 1.9f })
-                Part(t, PrimitiveType.Cube, new Vector3(x, 1.5f, z), new Vector3(0.2f, 3f, 0.2f), wall);
-            Part(t, PrimitiveType.Cube, new Vector3(0f, 1.5f, 1.95f), new Vector3(3.6f, 2.8f, 0.1f), m.Lit("Glass", new Color(0.5f, 0.75f, 0.9f), 0.9f));
+            go.transform.localScale = Vector3.one * scale;
+            return go;
         }
 
-        static void ShapeWindTurbine(Transform t, MaterialLibrary m)
+        // Modelos são feitos com a frente em +Y no Blender; confere pelo volume da malha para onde
+        // essa frente foi no Unity e gira 180° se ela ficou para trás (AnimalWander anda em +Z).
+        static GameObject FaceForward(GameObject model)
         {
-            var metal = m.Lit("Metal", new Color(0.7f, 0.72f, 0.75f), 0.5f);
-            Part(t, PrimitiveType.Cylinder, new Vector3(0f, 2.5f, 0f), new Vector3(0.3f, 2.5f, 0.3f), metal);
-            var rotor = new GameObject("Rotor").transform;
-            rotor.SetParent(t, false);
-            rotor.localPosition = new Vector3(0f, 5f, 0.25f);
-            Part(rotor, PrimitiveType.Sphere, Vector3.zero, Vector3.one * 0.5f, metal);
-            for (int i = 0; i < 3; i++)
+            var b = new Bounds();
+            bool first = true;
+            foreach (var mf in model.GetComponentsInChildren<MeshFilter>())
             {
-                var blade = Part(rotor, PrimitiveType.Cube, Vector3.zero, new Vector3(0.25f, 2.2f, 0.05f), metal, false);
-                blade.transform.localRotation = Quaternion.Euler(0f, 0f, i * 120f);
-                blade.transform.localPosition = blade.transform.localRotation * new Vector3(0f, 1.1f, 0f);
+                var mb = mf.sharedMesh.bounds;
+                var center = model.transform.InverseTransformPoint(mf.transform.TransformPoint(mb.center));
+                if (first) { b = new Bounds(center, mb.size); first = false; }
+                else b.Encapsulate(new Bounds(center, mb.size));
             }
-            rotor.gameObject.AddComponent<Spinner>();
-        }
-
-        static void ShapeHeater(Transform t, MaterialLibrary m, float scale)
-        {
-            Part(t, PrimitiveType.Cube, new Vector3(0f, 0.5f, 0f) * scale, new Vector3(1.5f, 1f, 1.5f) * scale, m.Lit("Dark", new Color(0.25f, 0.25f, 0.28f)));
-            Part(t, PrimitiveType.Cylinder, new Vector3(0f, 1.15f, 0f) * scale, new Vector3(0.9f, 0.15f, 0.9f) * scale, m.Emissive("Heat", new Color(1f, 0.45f, 0.1f)));
-        }
-
-        static void ShapeDrill(Transform t, MaterialLibrary m, float scale)
-        {
-            Part(t, PrimitiveType.Cube, new Vector3(0f, 0.4f, 0f) * scale, new Vector3(2f, 0.8f, 2f) * scale, m.Lit("Yellow", new Color(0.9f, 0.7f, 0.15f)));
-            Part(t, PrimitiveType.Cylinder, new Vector3(0f, 1.8f, 0f) * scale, new Vector3(0.45f, 1.2f, 0.45f) * scale, m.Lit("Metal", new Color(0.7f, 0.72f, 0.75f), 0.5f));
-        }
-
-        static void ShapeVegetube(Transform t, MaterialLibrary m)
-        {
-            Part(t, PrimitiveType.Cylinder, new Vector3(0f, 0.1f, 0f), new Vector3(1f, 0.1f, 1f), m.Lit("Dark", new Color(0.25f, 0.25f, 0.28f)));
-            Part(t, PrimitiveType.Cylinder, new Vector3(0f, 1.1f, 0f), new Vector3(0.8f, 0.9f, 0.8f), m.Lit("Plant", new Color(0.3f, 0.7f, 0.3f)));
-        }
-
-        static void ShapeSolar(Transform t, MaterialLibrary m)
-        {
-            Part(t, PrimitiveType.Cylinder, new Vector3(0f, 0.6f, 0f), new Vector3(0.15f, 0.6f, 0.15f), m.Lit("Metal", new Color(0.7f, 0.72f, 0.75f), 0.5f));
-            var panel = Part(t, PrimitiveType.Cube, new Vector3(0f, 1.3f, 0f), new Vector3(2f, 0.08f, 1.2f), m.Lit("SolarCell", new Color(0.1f, 0.2f, 0.5f), 0.8f));
-            panel.transform.localRotation = Quaternion.Euler(25f, 0f, 0f);
-        }
-
-        static void ShapeAlgae(Transform t, MaterialLibrary m)
-        {
-            Part(t, PrimitiveType.Cube, new Vector3(0f, 0.3f, 0f), new Vector3(3f, 0.6f, 2f), m.Lit("Module", new Color(0.85f, 0.85f, 0.8f)));
-            Part(t, PrimitiveType.Cube, new Vector3(0f, 0.62f, 0f), new Vector3(2.7f, 0.05f, 1.7f), m.Lit("Algae", new Color(0.15f, 0.5f, 0.25f), 0.7f));
+            if (b.max.z < -b.min.z) model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            return model;
         }
 
         static GameObject Part(Transform parent, PrimitiveType type, Vector3 pos, Vector3 scale, Material mat, bool keepCollider = true)
@@ -375,30 +347,17 @@ namespace Planetcraft.EditorTools
             var rng = new System.Random(4242);
             var vegetation = new GameObject("Vegetação");
             AddVegetationLayer(vegetation.transform, "Musgo", stages["moss"].requiredTi, stages["flora"].requiredTi, 350, rng, terrain, center, (p, r) =>
-                Part(p, PrimitiveType.Sphere, Vector3.zero, new Vector3(1.6f, 0.25f, 1.6f) * (0.6f + (float)r.NextDouble()), m.Lit("Moss", new Color(0.25f, 0.4f, 0.15f)), false));
+                Scaled(Model("Nature/moss", p), 0.6f + (float)r.NextDouble() * 0.8f));
             AddVegetationLayer(vegetation.transform, "Flora", stages["flora"].requiredTi, stages["forest"].requiredTi, 200, rng, terrain, center, (p, r) =>
-                Part(p, PrimitiveType.Sphere, Vector3.up * 0.4f, Vector3.one * (0.6f + (float)r.NextDouble() * 0.6f), m.Lit("Bush", new Color(0.3f, 0.6f, 0.2f)), false));
+                Scaled(Model("Nature/bush", p), 0.7f + (float)r.NextDouble() * 0.7f));
             AddVegetationLayer(vegetation.transform, "Florestas", stages["forest"].requiredTi, stages["fauna"].requiredTi * 2, 260, rng, terrain, center, (p, r) =>
             {
-                float s = 1f + (float)r.NextDouble() * 1.1f;
-                var tree = new GameObject("Árvore");
-                tree.transform.SetParent(p, false);
-                var bark = m.Lit("Bark", new Color(0.35f, 0.22f, 0.12f));
-                if (r.NextDouble() < 0.4)
-                {
-                    // Conífera: tronco fino e copa em camadas
-                    Part(tree.transform, PrimitiveType.Cylinder, new Vector3(0f, 1.6f, 0f) * s, new Vector3(0.25f, 1.6f, 0.25f) * s, bark);
-                    var pine = m.Lit("Pine", new Color(0.1f, 0.35f, 0.18f));
-                    for (int k = 0; k < 3; k++)
-                        Part(tree.transform, PrimitiveType.Sphere, new Vector3(0f, (2.4f + k * 1.1f) * s, 0f), new Vector3(2.2f - k * 0.6f, 1.1f, 2.2f - k * 0.6f) * s, pine, false);
-                }
-                else
-                {
-                    Part(tree.transform, PrimitiveType.Cylinder, new Vector3(0f, 1.5f, 0f) * s, new Vector3(0.35f, 1.5f, 0.35f) * s, bark);
-                    var leaves = m.Lit(r.NextDouble() < 0.5 ? "Leaves" : "LeavesLight", r.NextDouble() < 0.5 ? new Color(0.18f, 0.5f, 0.2f) : new Color(0.32f, 0.58f, 0.22f));
-                    Part(tree.transform, PrimitiveType.Sphere, new Vector3(0f, 3.6f, 0f) * s, Vector3.one * 2.6f * s, leaves, false);
-                    Part(tree.transform, PrimitiveType.Sphere, new Vector3(0.8f, 3.1f, 0.3f) * s, Vector3.one * 1.7f * s, leaves, false);
-                }
+                string kind = r.NextDouble() < 0.4 ? $"Nature/tree_conifer_{r.Next(2)}" : $"Nature/tree_broad_{r.Next(3)}";
+                var tree = Scaled(Model(kind, p), 0.8f + (float)r.NextDouble() * 0.7f);
+                var trunk = tree.AddComponent<CapsuleCollider>();
+                trunk.radius = 0.3f;
+                trunk.height = 3f;
+                trunk.center = new Vector3(0f, 1.5f, 0f);
                 return tree;
             }, minRadius: 110f, maxRadius: 225f);
 
@@ -411,13 +370,9 @@ namespace Planetcraft.EditorTools
 
             // Recursos
             var resources = new GameObject("Recursos");
-            var nodeKinds = new (string item, float weight, PrimitiveType shape, Color color)[]
+            var nodeKinds = new (string item, float weight)[]
             {
-                ("iron", 0.3f, PrimitiveType.Cube, new Color(0.5f, 0.3f, 0.2f)),
-                ("silicon", 0.25f, PrimitiveType.Sphere, new Color(0.45f, 0.5f, 0.6f)),
-                ("ice", 0.2f, PrimitiveType.Cube, new Color(0.75f, 0.9f, 1f)),
-                ("magnesium", 0.15f, PrimitiveType.Sphere, new Color(0.85f, 0.82f, 0.75f)),
-                ("titanium", 0.1f, PrimitiveType.Cylinder, new Color(0.95f, 0.95f, 0.95f)),
+                ("iron", 0.3f), ("silicon", 0.25f), ("ice", 0.2f), ("magnesium", 0.15f), ("titanium", 0.1f),
             };
             for (int i = 0; i < 260; i++)
             {
@@ -429,9 +384,10 @@ namespace Planetcraft.EditorTools
                     if (roll <= acc) { kind = k; break; }
                 }
                 var pos = RandomPointInRing(rng, center, 30f, 200f, terrain);
-                var node = Part(resources.transform, kind.shape, pos + Vector3.up * 0.25f, Vector3.one * 0.6f, m.Lit("Ore_" + kind.item, kind.color, 0.3f));
-                node.name = "Nó_" + kind.item;
-                node.transform.rotation = Quaternion.Euler(rng.Next(0, 360), rng.Next(0, 360), rng.Next(0, 360));
+                var node = new GameObject("Nó_" + kind.item);
+                node.transform.SetParent(resources.transform, false);
+                node.transform.SetPositionAndRotation(pos - Vector3.up * 0.05f, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
+                Scaled(Model("Ore/ore_" + kind.item, node.transform), 0.8f + (float)rng.NextDouble() * 0.4f);
                 node.AddComponent<ResourceNode>().EditorSetup($"node_{i}", items[kind.item], 1);
             }
 
@@ -536,21 +492,10 @@ namespace Planetcraft.EditorTools
 
         static GameObject CreateGrazer(Transform parent, System.Random r, MaterialLibrary m)
         {
-            float s = 0.9f + (float)r.NextDouble() * 0.4f;
             var root = new GameObject("Herbívoro");
             root.transform.SetParent(parent, false);
-            root.transform.localScale = Vector3.one * s;
-            var fur = r.NextDouble() < 0.5 ? m.Lit("FurBrown", new Color(0.45f, 0.3f, 0.18f)) : m.Lit("FurSand", new Color(0.72f, 0.6f, 0.4f));
-            var dark = m.Lit("Hoof", new Color(0.15f, 0.12f, 0.1f));
-            foreach (var x in new[] { -0.3f, 0.3f })
-            foreach (var z in new[] { -0.6f, 0.6f })
-                Part(root.transform, PrimitiveType.Cylinder, new Vector3(x, 0.35f, z), new Vector3(0.14f, 0.35f, 0.14f), dark, false);
-            var body = new GameObject("Corpo").transform;
-            body.SetParent(root.transform, false);
-            Part(body, PrimitiveType.Sphere, new Vector3(0f, 0.95f, 0f), new Vector3(0.9f, 0.75f, 1.7f), fur, false);
-            Part(body, PrimitiveType.Sphere, new Vector3(0f, 1.25f, 1.0f), new Vector3(0.45f, 0.45f, 0.6f), fur, false);
-            Part(body, PrimitiveType.Cylinder, new Vector3(-0.12f, 1.55f, 1.0f), new Vector3(0.05f, 0.18f, 0.05f), dark, false);
-            Part(body, PrimitiveType.Cylinder, new Vector3(0.12f, 1.55f, 1.0f), new Vector3(0.05f, 0.18f, 0.05f), dark, false);
+            root.transform.localScale = Vector3.one * (0.85f + (float)r.NextDouble() * 0.35f);
+            var body = FaceForward(Model("Fauna/grazer", root.transform)).transform;
 
             var wander = root.AddComponent<AnimalWander>();
             var so = new SerializedObject(wander);
@@ -565,13 +510,8 @@ namespace Planetcraft.EditorTools
         {
             var root = new GameObject("Saltador");
             root.transform.SetParent(parent, false);
-            var fur = m.Lit("FurWhite", new Color(0.9f, 0.88f, 0.84f));
-            var body = new GameObject("Corpo").transform;
-            body.SetParent(root.transform, false);
-            Part(body, PrimitiveType.Sphere, new Vector3(0f, 0.25f, 0f), new Vector3(0.4f, 0.4f, 0.55f), fur, false);
-            Part(body, PrimitiveType.Sphere, new Vector3(0f, 0.45f, 0.25f), Vector3.one * 0.28f, fur, false);
-            Part(body, PrimitiveType.Sphere, new Vector3(-0.07f, 0.7f, 0.22f), new Vector3(0.07f, 0.25f, 0.05f), fur, false);
-            Part(body, PrimitiveType.Sphere, new Vector3(0.07f, 0.7f, 0.22f), new Vector3(0.07f, 0.25f, 0.05f), fur, false);
+            root.transform.localScale = Vector3.one * (1.1f + (float)r.NextDouble() * 0.3f);
+            var body = FaceForward(Model("Fauna/hopper", root.transform)).transform;
 
             var wander = root.AddComponent<AnimalWander>();
             var so = new SerializedObject(wander);
