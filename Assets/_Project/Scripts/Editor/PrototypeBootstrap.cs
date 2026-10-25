@@ -14,6 +14,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -40,6 +41,7 @@ namespace Planetcraft.EditorTools
         [MenuItem("Planetcraft/Gerar Protótipo")]
         public static void Build()
         {
+            HdrpSetup.Configure();
             foreach (var dir in new[] { DataDir + "/Stages", DataDir + "/Items", DataDir + "/Recipes", DataDir + "/Buildables", DataDir + "/Logs", PrefabDir, MatDir, TerrainDir, SceneDir })
                 Directory.CreateDirectory(dir);
             AssetDatabase.Refresh();
@@ -392,25 +394,13 @@ namespace Planetcraft.EditorTools
             var sunGo = new GameObject("Sol");
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.intensity = 1.4f;
-            sun.color = new Color(1f, 0.9f, 0.8f);
+            sun.intensity = 100000f;
+            sun.color = new Color(1f, 0.95f, 0.88f);
             sunGo.transform.rotation = Quaternion.Euler(20f, 120f, 0f);
-            RenderSettings.sun = sun;
 
-            var sky = AssetDatabase.LoadAssetAtPath<Material>(MatDir + "/TitleSky.mat");
-            if (sky == null)
-            {
-                sky = new Material(Shader.Find("Skybox/Procedural"));
-                sky.SetFloat("_AtmosphereThickness", 0.05f);
-                sky.SetFloat("_Exposure", 0.4f);
-                sky.SetColor("_SkyTint", new Color(0.1f, 0.1f, 0.15f));
-                sky.SetColor("_GroundColor", Color.black);
-                AssetDatabase.CreateAsset(sky, MatDir + "/TitleSky.mat");
-            }
-            RenderSettings.skybox = sky;
-            RenderSettings.fog = false;
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.12f, 0.12f, 0.16f);
+            var space = new GameObject("Espaço").AddComponent<Volume>();
+            space.isGlobal = true;
+            space.sharedProfile = HdrpSetup.TitleProfile();
 
             var planet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             planet.name = "Planeta";
@@ -445,9 +435,10 @@ namespace Planetcraft.EditorTools
             var camGo = new GameObject("Câmera") { tag = "MainCamera" };
             var cam = camGo.AddComponent<Camera>();
             cam.farClipPlane = 2000f;
-            // Fundo preto: as estrelas são partículas (o skybox procedural deixa uma faixa no horizonte).
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Color.black;
+            // Fundo preto: as estrelas são partículas.
+            var hdCam = camGo.AddComponent<HDAdditionalCameraData>();
+            hdCam.clearColorMode = HDAdditionalCameraData.ClearColorMode.Color;
+            hdCam.backgroundColorHDR = Color.black;
             camGo.AddComponent<AudioListener>();
             var orbit = camGo.AddComponent<Orbiter>();
             SetRef(orbit, "target", shipRoot.transform);
@@ -532,40 +523,37 @@ namespace Planetcraft.EditorTools
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // Luz e céu
+            // Luz física (HDRP): sol de ~100 mil lux; a exposição automática do volume adapta a câmera.
             var sunGo = new GameObject("Sol");
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.intensity = 1.3f;
+            sun.intensity = 100000f;
             sun.shadows = LightShadows.Soft;
-            sunGo.transform.rotation = Quaternion.Euler(40f, -30f, 0f);
-            RenderSettings.sun = sun;
+            sunGo.transform.rotation = Quaternion.Euler(35f, -30f, 0f);
 
-            var skyMat = AssetDatabase.LoadAssetAtPath<Material>(MatDir + "/Sky.mat");
-            if (skyMat == null)
-            {
-                skyMat = new Material(Shader.Find("Skybox/Procedural"));
-                AssetDatabase.CreateAsset(skyMat, MatDir + "/Sky.mat");
-            }
-            RenderSettings.skybox = skyMat;
-            RenderSettings.ambientMode = AmbientMode.Skybox;
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            // Atmosfera: céu físico terrestre, nuvens volumétricas, neblina e pós-processamento.
+            var atmosphereGo = new GameObject("Atmosfera");
+            var atmosphere = atmosphereGo.AddComponent<Volume>();
+            atmosphere.isGlobal = true;
+            atmosphere.sharedProfile = HdrpSetup.AtmosphereProfile();
 
             // Terreno com uma bacia central que vira lago quando a água sobe
             var terrain = CreateTerrain();
             var center = new Vector3(TerrainSize / 2f, 0f, TerrainSize / 2f);
 
-            // Água
-            var water = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            water.name = "Água";
-            Object.DestroyImmediate(water.GetComponent<Collider>());
+            // Água: superfície do HDRP (ondas, refração, cáusticas); o relevo é que forma o lago.
+            var water = new GameObject("Água");
             water.transform.position = center + Vector3.up * -2f;
-            water.transform.localScale = new Vector3(TerrainSize / 10f, 1f, TerrainSize / 10f);
-            var waterRenderer = water.GetComponent<Renderer>();
-            waterRenderer.sharedMaterial = ShaderMaterial("WaterSurface", "Planetcraft/Water");
-            waterRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            AssetDatabase.DeleteAsset(MatDir + "/Water.mat"); // material Lit da primeira versão
+            var surface = water.AddComponent<WaterSurface>();
+            surface.surfaceType = WaterSurfaceType.OceanSeaLake;
+            surface.geometryType = WaterGeometryType.Infinite;
+            surface.largeWindSpeed = 6f;
+            surface.largeChaos = 0.6f;
+            surface.ripplesWindSpeed = 5f;
+            surface.refractionColor = new Color(0.1f, 0.42f, 0.5f);
+            surface.scatteringColor = new Color(0.02f, 0.2f, 0.2f);
+            surface.absorptionDistance = 6f;
+            surface.caustics = true;
             var waterReactor = water.AddComponent<WaterReactor>();
             SetDouble(waterReactor, "tiStart", stages["water"].requiredTi);
             SetDouble(waterReactor, "tiEnd", stages["forest"].requiredTi);
@@ -575,11 +563,12 @@ namespace Planetcraft.EditorTools
             var tm = systems.AddComponent<TerraformManager>();
             SetRef(tm, "stages", stageDb);
 
-            var sky = new GameObject("Céu").AddComponent<SkyReactor>();
+            var sky = atmosphereGo.AddComponent<AtmosphereReactor>();
+            SetRef(sky, "volume", atmosphere);
             SetRef(sky, "sun", sun);
-            // Céu muda forte nos primeiros estágios: Névoa ~1/3, Céu Azul ~2/3, Nuvens completo.
+            // A atmosfera limpa entre a Névoa e as Nuvens: cada estágio inicial muda o céu de forma visível.
             SetDouble(sky, "tiStart", 20);
-            SetDouble(sky, "tiEnd", stages["clouds"].requiredTi);
+            SetDouble(sky, "tiEnd", stages["rain"].requiredTi);
 
             var ground = terrain.gameObject.AddComponent<GroundReactor>();
             SetRef(ground, "terrain", terrain);
@@ -785,24 +774,14 @@ namespace Planetcraft.EditorTools
             SetRef(feedback, "database", db);
             SetRef(feedback, "audioSource", feedbackAudio);
 
-            // Clima: camada de nuvens + chuva que segue o jogador
-            var clouds = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            clouds.name = "Nuvens";
-            Object.DestroyImmediate(clouds.GetComponent<Collider>());
-            clouds.transform.position = new Vector3(center.x, 180f, center.z);
-            clouds.transform.localScale = new Vector3(300f, 1f, 300f);
-            var cloudRenderer = clouds.GetComponent<Renderer>();
-            cloudRenderer.sharedMaterial = ShaderMaterial("CloudLayer", "Planetcraft/CloudLayer");
-            cloudRenderer.shadowCastingMode = ShadowCastingMode.Off;
-            cloudRenderer.receiveShadows = false;
-
+            // Clima: nuvens volumétricas (no volume Atmosfera) + chuva que segue o jogador
             var rain = CreateRain(RainMaterial());
             var weatherGo = new GameObject("Clima");
             var rainAudio = weatherGo.AddComponent<AudioSource>();
             rainAudio.playOnAwake = false;
             rainAudio.spatialBlend = 0f;
             var weather = weatherGo.AddComponent<WeatherController>();
-            SetRef(weather, "cloudLayer", cloudRenderer);
+            SetRef(weather, "atmosphere", atmosphere);
             SetDouble(weather, "cloudTiStart", stages["bluesky"].requiredTi);
             SetDouble(weather, "cloudTiEnd", stages["rain"].requiredTi);
             SetRef(weather, "rainStage", stages["rain"]);
@@ -947,7 +926,7 @@ namespace Planetcraft.EditorTools
             var go = Terrain.CreateTerrainGameObject(td);
             go.name = "Terreno";
             var terrain = go.GetComponent<Terrain>();
-            var terrainShader = Shader.Find("Universal Render Pipeline/Terrain/Lit");
+            var terrainShader = Shader.Find("HDRP/TerrainLit");
             if (terrainShader != null)
             {
                 string matPath = MatDir + "/Terrain.mat";
@@ -1000,25 +979,11 @@ namespace Planetcraft.EditorTools
             string path = MatDir + "/Rain.mat";
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (mat != null) return mat;
-            mat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-            mat.SetFloat("_Surface", 1f);
-            mat.SetFloat("_Blend", 0f);
-            mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-            mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-            mat.SetFloat("_ZWrite", 0f);
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            mat.renderQueue = (int)RenderQueue.Transparent;
-            mat.SetColor("_BaseColor", Color.white);
-            AssetDatabase.CreateAsset(mat, path);
-            return mat;
-        }
-
-        static Material ShaderMaterial(string name, string shaderName)
-        {
-            string path = $"{MatDir}/{name}.mat";
-            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (mat != null) return mat;
-            mat = new Material(Shader.Find(shaderName));
+            // HDRP/Unlit transparente: a cor por partícula vem do vertex color do sistema de partículas.
+            mat = new Material(Shader.Find("HDRP/Unlit"));
+            mat.SetColor("_UnlitColor", new Color(1f, 1f, 1f, 1f));
+            HDMaterial.SetSurfaceType(mat, true);
+            HDMaterial.ValidateMaterial(mat);
             AssetDatabase.CreateAsset(mat, path);
             return mat;
         }
@@ -1077,17 +1042,10 @@ namespace Planetcraft.EditorTools
                 var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
                 if (mat == null)
                 {
-                    var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-                    mat = new Material(shader);
-                    if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
-                    if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
-                    if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smoothness);
-                    if (emissive)
-                    {
-                        mat.EnableKeyword("_EMISSION");
-                        mat.SetColor("_EmissionColor", color * 1.5f);
-                        mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-                    }
+                    mat = new Material(Shader.Find("HDRP/Lit"));
+                    ModelPostprocessor.ConfigureLit(mat, color, smoothness);
+                    if (emissive) ModelPostprocessor.MakeEmissive(mat, color, ModelPostprocessor.GlowNits);
+                    HDMaterial.ValidateMaterial(mat);
                     AssetDatabase.CreateAsset(mat, path);
                 }
                 cache[name] = mat;

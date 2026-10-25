@@ -1,22 +1,25 @@
 using UnityEditor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
-using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace Planetcraft.EditorTools
 {
     // Importação dos FBX gerados por tools/gen_models.py:
-    // - colisores de malha só em construções e minérios (precisam de raycast/colisão);
-    // - materiais viram URP/Lit com a cor do Blender; "glow_*" ficam emissivos e "glass_*" translúcidos.
+    // - colisores de malha só em construções, minérios e props (precisam de raycast/colisão);
+    // - materiais viram HDRP/Lit com a cor do Blender; "glow_*" ficam emissivos e "glass_*" translúcidos.
     public class ModelPostprocessor : AssetPostprocessor
     {
         const string ModelRoot = "Assets/_Project/Models/";
 
-        // Depois do pré-processador de materiais do próprio URP.
+        // Luminância dos emissivos (nits): visível de dia com exposição automática, sem estourar.
+        public const float GlowNits = 4000f;
+
+        // Depois do pré-processador de materiais do próprio HDRP.
         public override int GetPostprocessOrder() => 100;
 
         // Incrementar quando mudar a conversão: força o Unity a reimportar os modelos.
-        public override uint GetVersion() => 2;
+        public override uint GetVersion() => 3;
 
         void OnPreprocessModel()
         {
@@ -39,32 +42,34 @@ namespace Planetcraft.EditorTools
             // O Blender guarda cores lineares; propriedades de cor do material são em gama.
             color = color.gamma;
 
-            material.shader = Shader.Find("Universal Render Pipeline/Lit");
-            material.SetColor("_BaseColor", color);
-            material.SetFloat("_Smoothness", 0.25f);
-            material.SetFloat("_Metallic", 0f);
-
             string name = description.materialName ?? material.name;
-            if (name.StartsWith("glow_"))
-            {
-                material.EnableKeyword("_EMISSION");
-                // Acima de ~1x a cor estoura para branco sem tonemapping; o brilho vem da própria cor.
-                material.SetColor("_EmissionColor", color * 0.9f);
-                material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            }
-            else if (name.StartsWith("glass_"))
-            {
-                color.a = 0.35f;
-                material.SetColor("_BaseColor", color);
-                material.SetFloat("_Smoothness", 0.9f);
-                material.SetFloat("_Surface", 1f);
-                material.SetFloat("_Blend", 0f);
-                material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-                material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-                material.SetFloat("_ZWrite", 0f);
-                material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                material.renderQueue = (int)RenderQueue.Transparent;
-            }
+            ConfigureLit(material, color, name.StartsWith("glass_") ? 0.9f : 0.3f);
+            if (name.StartsWith("glow_")) MakeEmissive(material, color, GlowNits);
+            else if (name.StartsWith("glass_")) MakeTransparent(material, 0.35f);
+            HDMaterial.ValidateMaterial(material);
+        }
+
+        public static void ConfigureLit(Material material, Color color, float smoothness, float metallic = 0f)
+        {
+            material.shader = Shader.Find("HDRP/Lit");
+            material.SetColor("_BaseColor", color);
+            material.SetFloat("_Smoothness", smoothness);
+            material.SetFloat("_Metallic", metallic);
+        }
+
+        public static void MakeEmissive(Material material, Color color, float nits)
+        {
+            HDMaterial.SetUseEmissiveIntensity(material, true);
+            HDMaterial.SetEmissiveColor(material, color);
+            HDMaterial.SetEmissiveIntensity(material, nits, EmissiveIntensityUnit.Nits);
+        }
+
+        public static void MakeTransparent(Material material, float alpha)
+        {
+            var c = material.GetColor("_BaseColor");
+            c.a = alpha;
+            material.SetColor("_BaseColor", c);
+            HDMaterial.SetSurfaceType(material, true);
         }
     }
 }

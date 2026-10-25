@@ -2,7 +2,9 @@
     "name": "Planetcraft.Runtime",
     "rootNamespace": "Planetcraft",
     "references": [
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.HighDefinition.Runtime"
     ],
     "autoReferenced": true
 }

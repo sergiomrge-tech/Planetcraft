@@ -1,5 +1,7 @@
 using Planetcraft.Core;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace Planetcraft.World
 {
@@ -7,8 +9,9 @@ namespace Planetcraft.World
     // A chuva engrossa as nuvens, escurece o sol e toca o som de chuva.
     public class WeatherController : MonoBehaviour
     {
-        [Header("Nuvens")]
-        [SerializeField] Renderer cloudLayer;
+        [Header("Nuvens (Volumetric Clouds do HDRP)")]
+        [SerializeField] Volume atmosphere;
+        [SerializeField] float maxCloudDensity = 0.6f;
         [SerializeField] double cloudTiStart = 2_000;
         [SerializeField] double cloudTiEnd = 3_000_000;
         [SerializeField] AnimationCurve coverageByProgress = AnimationCurve.EaseInOut(0f, 0f, 1f, 0.55f);
@@ -31,9 +34,7 @@ namespace Planetcraft.World
         [SerializeField] Light sun;
         [SerializeField, Range(0f, 1f)] float rainSunDimming = 0.45f;
 
-        static readonly int CoverageId = Shader.PropertyToID("_Coverage");
-
-        Material cloudMaterial;
+        VolumetricClouds clouds;
         ParticleSystem.EmissionModule emission;
         float baseSunIntensity;
         bool raining;
@@ -53,7 +54,11 @@ namespace Planetcraft.World
             }
             tm.StageReached += OnStageReached;
 
-            if (cloudLayer != null) cloudMaterial = cloudLayer.material;
+            if (atmosphere != null && atmosphere.profile.TryGet(out clouds))
+            {
+                clouds.cloudPreset = VolumetricClouds.CloudPresets.Custom;
+                clouds.enable.overrideState = clouds.densityMultiplier.overrideState = true;
+            }
             if (sun != null) baseSunIntensity = sun.intensity;
             if (rain != null)
             {
@@ -146,7 +151,9 @@ namespace Planetcraft.World
 
         void ApplyCoverage()
         {
-            if (cloudMaterial != null) cloudMaterial.SetFloat(CoverageId, coverage);
+            if (clouds == null) return;
+            clouds.enable.value = coverage > 0.01f;
+            clouds.densityMultiplier.value = coverage * maxCloudDensity;
         }
     }
 }
