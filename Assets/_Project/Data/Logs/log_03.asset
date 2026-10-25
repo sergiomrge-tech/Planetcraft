@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
   id: log_03
   title: Comandante Raul Tavares
-  body: "Ningu\xE9m nos mandou aqui para sobreviver. Mandaram para preparar o planeta.\n\nA nave-m\xE3e G\xEAnese est\xE1 parada al\xE9m do cintur\xE3o, com quarenta mil colonos em criossono. Ela s\xF3 desce quando a atmosfera aguentar vida sem capacete. At\xE9 l\xE1, cada aquecedor e cada perfuratriz que ligarmos \xE9 um passo deles."
+  body: "Ningu\xE9m nos mandou aqui para sobreviver. Mandaram para preparar o planeta.\n\nA frota espera al\xE9m do cintur\xE3o, com quarenta mil colonos em criossono, mas a Aurora era a \xFAnica nave capaz de voltar at\xE9 eles. Se algu\xE9m ler isto: monte um estaleiro e construa outra nave-m\xE3e com o que sobrou. Decole quando a atmosfera estiver est\xE1vel e leve a not\xEDcia de que este planeta respira."

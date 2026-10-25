@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: "G\xEAnese"
   requiredTi: 15000000
-  description: "A atmosfera sustenta vida. A nave-m\xE3e G\xEAnese est\xE1 descendo."
+  description: "A atmosfera est\xE1 est\xE1vel. A nave-m\xE3e pode decolar do estaleiro."

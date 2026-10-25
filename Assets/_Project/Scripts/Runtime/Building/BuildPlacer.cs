@@ -89,6 +89,11 @@ namespace Planetcraft.Building
                 reason = $"Requer {TiFormat.Format(selected.requiredTi)}";
                 return false;
             }
+            if (selected.unique && System.Linq.Enumerable.Any(PlacedObject.All, p => p.Definition == selected))
+            {
+                reason = "Só é possível ter um";
+                return false;
+            }
             if (!Blueprints.Has(selected.blueprintId))
             {
                 reason = "Requer microchip de destroço";

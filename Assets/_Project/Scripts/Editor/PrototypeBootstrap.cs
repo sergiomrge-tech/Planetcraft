@@ -49,6 +49,7 @@ namespace Planetcraft.EditorTools
             var items = CreateItems();
             var recipes = CreateRecipes(items);
             var buildables = CreateBuildables(items, mats);
+            ConfigureShipyardPrefab(buildables.Find(b => b.id == "shipyard"), CreateShipModules(items), stages["genesis"]);
 
             var db = Asset<GameDatabase>(DataDir + "/GameDatabase.asset", d => { });
             db.items = new List<ItemDefinition>(items.Values);
@@ -85,7 +86,7 @@ namespace Planetcraft.EditorTools
                 ("flora", "Flora", 1_000_000, "Plantas se espalham pelo vale."),
                 ("forest", "Florestas", 2_500_000, "Árvores crescem sozinhas."),
                 ("fauna", "Fauna", 6_000_000, "Os primeiros animais caminham pelo vale."),
-                ("genesis", "Gênese", 15_000_000, "A atmosfera sustenta vida. A nave-mãe Gênese está descendo."),
+                ("genesis", "Gênese", 15_000_000, "A atmosfera está estável. A nave-mãe pode decolar do estaleiro."),
             };
 
             // A tabela acima é a fonte da verdade dos estágios: sincroniza sempre.
@@ -168,7 +169,7 @@ namespace Planetcraft.EditorTools
 
             void Add(string id, string name, string desc, double ti, float gen, float demand, ItemAmount[] cost,
                 TerraformRate[] rates, bool isMachine, string model, float scale = 1f, bool pressurized = false, bool storage = false,
-                string blueprint = null)
+                string blueprint = null, bool unique = false)
             {
                 var def = Asset<BuildableDefinition>($"{DataDir}/Buildables/{id}.asset", a =>
                 {
@@ -182,6 +183,7 @@ namespace Planetcraft.EditorTools
                     a.terraformRates = rates;
                 });
                 def.blueprintId = blueprint; // projeto exigido faz parte do design: sempre sincroniza
+                def.unique = unique;
                 // Prefab é derivado do modelo: sempre regenera para pegar mudanças do gen_models.py.
                 def.prefab = SavePrefab(def, isMachine, pressurized, model, scale, storage);
                 EditorUtility.SetDirty(def);
@@ -210,6 +212,8 @@ namespace Planetcraft.EditorTools
             Add("algae_farm", "Fazenda de Algas", "Biomassa +25/s, Oxigênio +5/s. Consome 2 kW.", 20_000, 0, 2f,
                 new[] { C(it["ice"], 2), C(it["magnesium"], 1) },
                 new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, "Machines/algae_farm");
+            Add("shipyard", "Estaleiro", "Plataforma para montar a nave-mãe e deixar o planeta. Só um por planeta.", 2_500_000, 0, 0,
+                new[] { C(it["alloy"], 6), C(it["titanium"], 4), C(it["iron"], 8) }, none, false, "Machines/shipyard", unique: true);
             Add("heater_t3", "Aquecedor III", "Calor +400/s. Consome 15 kW.", 60_000, 0, 15f,
                 new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "Machines/heater", 2.2f);
 
@@ -229,6 +233,56 @@ namespace Planetcraft.EditorTools
             return list;
         }
 
+        // Etapas da nave-mãe, em ordem de montagem (a tabela é a fonte da verdade).
+        static ShipModule[] CreateShipModules(Dictionary<string, ItemDefinition> it)
+        {
+            Directory.CreateDirectory(DataDir + "/ShipModules");
+            var data = new (string id, string name, string desc, double ti, string obj, ItemAmount[] cost)[]
+            {
+                ("ship_hull", "Casco", "Estrutura em cunha e blindagem.", 2_500_000, "Hull",
+                    new[] { C(it["alloy"], 8), C(it["iron"], 10), C(it["titanium"], 6) }),
+                ("ship_engines", "Motores", "Propulsores principais e de manobra.", 4_000_000, "Engines",
+                    new[] { C(it["alloy"], 6), C(it["titanium"], 4), C(it["fuel_rod"], 3) }),
+                ("ship_superstructure", "Superestrutura", "Conveses, hangares e alojamentos.", 6_000_000, "Superstructure",
+                    new[] { C(it["iron"], 10), C(it["silicon"], 8), C(it["alloy"], 4) }),
+                ("ship_bridge", "Ponte de comando", "Torre de comando e domos de sensores.", 8_000_000, "Bridge",
+                    new[] { C(it["silicon"], 8), C(it["magnesium"], 6), C(it["alloy"], 4) }),
+                ("ship_hyperdrive", "Reator de salto", "Núcleo de salto para deixar o sistema.", 12_000_000, "Hyperdrive",
+                    new[] { C(it["fuel_rod"], 4), C(it["uranium"], 6), C(it["alloy"], 6) }),
+            };
+            var list = new List<ShipModule>();
+            foreach (var d in data)
+            {
+                var module = Asset<ShipModule>($"{DataDir}/ShipModules/{d.id}.asset", a => { });
+                module.id = d.id;
+                module.displayName = d.name;
+                module.description = d.desc;
+                module.requiredTi = d.ti;
+                module.objectName = d.obj;
+                module.cost = d.cost;
+                EditorUtility.SetDirty(module);
+                list.Add(module);
+            }
+            return list.ToArray();
+        }
+
+        // O prefab do estaleiro ganha a nave-mãe (partes escondidas até instalar) e o componente Shipyard.
+        static void ConfigureShipyardPrefab(BuildableDefinition def, ShipModule[] modules, TerraformStage launchStage)
+        {
+            string path = AssetDatabase.GetAssetPath(def.prefab);
+            var root = PrefabUtility.LoadPrefabContents(path);
+            var ship = Model("Sky/mothership", root.transform);
+            ship.name = "NaveMae";
+            ship.transform.localPosition = new Vector3(0f, 7.2f, 0f);
+            FaceForward(ship, longerSideIsFront: false); // motores (lado mais comprido) para trás
+            var rumble = root.AddComponent<AudioSource>();
+            rumble.playOnAwake = false;
+            rumble.spatialBlend = 0f;
+            root.AddComponent<Shipyard>().EditorSetup(ship.transform, modules, launchStage, rumble);
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+
         // Registros de história encontrados nos destroços (a tabela é a fonte da verdade).
         static List<StoryLog> CreateLogs()
         {
@@ -244,9 +298,10 @@ namespace Planetcraft.EditorTools
                  "metálica.\n\nOs veios verdes que brilham perto das crateras são urânio exposto pela queda das cápsulas. " +
                  "Cuidado ao coletar. O projeto completo do reator está no chip deste módulo."),
                 ("log_03", "Comandante Raul Tavares",
-                 "Ninguém nos mandou aqui para sobreviver. Mandaram para preparar o planeta.\n\nA nave-mãe Gênese está " +
-                 "parada além do cinturão, com quarenta mil colonos em criossono. Ela só desce quando a atmosfera aguentar " +
-                 "vida sem capacete. Até lá, cada aquecedor e cada perfuratriz que ligarmos é um passo deles."),
+                 "Ninguém nos mandou aqui para sobreviver. Mandaram para preparar o planeta.\n\nA frota espera além do " +
+                 "cinturão, com quarenta mil colonos em criossono, mas a Aurora era a única nave capaz de voltar até eles. " +
+                 "Se alguém ler isto: monte um estaleiro e construa outra nave-mãe com o que sobrou. Decole quando a " +
+                 "atmosfera estiver estável e leve a notícia de que este planeta respira."),
                 ("log_04", "IA de bordo — MAIA",
                  "Registro automático. Detecto atividade de terraformação na superfície, de origem desconhecida.\n\n" +
                  "Atualizando projeções: com perfuratrizes de alta pressão o índice cresce em ordens de grandeza. " +
@@ -443,7 +498,7 @@ namespace Planetcraft.EditorTools
 
         // Modelos são feitos com a frente em +Y no Blender; confere pelo volume da malha para onde
         // essa frente foi no Unity e gira 180° se ela ficou para trás (AnimalWander anda em +Z).
-        static GameObject FaceForward(GameObject model)
+        static GameObject FaceForward(GameObject model, bool longerSideIsFront = true)
         {
             var b = new Bounds();
             bool first = true;
@@ -454,7 +509,8 @@ namespace Planetcraft.EditorTools
                 if (first) { b = new Bounds(center, mb.size); first = false; }
                 else b.Encapsulate(new Bounds(center, mb.size));
             }
-            if (b.max.z < -b.min.z) model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            bool frontIsPositiveZ = longerSideIsFront ? b.max.z >= -b.min.z : b.max.z <= -b.min.z;
+            if (!frontIsPositiveZ) model.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             return model;
         }
 
@@ -625,9 +681,9 @@ namespace Planetcraft.EditorTools
                     chip.AddComponent<ChipPickup>().EditorSetup(sites[s].blueprint, sites[s].label, new[] { beacon });
                 }
 
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 8; i++)
                 {
-                    float na = i * Mathf.PI / 2f + (float)rng.NextDouble() * 0.6f;
+                    float na = i * Mathf.PI / 4f + (float)rng.NextDouble() * 0.4f;
                     var np = pos + new Vector3(Mathf.Cos(na), 0f, Mathf.Sin(na)) * (6f + (float)rng.NextDouble() * 5f);
                     np.y = terrain.SampleHeight(np) - 0.05f;
                     var node = new GameObject("Nó_uranium");
@@ -759,20 +815,6 @@ namespace Planetcraft.EditorTools
             SetRef(dev, "player", fpc);
             SetRef(dev, "weather", weather);
             SetRef(dev, "database", db);
-
-            // Final: a nave-mãe espera escondida até o estágio Gênese.
-            var final = new GameObject("Final");
-            var ship = Scaled(Model("Sky/mothership", final.transform), 2.5f);
-            var rumble = final.AddComponent<AudioSource>();
-            rumble.playOnAwake = false;
-            rumble.spatialBlend = 0f;
-            var ending = final.AddComponent<EndingDirector>();
-            SetRef(ending, "goalStage", stages["genesis"]);
-            SetRef(ending, "ship", ship.transform);
-            SetRef(ending, "rumble", rumble);
-            var endingSo = new SerializedObject(ending);
-            endingSo.FindProperty("hoverPosition").vector3Value = center + new Vector3(0f, 95f, 0f);
-            endingSo.ApplyModifiedPropertiesWithoutUndo();
 
             EditorSceneManager.SaveScene(scene, ScenePath);
         }

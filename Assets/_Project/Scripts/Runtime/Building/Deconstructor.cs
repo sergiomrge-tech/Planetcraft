@@ -34,6 +34,8 @@ namespace Planetcraft.Building
 
         string BlockReason(PlacedObject placed)
         {
+            if (placed.TryGetComponent<Shipyard>(out _) && ShipProgress.Count > 0)
+                return "A nave-mãe está em montagem neste estaleiro";
             if (placed.TryGetComponent<InventoryComponent>(out var storage) && !storage.Inventory.IsEmpty)
                 return "Esvazie o baú antes de desmontar";
             if (placed.TryGetComponent<PressurizedZone>(out _) && placed.TryGetComponent<Collider>(out var zone)

@@ -23,6 +23,7 @@ MonoBehaviour:
     amount: 1
   requiredTi: 50
   blueprintId: 
+  unique: 0
   powerGeneration: 0
   powerDemand: 0.5
   terraformRates:

@@ -17,7 +17,8 @@ namespace Planetcraft.Save
         public List<string> blueprints = new();
         public List<string> logsRead = new();
         public double playTime;
-        public bool endingSeen;
+        public List<string> shipModules = new();
+        public bool shipLaunched;
         public Vector3 playerPosition;
         public float playerYaw;
         public float oxygen;

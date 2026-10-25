@@ -50,11 +50,26 @@ namespace Planetcraft.Dev
                 StoryLogs.MarkRead(log.id);
                 if (GameHud.Instance != null) GameHud.Instance.ShowLog(log);
             }
-            if (HasFlag(args, "-pc-ending"))
+            // -pc-shipyard <n>: estaleiro 45 m à frente com os n primeiros módulos instalados.
+            if (TryNumber(args, "-pc-shipyard", out double modulesToInstall))
+            {
+                var yard = SpawnShipyard((int)modulesToInstall);
+                if (yard != null && HasFlag(args, "-pc-shipyard-menu"))
+                {
+                    yield return null;
+                    if (GameHud.Instance != null) GameHud.Instance.OpenShipyard(yard);
+                }
+            }
+            // -pc-launch <segundos>: decola e adianta a sequência.
+            if (TryNumber(args, "-pc-launch", out double skip))
             {
                 yield return null;
-                var ending = FindFirstObjectByType<EndingDirector>();
-                if (ending != null) ending.SkipAhead();
+                var yard = FindFirstObjectByType<Shipyard>();
+                if (yard != null)
+                {
+                    yard.Launch();
+                    yard.SkipAhead((float)skip);
+                }
             }
             if (HasFlag(args, "-pc-pause"))
             {
@@ -96,6 +111,20 @@ namespace Planetcraft.Dev
             pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y + 0.2f;
             var look = target - pos;
             player.Teleport(pos, Mathf.Atan2(look.x, look.z) * Mathf.Rad2Deg);
+        }
+
+        Shipyard SpawnShipyard(int modules)
+        {
+            var def = database != null ? database.buildables.FirstOrDefault(b => b != null && b.id == "shipyard") : null;
+            var terrain = Terrain.activeTerrain;
+            if (def == null || player == null || terrain == null) return null;
+            var dir = player.transform.forward;
+            var pos = player.transform.position + dir * 45f;
+            pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
+            var yard = PlacedObject.Spawn(def, pos, Quaternion.LookRotation(Vector3.Cross(dir, Vector3.up), Vector3.up));
+            var shipyard = yard.GetComponent<Shipyard>();
+            foreach (var m in shipyard.Modules.Take(modules)) ShipProgress.Install(m.id);
+            return shipyard;
         }
 
         // Constrói uma de cada construção num arco à frente do jogador, viradas para ele.

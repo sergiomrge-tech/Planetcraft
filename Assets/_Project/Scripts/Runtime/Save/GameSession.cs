@@ -1,3 +1,4 @@
+using Planetcraft.Building;
 using Planetcraft.Core;
 using Planetcraft.World;
 using UnityEngine;
@@ -21,7 +22,7 @@ namespace Planetcraft.Save
             Blueprints.Restore(null);
             StoryLogs.Restore(null);
             ResourceNode.RestoreCollected(null);
-            EndingDirector.Seen = false;
+            ShipProgress.Restore(null, false);
             PlayClock.Seconds = 0;
             StartGame();
         }

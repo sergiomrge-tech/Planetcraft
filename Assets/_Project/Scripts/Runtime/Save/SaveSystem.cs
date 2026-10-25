@@ -72,8 +72,9 @@ namespace Planetcraft.Save
                 water = playerSurvival.Water,
                 food = playerSurvival.Food,
                 playTime = PlayClock.Seconds,
-                endingSeen = EndingDirector.Seen,
+                shipLaunched = ShipProgress.Launched,
             };
+            data.shipModules.AddRange(ShipProgress.Installed);
 
             WriteSlots(playerInventory.Inventory, data.inventory);
 
@@ -113,7 +114,7 @@ namespace Planetcraft.Save
             Blueprints.Restore(data.blueprints);
             StoryLogs.Restore(data.logsRead);
             PlayClock.Seconds = data.playTime;
-            EndingDirector.Seen = data.endingSeen;
+            ShipProgress.Restore(data.shipModules, data.shipLaunched);
             if (data.terraform != null) TerraformManager.Instance.SetValues(data.terraform);
 
             ReadSlots(data.inventory, playerInventory.Inventory);

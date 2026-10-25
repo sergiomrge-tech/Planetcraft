@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17d6cdc3a78dc1b4abc1bb0b767e82d7, type: 3}
+  m_Name: ship_superstructure
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.ShipModule
+  id: ship_superstructure
+  displayName: Superestrutura
+  description: Conveses, hangares e alojamentos.
+  cost:
+  - item: {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
+    amount: 10
+  - item: {fileID: 11400000, guid: 992d46b4fabab2a4eafbbaf792fb73d9, type: 2}
+    amount: 8
+  - item: {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}
+    amount: 4
+  requiredTi: 6000000
+  objectName: Superstructure

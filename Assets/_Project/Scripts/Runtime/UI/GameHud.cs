@@ -39,7 +39,8 @@ namespace Planetcraft.UI
         }
 
         VisualElement menu, banner, flash, chestColumn, craftColumn, buildColumn, logsColumn, logPanel;
-        VisualElement pausePanel, pauseButtons, pauseOptions, endPanel;
+        VisualElement pausePanel, pauseButtons, pauseOptions, endPanel, shipColumn, shipList;
+        Shipyard openShipyard;
         Label endStats;
         VisualElement invList, craftList, buildList, chestList, logsList;
         Label logTitle, logBody;
@@ -87,6 +88,11 @@ namespace Planetcraft.UI
                 openChest.Inventory.Changed -= MarkMenuDirty;
                 openChest = null;
             }
+            if (!open && openShipyard != null)
+            {
+                ShipProgress.Changed -= MarkMenuDirty;
+                openShipyard = null;
+            }
             menuDirty = true;
         }
 
@@ -95,6 +101,13 @@ namespace Planetcraft.UI
             if (openChest != null) openChest.Inventory.Changed -= MarkMenuDirty;
             openChest = chest;
             openChest.Inventory.Changed += MarkMenuDirty;
+            ToggleMenu(true);
+        }
+
+        public void OpenShipyard(Shipyard shipyard)
+        {
+            openShipyard = shipyard;
+            ShipProgress.Changed += MarkMenuDirty;
             ToggleMenu(true);
         }
 
@@ -283,10 +296,14 @@ namespace Planetcraft.UI
             menuDirty = false;
             var inv = inventory.Inventory;
             bool chestMode = openChest != null;
-            craftColumn.style.display = chestMode ? DisplayStyle.None : DisplayStyle.Flex;
-            buildColumn.style.display = chestMode ? DisplayStyle.None : DisplayStyle.Flex;
+            bool shipMode = openShipyard != null;
+            bool normal = !chestMode && !shipMode;
+            craftColumn.style.display = normal ? DisplayStyle.Flex : DisplayStyle.None;
+            buildColumn.style.display = normal ? DisplayStyle.Flex : DisplayStyle.None;
+            logsColumn.style.display = normal ? DisplayStyle.Flex : DisplayStyle.None;
             chestColumn.style.display = chestMode ? DisplayStyle.Flex : DisplayStyle.None;
-            logsColumn.style.display = chestMode ? DisplayStyle.None : DisplayStyle.Flex;
+            shipColumn.style.display = shipMode ? DisplayStyle.Flex : DisplayStyle.None;
+            if (shipMode) RebuildShipyard(inv);
 
             invList.Clear();
             FillInventory(invList, inv, slot =>
@@ -297,6 +314,7 @@ namespace Planetcraft.UI
                 return null;
             });
 
+            if (shipMode) return;
             if (chestMode)
             {
                 chestList.Clear();
@@ -362,6 +380,47 @@ namespace Planetcraft.UI
                 logsList.Add(row);
             }
             if (!anyLog) logsList.Add(MakeLabel("Nenhum registro encontrado.\nProcure destroços: os faróis marcam onde estão.", 13, Muted));
+        }
+
+        void RebuildShipyard(Inventory inv)
+        {
+            shipList.Clear();
+            double ti = TerraformManager.Instance != null ? TerraformManager.Instance.Ti : 0;
+            int total = openShipyard.Modules.Length;
+            var progressLabel = MakeLabel($"Módulos instalados: <b>{ShipProgress.Count} de {total}</b>", 15, Accent);
+            progressLabel.style.marginBottom = 8;
+            shipList.Add(progressLabel);
+
+            foreach (var m in openShipyard.Modules)
+            {
+                if (m == null) continue;
+                bool done = ShipProgress.IsInstalled(m.id);
+                var card = Card(done ? $"{m.displayName}  <color=#8fd18f>(instalado)</color>" : m.displayName,
+                    $"{m.description}\n<color=#c9d1d9>{CostText(m.cost)}</color>");
+                string reason = openShipyard.BlockReason(m, inv, ti);
+                if (!done)
+                {
+                    var module = m;
+                    var button = MakeButton("Instalar", () => openShipyard.TryInstall(module, inv, ti));
+                    button.SetEnabled(reason == null);
+                    card.Add(button);
+                    if (reason != null) card.Add(MakeLabel(reason, 12, Warn));
+                }
+                shipList.Add(card);
+            }
+
+            string launchBlock = openShipyard.LaunchBlockReason(ti);
+            var launch = BigButton("DECOLAR", () =>
+            {
+                var yard = openShipyard;
+                ToggleMenu(false);
+                yard.Launch();
+            });
+            launch.style.marginTop = 10;
+            launch.style.backgroundColor = launchBlock == null ? new Color(0.2f, 0.55f, 0.35f) : new Color(0.25f, 0.25f, 0.28f);
+            launch.SetEnabled(launchBlock == null);
+            shipList.Add(launch);
+            if (launchBlock != null) shipList.Add(MakeLabel(launchBlock, 13, Muted));
         }
 
         static string LockReason(double requiredTi, string blueprintId, double ti) =>
@@ -496,6 +555,9 @@ namespace Planetcraft.UI
             chestColumn = Column("Baú", out chestList, out _);
             logsColumn = Column("Registros", out logsList, out _);
             logsColumn.style.width = 280;
+            shipColumn = Column("Nave-mãe — Estaleiro", out shipList, out _);
+            shipColumn.style.width = 460;
+            columns.Add(shipColumn);
             columns.Add(craftColumn);
             columns.Add(buildColumn);
             columns.Add(chestColumn);
@@ -569,13 +631,13 @@ namespace Planetcraft.UI
             var endSheet = Panel();
             endSheet.style.width = 680;
             endSheet.style.alignItems = Align.Center;
-            endSheet.Add(MakeLabel("TERRAFORMAÇÃO CONCLUÍDA", 14, new Color(0.45f, 0.95f, 0.75f), bold: true));
-            var endTitle = MakeLabel("Planeta habitável", 40, Color.white, bold: true);
+            endSheet.Add(MakeLabel("MISSÃO CUMPRIDA", 14, new Color(0.45f, 0.95f, 0.75f), bold: true));
+            var endTitle = MakeLabel("Rumo às estrelas", 40, Color.white, bold: true);
             endTitle.style.marginTop = 4;
             endSheet.Add(endTitle);
             var endText = MakeLabel(
-                "A nave-mãe Gênese desceu. Quarenta mil colonos acordam do criossono\n" +
-                "para respirar um ar que você ajudou a criar.", 16, new Color(0.88f, 0.9f, 0.92f));
+                "A nave-mãe que você montou deixa a órbita levando a notícia:\n" +
+                "o planeta respira. Os quarenta mil colonos da frota já podem vir.", 16, new Color(0.88f, 0.9f, 0.92f));
             endText.style.unityTextAlign = TextAnchor.MiddleCenter;
             endText.style.marginTop = 10;
             endText.style.marginBottom = 14;

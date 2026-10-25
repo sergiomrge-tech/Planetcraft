@@ -16,6 +16,8 @@ namespace Planetcraft.Building
         public double requiredTi;
         [Tooltip("Projeto obtido com microchip de destroço. Vazio = não precisa.")]
         public string blueprintId;
+        [Tooltip("Só pode existir um no mundo (ex.: estaleiro).")]
+        public bool unique;
 
         public bool IsUnlocked(double ti) => ti >= requiredTi && Blueprints.Has(blueprintId);
 
