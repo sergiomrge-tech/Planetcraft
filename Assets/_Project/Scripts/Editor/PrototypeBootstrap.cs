@@ -14,6 +14,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace Planetcraft.EditorTools
@@ -153,7 +154,7 @@ namespace Planetcraft.EditorTools
             var list = new List<BuildableDefinition>();
 
             void Add(string id, string name, string desc, double ti, float gen, float demand, ItemAmount[] cost,
-                TerraformRate[] rates, bool isMachine, string model, float scale = 1f, bool pressurized = false)
+                TerraformRate[] rates, bool isMachine, string model, float scale = 1f, bool pressurized = false, bool storage = false)
             {
                 var def = Asset<BuildableDefinition>($"{DataDir}/Buildables/{id}.asset", a =>
                 {
@@ -167,7 +168,7 @@ namespace Planetcraft.EditorTools
                     a.terraformRates = rates;
                 });
                 // Prefab é derivado do modelo: sempre regenera para pegar mudanças do gen_models.py.
-                def.prefab = SavePrefab(def, isMachine, pressurized, model, scale);
+                def.prefab = SavePrefab(def, isMachine, pressurized, model, scale, storage);
                 EditorUtility.SetDirty(def);
                 list.Add(def);
             }
@@ -175,6 +176,8 @@ namespace Planetcraft.EditorTools
             var none = Array.Empty<TerraformRate>();
             Add("base_module", "Módulo de Base", "Abrigo pressurizado: recarrega oxigênio.", 0, 0, 0,
                 new[] { C(it["iron"], 2) }, none, false, "Machines/base_module", pressurized: true);
+            Add("storage_chest", "Baú", "Guarda até 30 pilhas de itens. [E] para abrir.", 0, 0, 0,
+                new[] { C(it["iron"], 2) }, none, false, "Machines/storage_chest", storage: true);
             Add("wind_turbine", "Gerador Eólico", "+1.2 kW", 0, 1.2f, 0,
                 new[] { C(it["iron"], 1), C(it["silicon"], 1) }, none, true, "Machines/wind_turbine");
             Add("heater_t1", "Aquecedor", "Calor +1.2/s. Consome 1 kW.", 0, 0, 1f,
@@ -215,7 +218,7 @@ namespace Planetcraft.EditorTools
             return go;
         }
 
-        static GameObject SavePrefab(BuildableDefinition def, bool isMachine, bool pressurized, string model, float scale)
+        static GameObject SavePrefab(BuildableDefinition def, bool isMachine, bool pressurized, string model, float scale, bool storage)
         {
             string path = $"{PrefabDir}/{def.id}.prefab";
             var root = new GameObject(def.displayName);
@@ -234,6 +237,15 @@ namespace Planetcraft.EditorTools
                 if (indicator != null) SetRef(machine, "runningIndicator", indicator.gameObject);
             }
 
+            if (storage)
+            {
+                var chestInventory = root.AddComponent<InventoryComponent>();
+                var so = new SerializedObject(chestInventory);
+                so.FindProperty("capacity").intValue = 30;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                root.AddComponent<StorageChest>();
+            }
+
             if (pressurized)
             {
                 var box = root.AddComponent<BoxCollider>();
@@ -246,6 +258,27 @@ namespace Planetcraft.EditorTools
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
             return prefab;
+        }
+
+        // PanelSettings + tema padrão de runtime para o HUD em UI Toolkit.
+        static PanelSettings HudPanelSettings()
+        {
+            string dir = Root + "/UI";
+            Directory.CreateDirectory(dir);
+            string themePath = dir + "/HudTheme.tss";
+            if (!File.Exists(themePath))
+            {
+                File.WriteAllText(themePath, "@import url(\"unity-theme://default\");\n");
+                AssetDatabase.ImportAsset(themePath, ImportAssetOptions.ForceSynchronousImport);
+            }
+            var theme = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(themePath);
+            var settings = Asset<PanelSettings>(dir + "/HudPanelSettings.asset", ps => { });
+            settings.themeStyleSheet = theme;
+            settings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+            settings.referenceResolution = new Vector2Int(1920, 1080);
+            settings.match = 0.5f;
+            EditorUtility.SetDirty(settings);
+            return settings;
         }
 
         static GameObject Scaled(GameObject go, float scale)
@@ -416,12 +449,28 @@ namespace Planetcraft.EditorTools
             var fpc = playerGo.AddComponent<FirstPersonController>();
             SetRef(fpc, "cameraPivot", camGo.transform);
 
+            // Início: dá para montar base + gerador + aquecedor nos primeiros minutos.
             var inv = playerGo.AddComponent<InventoryComponent>();
             SetStartingItems(inv, new[]
             {
-                C(items["iron"], 4), C(items["silicon"], 2),
-                C(items["o2_capsule"], 2), C(items["water_bottle"], 1), C(items["nutrient_bar"], 1),
+                C(items["iron"], 5), C(items["silicon"], 2), C(items["titanium"], 1),
+                C(items["o2_capsule"], 3), C(items["water_bottle"], 2), C(items["nutrient_bar"], 2),
             });
+
+            // Aglomerado de recursos perto do ponto inicial para o começo não depender de sorte.
+            var nearKinds = new[] { "iron", "iron", "iron", "iron", "silicon", "silicon", "silicon", "ice", "ice", "ice", "titanium", "titanium", "magnesium", "magnesium" };
+            for (int i = 0; i < nearKinds.Length; i++)
+            {
+                float angle = i * Mathf.PI * 2f / nearKinds.Length + (float)rng.NextDouble() * 0.3f;
+                float radius = 7f + (float)rng.NextDouble() * 18f;
+                var p = spawnPos + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+                p.y = terrain.SampleHeight(p) - 0.05f;
+                var node = new GameObject("Nó_" + nearKinds[i]);
+                node.transform.SetParent(resources.transform, false);
+                node.transform.SetPositionAndRotation(p, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
+                Scaled(Model("Ore/ore_" + nearKinds[i], node.transform), 0.9f);
+                node.AddComponent<ResourceNode>().EditorSetup($"node_start_{i}", items[nearKinds[i]], 1);
+            }
 
             var survival = playerGo.AddComponent<SurvivalStats>();
             SetRef(survival, "respawnPoint", respawn);
@@ -435,18 +484,27 @@ namespace Planetcraft.EditorTools
             SetRef(placer, "validMaterial", m.Emissive("GhostValid", new Color(0.2f, 0.9f, 0.4f)));
             SetRef(placer, "invalidMaterial", m.Emissive("GhostInvalid", new Color(0.9f, 0.2f, 0.2f)));
 
+            var deconstructor = playerGo.AddComponent<Deconstructor>();
+            SetRef(deconstructor, "cam", cam);
+            SetRef(deconstructor, "inventory", inv);
+            SetRef(deconstructor, "placer", placer);
+
             var save = systems.AddComponent<SaveSystem>();
             SetRef(save, "database", db);
             SetRef(save, "player", fpc);
             SetRef(save, "playerInventory", inv);
             SetRef(save, "playerSurvival", survival);
 
-            var hud = systems.AddComponent<DebugHud>();
+            var hudGo = new GameObject("HUD");
+            var document = hudGo.AddComponent<UIDocument>();
+            document.panelSettings = HudPanelSettings();
+            var hud = hudGo.AddComponent<GameHud>();
             SetRef(hud, "database", db);
             SetRef(hud, "inventory", inv);
             SetRef(hud, "survival", survival);
             SetRef(hud, "interactor", interactor);
             SetRef(hud, "placer", placer);
+            SetRef(hud, "deconstructor", deconstructor);
             SetRef(hud, "saveSystem", save);
 
             var feedbackAudio = systems.AddComponent<AudioSource>();
@@ -485,6 +543,7 @@ namespace Planetcraft.EditorTools
             var dev = systems.AddComponent<Planetcraft.Dev.DevCommandLine>();
             SetRef(dev, "player", fpc);
             SetRef(dev, "weather", weather);
+            SetRef(dev, "database", db);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };

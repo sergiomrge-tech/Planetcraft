@@ -10,7 +10,7 @@ namespace Planetcraft.Player
         [SerializeField] float maxWater = 100f;
         [SerializeField] float maxFood = 100f;
         [Tooltip("Consumo por segundo.")]
-        [SerializeField] float oxygenDrain = 0.6f;
+        [SerializeField] float oxygenDrain = 0.45f;
         [SerializeField] float waterDrain = 0.12f;
         [SerializeField] float foodDrain = 0.08f;
         [SerializeField] float oxygenRefillInBase = 15f;

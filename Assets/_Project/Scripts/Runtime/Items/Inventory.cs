@@ -22,6 +22,26 @@ namespace Planetcraft.Items
         public int Capacity => slots.Length;
         public Slot this[int index] => slots[index];
 
+        public bool IsEmpty
+        {
+            get
+            {
+                foreach (var s in slots)
+                    if (!s.IsEmpty) return false;
+                return true;
+            }
+        }
+
+        // Move até `amount` de `item` para `target`, limitado ao espaço disponível lá. Retorna quanto moveu.
+        public int TransferTo(Inventory target, ItemDefinition item, int amount)
+        {
+            int n = System.Math.Min(System.Math.Min(amount, Count(item)), target.SpaceFor(item));
+            if (n <= 0) return 0;
+            TryRemove(item, n);
+            target.TryAdd(item, n);
+            return n;
+        }
+
         public int Count(ItemDefinition item)
         {
             int n = 0;

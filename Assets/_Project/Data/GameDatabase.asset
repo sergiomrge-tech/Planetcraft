@@ -29,6 +29,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b678bcc44f2c4ed4b87b6dce6a0d2343, type: 2}
   buildables:
   - {fileID: 11400000, guid: fc31631a87bb89a4a87b99c35c031151, type: 2}
+  - {fileID: 11400000, guid: ade840a34baf2354ebc51c3d1620d771, type: 2}
   - {fileID: 11400000, guid: 55646c03a70a78b4b8f98eb34f4348fc, type: 2}
   - {fileID: 11400000, guid: ba1681815aa39a7458256d9c888be507, type: 2}
   - {fileID: 11400000, guid: d1bf29c0c4c6f994c8d5f92b1a5e716f, type: 2}

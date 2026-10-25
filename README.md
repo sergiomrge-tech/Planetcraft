@@ -14,8 +14,9 @@ Unity **6000.6.2f1**, URP, Input System.
 | Tecla | Ação |
 |---|---|
 | WASD / Shift / Espaço | andar / correr / pular |
-| E | coletar recurso |
-| Tab | menu (inventário, fabricar, construir) |
+| E | coletar recurso / abrir baú |
+| X | desmontar construção (devolve o custo) |
+| Tab / Esc | abrir / fechar menu (inventário, fabricar, construir, baú) |
 | LMB / R ou scroll / RMB | construir / girar / cancelar |
 | F5 / F9 | salvar / carregar |
 | F2 | acelerar a simulação (x1 → x10 → x100) |
@@ -51,6 +52,17 @@ Princípios:
 - **Estado separado da apresentação.** O mundo reage a eventos do `TerraformManager`, o que facilita
   adicionar save, simulação offline e, no futuro, multiplayer.
 - **Save guarda estado, nunca a cena**, com campo `version` para migrações.
+
+## Modelos 3D
+
+`tools/gen_models.py` gera todos os modelos com o pacote `bpy` (Blender como módulo Python) e exporta FBX para
+`Assets/_Project/Models/`. Rode `python tools/gen_models.py Assets/_Project/Models [nomes...] [--preview <pasta>]`
+e depois **Planetcraft → Gerar Protótipo**.
+
+## Testes visuais automáticos
+
+`Planetcraft.exe -pc-ti <Ti> -pc-yaw <graus> -pc-pitch <graus> [-pc-rain] [-pc-showcase] [-pc-menu] -pc-wait <s> -pc-screenshot <png>`
+— `-pc-showcase` constrói uma de cada máquina na frente do jogador; `-pc-menu` abre o menu.
 
 ## Próximos passos
 

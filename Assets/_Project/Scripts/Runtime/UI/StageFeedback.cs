@@ -30,9 +30,6 @@ namespace Planetcraft.UI
         double lastTi;
         AudioClip chime;
         AudioClip blip;
-        GUIStyle titleStyle;
-        GUIStyle subtitleStyle;
-        GUIStyle bodyStyle;
 
         void Start()
         {
@@ -103,58 +100,23 @@ namespace Planetcraft.UI
 
         float Duration(Banner b) => b.isStage ? stageBannerDuration : unlockBannerDuration;
 
-        void OnGUI()
+        // Desenho fica no GameHud (UI Toolkit); aqui só a animação: fade, deslize e flash.
+        void LateUpdate()
         {
-            if (current == null) return;
-            EnsureStyles();
-
-            float elapsed = Time.unscaledTime - shownAt;
-            float duration = Duration(current);
-            float alpha = Mathf.Clamp01(elapsed / 0.4f) * Mathf.Clamp01((duration - elapsed) / 0.8f);
-            var previousColor = GUI.color;
-
-            if (current.isStage && elapsed < 0.9f)
+            var hud = GameHud.Instance;
+            if (hud == null) return;
+            if (current == null)
             {
-                GUI.color = new Color(1f, 0.97f, 0.9f, flashStrength * (1f - elapsed / 0.9f));
-                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+                hud.HideBanner();
+                hud.SetFlash(0f);
+                return;
             }
 
-            float width = Mathf.Min(640f, Screen.width - 40f);
-            float height = current.isStage ? 150f : 74f;
+            float elapsed = Time.unscaledTime - shownAt;
+            float alpha = Mathf.Clamp01(elapsed / 0.4f) * Mathf.Clamp01((Duration(current) - elapsed) / 0.8f);
             float slide = (1f - Mathf.Clamp01(elapsed / 0.4f)) * -30f;
-            var rect = new Rect((Screen.width - width) / 2f, 90f + slide, width, height);
-
-            GUI.color = new Color(0f, 0f, 0f, 0.65f * alpha);
-            GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = new Color(1f, 1f, 1f, alpha);
-
-            var inner = new Rect(rect.x + 16, rect.y + 10, rect.width - 32, rect.height - 20);
-            GUI.Label(new Rect(inner.x, inner.y, inner.width, 20), current.title, titleStyle);
-            GUI.Label(new Rect(inner.x, inner.y + 20, inner.width, current.isStage ? 44 : 30), current.subtitle, subtitleStyle);
-            if (!string.IsNullOrEmpty(current.body))
-                GUI.Label(new Rect(inner.x, inner.y + 66, inner.width, inner.height - 66), current.body, bodyStyle);
-
-            GUI.color = previousColor;
-        }
-
-        void EnsureStyles()
-        {
-            if (titleStyle != null) return;
-            titleStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter, fontSize = 13, fontStyle = FontStyle.Bold,
-                normal = { textColor = new Color(0.6f, 0.85f, 1f) },
-            };
-            subtitleStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter, fontSize = 30, fontStyle = FontStyle.Bold, wordWrap = true,
-                normal = { textColor = Color.white },
-            };
-            bodyStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.UpperCenter, fontSize = 14, wordWrap = true, richText = true,
-                normal = { textColor = new Color(0.9f, 0.9f, 0.9f) },
-            };
+            hud.ShowBanner(current.isStage, current.title, current.subtitle, current.body, alpha, slide);
+            hud.SetFlash(current.isStage && elapsed < 0.9f ? flashStrength * (1f - elapsed / 0.9f) : 0f);
         }
     }
 }

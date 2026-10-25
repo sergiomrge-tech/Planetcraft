@@ -548,6 +548,25 @@ def algae_farm():
     return m
 
 
+def storage_chest():
+    m = Model("storage_chest", "Machines")
+    m.material("body", (0.42, 0.45, 0.5), 0.5, 0.5)
+    m.material("dark", (0.16, 0.17, 0.19), 0.6, 0.3)
+    m.material("accent", (0.9, 0.5, 0.12), 0.6)
+    m.material("glow_lock", (0.4, 0.85, 1.0), 0.4)
+    m.box("dark", (0, 0, 0.06), (1.5, 0.95, 0.12), bevel=0.02)
+    m.box("body", (0, 0, 0.45), (1.4, 0.85, 0.66), bevel=0.05)
+    m.box("body", (0, 0, 0.88), (1.46, 0.9, 0.22), bevel=0.06)
+    for sx in (-0.5, 0.5):
+        m.box("dark", (sx, 0, 0.55), (0.1, 0.9, 0.9))
+    m.box("accent", (0, 0, 0.3), (1.42, 0.87, 0.06))
+    m.box("dark", (0, 0.46, 0.72), (0.26, 0.05, 0.22), bevel=0.02)
+    m.box("glow_lock", (0, 0.49, 0.74), (0.1, 0.02, 0.08))
+    for sx in (-1, 1):
+        m.box("dark", (sx * 0.74, 0, 0.6), (0.06, 0.4, 0.08), bevel=0.01)
+    return m
+
+
 # =============================================================================
 BUILDERS = {
     "tree_broad_0": lambda: tree_broad(0), "tree_broad_1": lambda: tree_broad(1), "tree_broad_2": lambda: tree_broad(2),
@@ -560,6 +579,7 @@ BUILDERS = {
     "grazer": grazer, "hopper": hopper,
     "base_module": base_module, "wind_turbine": wind_turbine, "heater": heater, "drill": drill,
     "vegetube": vegetube, "solar_panel": solar_panel, "algae_farm": algae_farm,
+    "storage_chest": storage_chest,
 }
 
 

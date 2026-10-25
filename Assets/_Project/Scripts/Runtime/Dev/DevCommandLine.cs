@@ -1,7 +1,10 @@
 using System;
 using System.Collections;
 using System.Globalization;
+using Planetcraft.Building;
 using Planetcraft.Core;
+using Planetcraft.Data;
+using Planetcraft.UI;
 using Planetcraft.Player;
 using Planetcraft.World;
 using UnityEngine;
@@ -19,24 +22,29 @@ namespace Planetcraft.Dev
     {
         [SerializeField] FirstPersonController player;
         [SerializeField] WeatherController weather;
+        [SerializeField] GameDatabase database;
 
         IEnumerator Start()
         {
             string[] args = Environment.GetCommandLineArgs();
             var tm = TerraformManager.Instance;
+            if (player != null && Value(args, "-pc-screenshot") != null) player.LookEnabled = false;
 
             if (tm != null && TryNumber(args, "-pc-ti", out double ti))
                 for (int i = 0; i < TerraformParameters.Count; i++) tm.Add((TerraformParameter)i, ti / TerraformParameters.Count);
             if (weather != null && HasFlag(args, "-pc-rain")) weather.ForceRain();
             if (player != null && TryNumber(args, "-pc-pitch", out double pitch)) player.SetPitch((float)pitch);
+            if (player != null && TryNumber(args, "-pc-yaw", out double startYaw)) player.Teleport(player.transform.position, (float)startYaw);
+            if (HasFlag(args, "-pc-showcase")) Showcase();
+            if (HasFlag(args, "-pc-menu"))
+            {
+                yield return null; // deixa o HUD montar a UI
+                if (GameHud.Instance != null) GameHud.Instance.ToggleMenu(true);
+            }
 
             string shot = Value(args, "-pc-screenshot");
             if (shot == null) yield break;
-            if (player != null)
-            {
-                player.LookEnabled = false;
-                if (TryNumber(args, "-pc-yaw", out double yaw)) player.Teleport(player.transform.position, (float)yaw);
-            }
+            if (player != null) player.LookEnabled = false;
             if (!TryNumber(args, "-pc-wait", out double wait)) wait = 12;
             yield return new WaitForSecondsRealtime((float)wait);
             if (player != null)
@@ -47,6 +55,26 @@ namespace Planetcraft.Dev
             ScreenCapture.CaptureScreenshot(shot);
             yield return new WaitForSecondsRealtime(1f);
             Application.Quit();
+        }
+
+        // Constrói uma de cada construção num arco à frente do jogador, viradas para ele.
+        void Showcase()
+        {
+            var terrain = Terrain.activeTerrain;
+            if (database == null || player == null || terrain == null) return;
+            var origin = player.transform.position;
+            var forward = player.transform.forward;
+            int n = database.buildables.Count;
+            for (int i = 0; i < n; i++)
+            {
+                var def = database.buildables[i];
+                if (def == null || def.prefab == null) continue;
+                float angle = Mathf.Lerp(-55f, 55f, n == 1 ? 0.5f : i / (float)(n - 1));
+                var dir = Quaternion.Euler(0f, angle, 0f) * forward;
+                var pos = origin + dir * 16f;
+                pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
+                PlacedObject.Spawn(def, pos, Quaternion.LookRotation(-dir, Vector3.up));
+            }
         }
 
         static string Value(string[] args, string name)

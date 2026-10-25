@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using Planetcraft.Building;
 using Planetcraft.Core;
@@ -61,23 +62,20 @@ namespace Planetcraft.Save
                 food = playerSurvival.Food,
             };
 
-            var inv = playerInventory.Inventory;
-            for (int i = 0; i < inv.Capacity; i++)
-            {
-                var s = inv[i];
-                if (!s.IsEmpty) data.inventory.Add(new SlotData { slot = i, itemId = s.item.id, amount = s.amount });
-            }
+            WriteSlots(playerInventory.Inventory, data.inventory);
 
             foreach (var p in PlacedObject.All)
             {
                 if (p.Definition == null) continue;
-                data.placed.Add(new PlacedData
+                var entry = new PlacedData
                 {
                     guid = p.Guid,
                     buildableId = p.Definition.id,
                     position = p.transform.position,
                     rotation = p.transform.rotation,
-                });
+                };
+                if (p.TryGetComponent<InventoryComponent>(out var storage)) WriteSlots(storage.Inventory, entry.contents);
+                data.placed.Add(entry);
             }
 
             data.collectedNodes.AddRange(ResourceNode.CollectedIds);
@@ -106,24 +104,40 @@ namespace Planetcraft.Save
         {
             if (data.terraform != null) TerraformManager.Instance.SetValues(data.terraform);
 
-            var inv = playerInventory.Inventory;
-            inv.Clear();
-            foreach (var s in data.inventory)
-            {
-                var item = database.FindItem(s.itemId);
-                if (item != null && s.slot >= 0 && s.slot < inv.Capacity) inv.SetSlot(s.slot, item, s.amount);
-            }
+            ReadSlots(data.inventory, playerInventory.Inventory);
 
             foreach (var p in data.placed)
             {
                 var def = database.FindBuildable(p.buildableId);
-                if (def != null && def.prefab != null) PlacedObject.Spawn(def, p.position, p.rotation, p.guid);
+                if (def == null || def.prefab == null) continue;
+                var placed = PlacedObject.Spawn(def, p.position, p.rotation, p.guid);
+                if (p.contents != null && placed.TryGetComponent<InventoryComponent>(out var storage))
+                    ReadSlots(p.contents, storage.Inventory);
             }
 
             ResourceNode.RestoreCollected(data.collectedNodes);
             player.Teleport(data.playerPosition, data.playerYaw);
             playerSurvival.SetValues(data.oxygen, data.water, data.food);
             Notify("Jogo carregado");
+        }
+
+        static void WriteSlots(Inventory inv, List<SlotData> target)
+        {
+            for (int i = 0; i < inv.Capacity; i++)
+            {
+                var s = inv[i];
+                if (!s.IsEmpty) target.Add(new SlotData { slot = i, itemId = s.item.id, amount = s.amount });
+            }
+        }
+
+        void ReadSlots(List<SlotData> source, Inventory inv)
+        {
+            inv.Clear();
+            foreach (var s in source)
+            {
+                var item = database.FindItem(s.itemId);
+                if (item != null && s.slot >= 0 && s.slot < inv.Capacity) inv.SetSlot(s.slot, item, s.amount);
+            }
         }
 
         void Notify(string message)
