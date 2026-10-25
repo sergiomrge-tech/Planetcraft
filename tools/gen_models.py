@@ -622,6 +622,85 @@ def wreck_pod():
     return m
 
 
+def ruin_bunker():
+    """Abrigo de concreto do velho mundo, meio enterrado e rachado (~12 x 9 m), com a porta blindada voltada para a
+    origem (onde ficam o terminal e o microchip). O corpo fica atrás, entre y=4 e y=13."""
+    m = Model("ruin_bunker", "Props")
+    m.material("concrete", (0.52, 0.5, 0.47), 0.95)
+    m.material("concrete_dark", (0.3, 0.29, 0.27), 0.95)
+    m.material("rust", (0.42, 0.22, 0.12), 0.8, 0.6)
+    m.material("stripe", (0.85, 0.65, 0.12), 0.7)
+    m.material("scorch", (0.1, 0.09, 0.08), 0.95)
+    m.material("glow_lamp", (1.0, 0.45, 0.2), 0.4)
+    cy = 8.5
+    # Paredes grossas, a de trás mais alta; a frente tem o vão da porta.
+    m.box("concrete", (0, cy + 4.2, 1.6), (12, 0.9, 4.2), bevel=0.06)
+    for sx in (-1, 1):
+        m.box("concrete", (sx * 5.6, cy, 1.4), (0.9, 9.2, 3.8), bevel=0.06)
+        m.box("concrete", (sx * 3.6, cy - 4.2, 1.3), (3.9, 0.9, 3.6), bevel=0.06)
+    m.box("concrete_dark", (0, cy - 4.2, 3.0), (4.2, 0.9, 0.6), bevel=0.04)
+    # Laje do teto partida: placas caídas em ângulos diferentes.
+    rng = random.Random(1189)
+    for (x, y, rx, ry) in [(-3.0, cy + 2.0, 6, -4), (2.8, cy + 2.4, -9, 7), (-2.4, cy - 2.2, 14, 3), (3.4, cy - 1.6, 4, -18)]:
+        m.box("concrete", (x, y, 3.55 + rng.uniform(-0.6, 0.1)), (5.4, 4.0, 0.5), rot=(rx, ry, rng.uniform(-6, 6)),
+              bevel=0.05)
+    # Porta blindada torta, com faixas de alerta, e a moldura enferrujada.
+    m.box("rust", (0, cy - 4.55, 1.25), (3.0, 0.25, 2.5), rot=(0, 0, 4), bevel=0.03)
+    for i in range(5):
+        m.box("stripe", (-1.2 + i * 0.6, cy - 4.7, 2.3), (0.3, 0.05, 0.25), rot=(0, 0, 4))
+    m.box("rust", (0, cy - 4.66, 1.2), (0.5, 0.1, 0.5), rot=(0, 0, 4))
+    m.blob("glow_lamp", (1.8, cy - 4.75, 2.8), (0.12, 0.12, 0.12), sub=1, noise=0, seed=3)
+    # Marcas de queimado e vergalhões expostos.
+    m.box("scorch", (-3.5, cy - 4.68, 2.0), (2.0, 0.05, 1.4), rot=(0, 0, 0))
+    for i in range(14):
+        x = rng.uniform(-5.5, 5.5)
+        y = rng.choice((cy - 4.2, cy + 4.2))
+        base = (x, y, rng.uniform(3.2, 3.9))
+        tip = (x + rng.uniform(-0.6, 0.6), y + rng.uniform(-0.6, 0.6), base[2] + rng.uniform(0.6, 1.6))
+        m.tube("rust", base, tip, 0.03, seg=5)
+    # Entulho em volta.
+    for i in range(26):
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(6.5, 9.5)
+        x, y = math.cos(a) * r, cy + math.sin(a) * r * 0.8
+        if abs(x) < 2 and y < cy:
+            continue
+        s = rng.uniform(0.3, 1.2)
+        m.box(rng.choice(("concrete", "concrete_dark")), (x, y, s * 0.3), (s, s * rng.uniform(0.6, 1.4), s * 0.6),
+              rot=(rng.uniform(-20, 20), rng.uniform(-20, 20), rng.uniform(0, 360)), bevel=0.04)
+    return m
+
+
+def decontaminator():
+    """Filtro de radiação (~2.4 x 1.8 x 3.2 m): dois tanques de filtro com anéis brilhantes, carcaça central com a
+    turbina de admissão na frente (Rotor, gira no eixo da frente) e a chaminé de exaustão."""
+    m = Model("decontaminator", "Machines")
+    m.material("body", (0.82, 0.83, 0.8), 0.5, 0.2)
+    m.material("dark", (0.16, 0.17, 0.19), 0.6, 0.3)
+    m.material("stripe", (0.9, 0.7, 0.1), 0.6)
+    m.material("pipe", (0.55, 0.57, 0.6), 0.4, 0.7)
+    m.material("glow_filter", (0.3, 1.0, 0.65), 0.4)
+    m.box("dark", (0, 0, 0.1), (2.4, 1.8, 0.2), bevel=0.04)
+    m.box("body", (0, 0, 0.95), (1.2, 1.3, 1.5), bevel=0.08)
+    m.box("stripe", (0, 0.66, 0.3), (1.2, 0.02, 0.12))
+    for sx in (-1, 1):
+        x = sx * 0.85
+        m.lathe("body", (x, 0, 0.2), [(0.42, 0), (0.42, 2.3), (0.3, 2.55), (0, 2.6)], seg=20)
+        for z in (0.7, 1.3, 1.9):
+            m.lathe("glow_filter", (x, 0, z), [(0.43, -0.06), (0.43, 0.06)], seg=20, caps=False)
+        m.tube("pipe", (x, 0, 2.8), (sx * 0.35, 0, 2.0), 0.08, seg=8)
+    m.lathe("dark", (0, 0, 1.7), [(0.28, 0), (0.24, 1.4), (0.3, 1.5), (0.3, 1.55)], seg=16, caps=False)
+    hub = (0, 0.68, 1.05)
+    m.cyl("dark", (0, 0.66, 1.05), 0.52, 0.52, 0.06, seg=24, rot=(90, 0, 0))
+    m.origins["Rotor"] = hub
+    m.blob("pipe", hub, (0.1, 0.1, 0.1), sub=1, noise=0, seed=1, smooth=True, obj="Rotor")
+    for i in range(6):
+        m.box("pipe", (0, 0, 0), (0.08, 0.03, 0.42), rot=(0, 20, 0), obj="Rotor",
+              base=T(*hub) @ R(0, i * 60, 0) @ T(0, 0.04, 0.24))
+    indicator(m, (0.45, 0.66, 1.6))
+    return m
+
+
 def chip_crate():
     m = Model("chip_crate", "Props")
     m.material("case", (0.25, 0.27, 0.3), 0.5, 0.5)
@@ -647,89 +726,112 @@ def log_terminal():
     return m
 
 
-SHIP_LEN, SHIP_HALF_W = 44.0, 13.0  # cunha: proa em +Y, popa em -Y
+# Planta do casco (x, y) em volta da proa: ponta de flecha facetada com asas recuadas e entalhes na popa.
+SHIP_OUTLINE = [(0, 23), (-3.5, 12), (-7, -2), (-14, -18), (-12.5, -21), (-7.5, -17.5), (-5, -21),
+                (5, -21), (7.5, -17.5), (12.5, -21), (14, -18), (7, -2), (3.5, 12)]
+SHIP_APEX_TOP = (0.0, -8.0, 3.2)
+SHIP_APEX_BOTTOM = (0.0, -8.0, -2.4)
+SHIP_EDGE = 0.35
 
 
 def _hull_top_z(x, y):
-    """Altura da superfície superior da cunha no ponto (x, y); None se fora do casco."""
-    t = (SHIP_LEN / 2 - y) / SHIP_LEN  # 0 na proa, 1 na popa
-    w = SHIP_HALF_W * t
-    if t <= 0 or abs(x) >= w:
-        return None
-    ridge = 0.6 + 3.9 * t
-    return ridge + (0.4 - ridge) * abs(x) / w
+    """Altura da face superior facetada no ponto (x, y); None se fora do casco."""
+    ax, ay, az = SHIP_APEX_TOP
+    n = len(SHIP_OUTLINE)
+    for i in range(n):
+        (x1, y1), (x2, y2) = SHIP_OUTLINE[i], SHIP_OUTLINE[(i + 1) % n]
+        det = (y1 - ay) * (x2 - ax) - (x1 - ax) * (y2 - ay)
+        if abs(det) < 1e-9:
+            continue
+        # Coordenadas baricêntricas em relação ao triângulo (ápice, p1, p2).
+        l1 = ((y - ay) * (x2 - ax) - (x - ax) * (y2 - ay)) / det
+        l2 = ((x - ax) * (y1 - ay) - (y - ay) * (x1 - ax)) / det
+        l0 = 1 - l1 - l2
+        if min(l0, l1, l2) >= 0:
+            return l0 * az + (l1 + l2) * SHIP_EDGE
+    return None
 
 
 def mothership():
-    """Cruzador estelar em cunha (~44 m), em 5 objetos = 5 módulos montados no estaleiro:
-    Hull, Engines, Superstructure, Bridge, Hyperdrive. Pivô no centro da borda do casco."""
+    """Nave-mãe (~44 m) em ponta de flecha facetada, em 5 objetos = 5 módulos montados no estaleiro:
+    Hull, Engines, Superstructure, Bridge, Hyperdrive. Pivô no centro; proa em +Y (y=23)."""
     m = Model("mothership", "Sky")
-    m.material("hull", (0.72, 0.74, 0.78), 0.5, 0.4)
-    m.material("hull_dark", (0.36, 0.38, 0.42), 0.55, 0.4)
+    m.material("hull", (0.74, 0.75, 0.78), 0.45, 0.45)
+    m.material("hull_dark", (0.27, 0.29, 0.32), 0.5, 0.5)
     m.material("panel", (0.55, 0.57, 0.6), 0.5, 0.4)
+    m.material("accent", (0.78, 0.36, 0.12), 0.55, 0.3)
     m.material("glow_engine", (0.45, 0.8, 1.0), 0.4)
     m.material("glow_window", (1.0, 0.88, 0.62), 0.4)
     m.material("glow_hyper", (0.35, 0.65, 1.0), 0.4)
-    half = SHIP_LEN / 2
 
-    # --- Casco (Hull): cunha + borda + detalhes na superfície
-    v = [(0, half, 0.6), (0, half, -0.4),
-         (-SHIP_HALF_W, -half, 0.4), (-SHIP_HALF_W, -half, -0.4),
-         (SHIP_HALF_W, -half, 0.4), (SHIP_HALF_W, -half, -0.4),
-         (0, -half, 4.5), (0, -half, -3.0)]
-    f = [(0, 6, 2), (0, 4, 6), (1, 3, 7), (1, 7, 5), (0, 2, 3, 1), (0, 1, 5, 4), (2, 6, 4, 5, 7, 3)]
-    m.poly("hull", v, f, obj="Hull")
-    rng = random.Random(2026)
+    # --- Casco (Hull): faces em leque a partir de um ápice em cima e outro embaixo (visual facetado).
+    n = len(SHIP_OUTLINE)
+    verts = [SHIP_APEX_TOP, SHIP_APEX_BOTTOM]
+    verts += [(x, y, SHIP_EDGE) for x, y in SHIP_OUTLINE]
+    verts += [(x, y, -SHIP_EDGE) for x, y in SHIP_OUTLINE]
+    faces = []
+    for i in range(n):
+        j = (i + 1) % n
+        faces.append((0, 2 + i, 2 + j))
+        faces.append((1, 2 + n + j, 2 + n + i))
+        faces.append((2 + i, 2 + n + i, 2 + n + j, 2 + j))
+    m.poly("hull", verts, faces, obj="Hull")
+    rng = random.Random(2077)
     placed = 0
-    while placed < 170:
-        x = rng.uniform(-SHIP_HALF_W, SHIP_HALF_W)
-        y = rng.uniform(-half + 1, half - 4)
+    while placed < 150:
+        x, y = rng.uniform(-13, 13), rng.uniform(-20, 20)
         z = _hull_top_z(x, y)
-        if z is None:
+        if z is None or (abs(x) < 2.6 and -20 < y < 4):
             continue
-        sx, sy, sz = rng.uniform(0.3, 1.6), rng.uniform(0.3, 2.2), rng.uniform(0.12, 0.5)
-        m.box("panel" if rng.random() < 0.6 else "hull_dark", (x, y, z + sz / 2 - 0.05), (sx, sy, sz), obj="Hull")
+        sx, sy, sz = rng.uniform(0.3, 1.4), rng.uniform(0.4, 2.4), rng.uniform(0.1, 0.35)
+        m.box(rng.choice(("panel", "panel", "hull_dark")), (x, y, z + sz / 2 - 0.08), (sx, sy, sz), obj="Hull")
         placed += 1
-    for i in range(14):  # janelas ao longo das bordas
-        t = 0.2 + i * 0.055
-        y = half - SHIP_LEN * t
-        for side in (-1, 1):
-            m.box("glow_window", (side * (SHIP_HALF_W * t + 0.02), y, 0.0), (0.08, 0.9, 0.12), rot=(0, 0, side * -16.5), obj="Hull")
-    m.box("hull_dark", (0, -4, -1.6), (5, 9, 0.5), obj="Hull")
+    for side in (-1, 1):  # faixas de cor no bordo de ataque das asas
+        m.tube("accent", (side * 7.2, -2.5, 0.45), (side * 13.6, -17.6, 0.45), 0.12, seg=6, obj="Hull")
+        for k in range(10):  # vigias ao longo do flanco
+            t = 0.15 + k * 0.07
+            x, y = side * (3.5 + (7 - 3.5) * t * 1.4), 12 - 14 * t * 1.4
+            if y < -2:
+                break
+            m.box("glow_window", (x * 1.01, y, 0.0), (0.1, 0.9, 0.14), rot=(0, 0, side * -17), obj="Hull")
 
-    # --- Motores (Engines)
-    for x, z, r in [(0, 0.8, 2.3), (-6.5, 0.3, 1.7), (6.5, 0.3, 1.7)]:
-        m.cyl("hull_dark", (x, -half - 1.2, z), r * 1.1, r, 2.6, seg=18, rot=(90, 0, 0), obj="Engines")
-        m.cyl("glow_engine", (x, -half - 2.55, z), r * 0.85, r * 0.85, 0.1, seg=18, rot=(90, 0, 0), obj="Engines")
-    for x, z in [(-3.4, -1.4), (3.4, -1.4), (-10, -0.1), (10, -0.1)]:
-        m.cyl("hull_dark", (x, -half - 0.8, z), 0.9, 0.8, 1.8, seg=12, rot=(90, 0, 0), obj="Engines")
-        m.cyl("glow_engine", (x, -half - 1.75, z), 0.7, 0.7, 0.1, seg=12, rot=(90, 0, 0), obj="Engines")
-
-    # --- Superestrutura em degraus (Superstructure)
-    for (w, l, h, y, z) in [(16, 13, 2.4, -15.0, 4.6), (11, 9.5, 2.0, -16.5, 6.7), (7, 6.5, 1.6, -17.5, 8.4)]:
-        m.box("hull", (0, y, z), (w, l, h), bevel=0.12, obj="Superstructure")
-        for i in range(int(w // 1.4)):
-            m.box("glow_window", (-w / 2 + 0.7 + i * 1.4, y + l / 2 + 0.02, z), (0.7, 0.05, 0.25), obj="Superstructure")
+    # --- Motores (Engines): dois propulsores centrais na popa e duas naceles sob as asas.
+    for x in (-2.6, 2.6):
+        m.cyl("hull_dark", (x, -21.9, 0.2), 2.0, 1.7, 2.0, seg=24, rot=(90, 0, 0), obj="Engines")
+        m.cyl("glow_engine", (x, -22.95, 0.2), 1.5, 1.5, 0.1, seg=24, rot=(90, 0, 0), obj="Engines")
     for side in (-1, 1):
-        m.box("hull_dark", (side * 9.5, -17, 4.0), (3, 7, 1.8), bevel=0.1, obj="Superstructure")
+        x = side * 10.2
+        m.lathe("hull", (0, 0, 0), [(0, 0), (0.7, 0.8), (1.25, 3.0), (1.3, 11.5), (1.1, 12.6)], seg=20,
+                obj="Engines", base=T(x, -7.6, -1.1) @ R(90, 0, 0))
+        m.cyl("glow_engine", (x, -20.3, -1.1), 0.95, 0.95, 0.1, seg=20, rot=(90, 0, 0), obj="Engines")
+        m.box("hull_dark", (x, -13.5, -0.45), (0.3, 7.0, 0.9), obj="Engines")
 
-    # --- Torre de comando (Bridge)
-    m.tube("hull_dark", (0, -18.5, 9.0), (0, -18.5, 11.4), 1.1, 0.8, seg=10, obj="Bridge")
-    m.box("hull", (0, -18.5, 12.1), (10, 2.6, 1.7), bevel=0.15, obj="Bridge")
-    m.box("glow_window", (0, -17.17, 12.2), (8.6, 0.05, 0.35), obj="Bridge")
+    # --- Superestrutura (Superstructure): espinha dorsal baixa e alongada, com hangares laterais.
+    spine = T(0, -9.5, 2.9) @ R(-90, 0, 0) @ S(0.9, 0.5, 1.0)
+    m.lathe("hull", (0, 0, 0), [(0, -11), (1.6, -10), (2.6, -6), (2.7, 2), (2.2, 7), (1.2, 10), (0, 11)], seg=24,
+            obj="Superstructure", base=spine)
     for side in (-1, 1):
-        m.tube("hull_dark", (side * 3.4, -18.5, 12.9), (side * 3.4, -18.5, 13.6), 0.35, 0.3, seg=8, obj="Bridge")
-        m.blob("hull", (side * 3.4, -18.5, 14.3), (1.0, 1.0, 1.0), sub=2, noise=0, seed=1, smooth=True, obj="Bridge")
-    m.tube("hull_dark", (0, -19.2, 13.0), (0, -19.2, 16.0), 0.08, 0.04, seg=6, obj="Bridge")
+        m.box("hull_dark", (side * 2.5, -12, 2.6), (0.4, 6.0, 0.9), obj="Superstructure")
+        for k in range(12):
+            m.box("glow_window", (side * 2.2, -16 + k * 1.1, 3.35), (0.06, 0.5, 0.14), obj="Superstructure")
+    m.box("panel", (0, -9.5, 4.55), (1.2, 12, 0.25), bevel=0.05, obj="Superstructure")
 
-    # --- Reator de salto (Hyperdrive): núcleo ventral e faixas de energia
-    m.blob("hull_dark", (0, -9, -3.1), (2.6, 3.6, 1.4), sub=2, noise=0, seed=3, smooth=True, obj="Hyperdrive")
-    m.blob("glow_hyper", (0, -9, -4.0), (1.6, 2.4, 0.7), sub=2, noise=0, seed=4, smooth=True, obj="Hyperdrive")
+    # --- Ponte de comando (Bridge): cabine afilada à frente da espinha, faixa de vidro e mastro de sensores.
+    m.box("hull", (0, 1.5, 3.0), (3.4, 5.2, 1.3), taper=(0.75, 0.55), bevel=0.12, obj="Bridge")
+    m.box("glow_window", (0, 4.05, 3.15), (2.0, 0.06, 0.3), rot=(28, 0, 0), obj="Bridge")
     for side in (-1, 1):
-        for i in range(3):
-            t = 0.45 + i * 0.16
-            y = half - SHIP_LEN * t
-            m.box("glow_hyper", (side * (SHIP_HALF_W * t - 0.6), y, 0.75), (0.2, 3.0, 0.1), rot=(0, 0, side * -16.5), obj="Hyperdrive")
+        m.box("glow_window", (side * 1.62, 1.6, 3.15), (0.06, 3.2, 0.22), obj="Bridge")
+        m.box("hull_dark", (side * 1.1, -0.6, 4.1), (0.12, 1.6, 1.3), taper=(1.0, 0.3), obj="Bridge")
+    m.tube("hull_dark", (0, -0.2, 3.6), (0, -0.6, 6.0), 0.07, 0.04, seg=6, obj="Bridge")
+
+    # --- Reator de salto (Hyperdrive): anel ventral e faixas de energia no bordo de fuga das asas.
+    belly = T(0, -8, -2.25)
+    m.lathe("hull_dark", (0, 0, 0), [(3.4, -0.5), (3.8, 0), (3.4, 0.5)], seg=32, obj="Hyperdrive", base=belly)
+    m.lathe("glow_hyper", (0, 0, 0), [(2.4, -0.25), (3.3, -0.05), (3.3, 0.05), (2.4, 0.25)], seg=32,
+            obj="Hyperdrive", base=belly)
+    m.blob("glow_hyper", (0, -8, -2.4), (1.6, 1.6, 0.5), sub=2, noise=0, seed=4, smooth=True, obj="Hyperdrive")
+    for side in (-1, 1):
+        m.tube("glow_hyper", (side * 7.6, -17.7, 0.42), (side * 12.4, -20.8, 0.42), 0.1, seg=6, obj="Hyperdrive")
     return m
 
 
@@ -889,6 +991,7 @@ BUILDERS = {
     "nuclear_reactor": nuclear_reactor,
     "ore_uranium": lambda: crystals("ore_uranium", (0.25, 0.9, 0.35), (0.6, 1.0, 0.6), 0.3, 0.2, 43, glow=True),
     "wreck_pod": wreck_pod, "chip_crate": chip_crate, "log_terminal": log_terminal,
+    "ruin_bunker": ruin_bunker, "decontaminator": decontaminator,
     "mothership": mothership, "shipyard": shipyard, "station": station,
 }
 

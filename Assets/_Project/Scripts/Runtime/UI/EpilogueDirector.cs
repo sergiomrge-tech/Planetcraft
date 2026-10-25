@@ -37,7 +37,7 @@ namespace Planetcraft.UI
             UIState.MenuOpen = true;
             BuildUi(GetComponent<UIDocument>().rootVisualElement);
             Update();
-            cameraRig.rotation = Quaternion.LookRotation(Vector3.Lerp(ship.position, station.position, 0.6f) - cameraRig.position);
+            cameraRig.rotation = Quaternion.LookRotation(Vector3.Lerp(ship.position, station.position, 0.85f) - cameraRig.position);
 
             string[] args = Environment.GetCommandLineArgs();
             if (TryNumber(args, "-pc-epilogue", out float skip)) elapsed = skip;
@@ -78,7 +78,7 @@ namespace Planetcraft.UI
 
             // Câmera fixa ao lado do eixo, acompanhando a nave com suavidade.
             // Enquadra nave e estação juntas: o foco começa perto da estação e acompanha a nave conforme ela chega.
-            var focus = Vector3.Lerp(Vector3.Lerp(pos, station.position, 0.6f), Vector3.Lerp(pos, port, 0.35f), k);
+            var focus = Vector3.Lerp(Vector3.Lerp(pos, station.position, 0.85f), Vector3.Lerp(pos, port, 0.35f), k);
             var look = Quaternion.LookRotation(focus - cameraRig.position, Vector3.up);
             cameraRig.rotation = Quaternion.Slerp(cameraRig.rotation, look, 1f - Mathf.Exp(-2f * Time.deltaTime));
 

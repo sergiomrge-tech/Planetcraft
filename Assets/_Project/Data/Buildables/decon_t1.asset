@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d05df1c84e3d59143983b32ed329f720, type: 3}
+  m_Name: decon_t1
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
+  id: decon_t1
+  displayName: "Filtro de Radia\xE7\xE3o"
+  description: "Descontamina\xE7\xE3o +1/s. Consome 1 kW."
+  prefab: {fileID: 5204728549343925571, guid: e5c8929fb2125fc44b25a3fe67503636, type: 3}
+  cost:
+  - item: {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
+    amount: 2
+  - item: {fileID: 11400000, guid: 992d46b4fabab2a4eafbbaf792fb73d9, type: 2}
+    amount: 1
+  requiredTi: 0
+  blueprintId: 
+  unique: 0
+  powerGeneration: 0
+  powerDemand: 1
+  terraformRates:
+  - parameter: 4
+    perSecond: 1

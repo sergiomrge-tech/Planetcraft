@@ -69,7 +69,10 @@ namespace Planetcraft.EditorTools
                 string fbx = $"{dir}/{id}.fbx";
                 if (AssetImporter.GetAtPath(fbx) is not ModelImporter importer) continue;
                 Directory.CreateDirectory($"{dir}/Materials");
-                var names = AssetDatabase.LoadAllAssetsAtPath(fbx).OfType<Material>().Select(m => m.name).Distinct().ToList();
+                // Depois do primeiro remapeamento o FBX não expõe mais os materiais embutidos: junta os já remapeados.
+                var names = AssetDatabase.LoadAllAssetsAtPath(fbx).OfType<Material>().Select(m => m.name)
+                    .Concat(importer.GetExternalObjectMap().Keys.Where(k => k.type == typeof(Material)).Select(k => k.name))
+                    .Distinct().ToList();
                 foreach (var name in names)
                 {
                     var mat = BuildMaterial(dir, name);
@@ -81,6 +84,9 @@ namespace Planetcraft.EditorTools
             Debug.Log("[Planetcraft] Materiais Poly Haven configurados.");
         }
 
+        const string FoliageProfile =
+            "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipelineResources/FoliageDiffusionProfile.asset";
+
         static Material BuildMaterial(string dir, string name)
         {
             string path = $"{dir}/Materials/{name}.mat";
@@ -90,7 +96,8 @@ namespace Planetcraft.EditorTools
 
             var diff = FindTexture(dir, name, "diff");
             var normal = FindTexture(dir, name, "nor_gl");
-            bool cutout = diff != null && AssetDatabase.GetAssetPath(diff).EndsWith(".png");
+            bool cutout = diff != null && AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(diff)) is TextureImporter ti &&
+                          ti.DoesSourceTextureHaveAlpha();
 
             // Folhas levemente puxadas para o verde vivo: os scans ficam escuros e pardos sob o céu do HDRP.
             mat.SetColor("_BaseColor", cutout ? new Color(1f, 1.1f, 0.85f) : Color.white);
@@ -104,8 +111,21 @@ namespace Planetcraft.EditorTools
                 HDMaterial.SetAlphaClipping(mat, true);
                 mat.SetFloat("_AlphaCutoff", 0.45f);
                 mat.SetFloat("_DoubleSidedEnable", 1f);
+                // Translúcidas com o perfil Foliage do HDRP: a luz atravessa as folhas e a copa contra o sol
+                // fica verde em vez de uma silhueta preta.
+                mat.SetMaterialType(MaterialId.LitTranslucent);
+                HDMaterial.SetDiffusionProfile(mat, AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(FoliageProfile));
+                mat.SetFloat("_Thickness", 0.25f);
+            }
+            else
+            {
+                HDMaterial.SetAlphaClipping(mat, false);
+                mat.SetFloat("_DoubleSidedEnable", 0f);
+                mat.SetMaterialType(MaterialId.LitStandard);
             }
             HDMaterial.ValidateMaterial(mat);
+            Debug.Log($"[PolyHaven] {name}: diff={(diff != null ? diff.name : "-")} normal={(normal != null)} " +
+                      $"recorte={cutout} tipo={mat.GetMaterialType()}");
             if (created) AssetDatabase.CreateAsset(mat, path);
             else EditorUtility.SetDirty(mat);
             return mat;

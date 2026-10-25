@@ -13,9 +13,8 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 - Modelo: [Dead Tree Trunk](https://polyhaven.com/a/dead_tree_trunk) — Rob Tuytel
 - Modelo: [Dead Tree Trunk 02](https://polyhaven.com/a/dead_tree_trunk_02) — Jenelle van Heerden, Rico Cilliers
 - Modelo: [Tree Stump 01](https://polyhaven.com/a/tree_stump_01) — Rob Tuytel
-- Modelo: [Fir Tree 01](https://polyhaven.com/a/fir_tree_01) — Rob Tuytel, Rico Cilliers
-- Modelo: [Pine Tree 01](https://polyhaven.com/a/pine_tree_01) — Rob Tuytel, Rico Cilliers
-- Modelo: [Island Tree 01](https://polyhaven.com/a/island_tree_01) — Rob Tuytel, Rico Cilliers
+- Modelo: [Jacaranda Tree](https://polyhaven.com/a/jacaranda_tree) — Rob Tuytel, Rico Cilliers
+- Modelo: [Tree Small 02](https://polyhaven.com/a/tree_small_02) — Rico Cilliers
 - Modelo: [Shrub 02](https://polyhaven.com/a/shrub_02) — Rico Cilliers
 - Modelo: [Fern 02](https://polyhaven.com/a/fern_02) — Rob Tuytel, Rico Cilliers
 

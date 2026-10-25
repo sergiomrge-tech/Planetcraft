@@ -6,11 +6,13 @@ namespace Planetcraft.Core
         Heat = 1,
         Pressure = 2,
         Biomass = 3,
+        // Radiação removida do ar e do solo (a Última Guerra deixou a Terra contaminada).
+        Decontamination = 4,
     }
 
     public static class TerraformParameters
     {
-        public const int Count = 4;
+        public const int Count = 5;
 
         public static string DisplayName(TerraformParameter p) => p switch
         {
@@ -18,6 +20,7 @@ namespace Planetcraft.Core
             TerraformParameter.Heat => "Calor",
             TerraformParameter.Pressure => "Pressão",
             TerraformParameter.Biomass => "Biomassa",
+            TerraformParameter.Decontamination => "Descontaminação",
             _ => p.ToString(),
         };
 
@@ -27,6 +30,7 @@ namespace Planetcraft.Core
             TerraformParameter.Heat => "pK",
             TerraformParameter.Pressure => "nPa",
             TerraformParameter.Biomass => "g",
+            TerraformParameter.Decontamination => "pGy",
             _ => "",
         };
     }

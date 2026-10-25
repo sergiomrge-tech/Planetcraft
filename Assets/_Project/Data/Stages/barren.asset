@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: Terra Morta
   requiredTi: 0
-  description: "A \xDAltima Guerra queimou o ar e o solo."
+  description: "A \xDAltima Guerra queimou o ar e contaminou o solo."

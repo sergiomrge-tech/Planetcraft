@@ -56,7 +56,7 @@ namespace Planetcraft.EditorTools
             foreach (var feature in new[]
                      {
                          "supportWater", "supportVolumetricClouds", "supportVolumetrics", "supportSSR", "supportSSAO",
-                         "supportSSGI", "supportMotionVectors", "supportTerrainHole",
+                         "supportSSGI", "supportMotionVectors", "supportTerrainHole", "supportSubsurfaceScattering",
                      })
             {
                 var p = so.FindProperty("m_RenderPipelineSettings." + feature);
@@ -85,6 +85,7 @@ namespace Planetcraft.EditorTools
         public static VolumeProfile AtmosphereProfile()
         {
             var profile = LoadOrCreate(AtmospherePath, out bool created);
+            EnsureFoliageProfile(profile);
             if (!created) return profile;
 
             var env = Add<VisualEnvironment>(profile);
@@ -140,6 +141,18 @@ namespace Planetcraft.EditorTools
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();
             return profile;
+        }
+
+        // As folhas translúcidas (PolyHavenMaterials) usam o perfil Foliage; ele precisa estar na lista da cena.
+        static void EnsureFoliageProfile(VolumeProfile profile)
+        {
+            if (profile.Has<DiffusionProfileList>()) return;
+            var foliage = AssetDatabase.LoadAssetAtPath<DiffusionProfileSettings>(
+                "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipelineResources/FoliageDiffusionProfile.asset");
+            if (foliage == null) return;
+            Add<DiffusionProfileList>(profile).diffusionProfiles.Override(new[] { foliage });
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssets();
         }
 
         static VolumeProfile LoadOrCreate(string path, out bool created)

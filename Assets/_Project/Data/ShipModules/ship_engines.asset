@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.ShipModule
   id: ship_engines
   displayName: Motores
-  description: Propulsores principais e de manobra.
+  description: Propulsores da popa e naceles sob as asas.
   cost:
   - item: {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}
     amount: 6

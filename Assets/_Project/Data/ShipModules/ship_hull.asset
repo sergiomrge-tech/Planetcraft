@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.ShipModule
   id: ship_hull
   displayName: Casco
-  description: Estrutura em cunha e blindagem.
+  description: Casco facetado em flecha e blindagem.
   cost:
   - item: {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}
     amount: 8

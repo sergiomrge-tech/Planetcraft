@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.ShipModule
   id: ship_superstructure
   displayName: Superestrutura
-  description: Conveses, hangares e alojamentos.
+  description: Espinha dorsal com conveses, hangares e alojamentos.
   cost:
   - item: {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
     amount: 10

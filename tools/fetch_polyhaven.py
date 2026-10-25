@@ -21,7 +21,7 @@ TEXTURE_RES = "2k"
 MODELS = [
     "boulder_01", "namaqualand_boulder_02", "namaqualand_boulder_05",
     "dead_tree_trunk", "dead_tree_trunk_02", "tree_stump_01",
-    "fir_tree_01", "pine_tree_01", "island_tree_01",
+    "jacaranda_tree", "tree_small_02",
     "shrub_02", "fern_02",
 ]
 MODEL_RES = "1k"
@@ -72,8 +72,15 @@ def write_credits(assets):
             info = get_json(f"{API}/info/{asset_id}")
             authors = ", ".join(info.get("authors", {}).keys())
             lines.append(f"- {kind}: [{info.get('name', asset_id)}](https://polyhaven.com/a/{asset_id}) — {authors}")
-    with open(os.path.join(ROOT, "CREDITS.md"), "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+    # Mantém as seções de outras fontes (ex.: NASA) que vêm depois da do Poly Haven.
+    path = os.path.join(ROOT, "CREDITS.md")
+    others = ""
+    if os.path.exists(path):
+        old = open(path, encoding="utf-8").read()
+        cut = old.find("\n## ", old.find("## Poly Haven") + 1)
+        others = old[cut:] if cut >= 0 else ""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n" + others)
 
 
 def main():

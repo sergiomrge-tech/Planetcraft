@@ -32,9 +32,10 @@ ASSETS = {
     "tree_stump_01": (5000, None, 1.0, False),
     "shrub_02": (0, 0.5, 1.2, True),
     "fern_02": (0, 1.0, 1.0, True),
-    "island_tree_01": (6000, 0.07, 2.1, False),
+    "jacaranda_tree": (9000, 0.03, 4.5, False),
+    "tree_small_02": (6000, 0.04, 4.0, False),
 }
-LEAF_WORDS = ("leaves", "leaf", "twig", "foliage")
+LEAF_WORDS = ("leaves", "leaf", "twig", "foliage", "branches")
 LOD1_FACTOR = 0.3
 
 
@@ -86,12 +87,18 @@ def thin_leaves(ob, keep, scale, seed=7):
                         seen.add(nf.index)
                         stack.append(nf)
         islands.append(island)
+    # Sorteia cachos até atingir `keep` dos triângulos: cachos enormes não estouram o orçamento.
     rng = random.Random(seed)
+    rng.shuffle(islands)
+    budget = keep * sum(len(f.verts) - 2 for isl in islands for f in isl)
+    used = 0
     doomed = []
     for island in islands:
-        if rng.random() > keep:
+        size = sum(len(f.verts) - 2 for f in island)
+        if used + size > budget:
             doomed.extend(island)
             continue
+        used += size
         verts = {v for face in island for v in face.verts}
         c = sum((v.co for v in verts), Vector()) / len(verts)
         for v in verts:
@@ -99,7 +106,7 @@ def thin_leaves(ob, keep, scale, seed=7):
     bmesh.ops.delete(bm, geom=doomed, context="FACES")
     bm.to_mesh(ob.data)
     bm.free()
-    print(f"    folhas: {len(islands)} cachos -> {int(len(islands) * keep)} mantidos")
+    print(f"    folhas: {len(islands)} cachos, {int(used)} triângulos mantidos")
 
 
 def decimate(ob, target):
@@ -129,11 +136,24 @@ def merge_alpha(diff_path, alpha_path, out_path):
     out.save()
 
 
-def find_texture(folder, prefix, kind):
-    for ext in (".png", ".jpg", ".exr"):
-        p = os.path.join(folder, f"{prefix}_{kind}_1k{ext}")
-        if os.path.exists(p):
-            return p
+def texture_prefixes(material):
+    """O Poly Haven nem sempre nomeia a textura igual ao material: `tree_small_02_branches` usa
+    `tree_small_02_branch_*` e o tronco `tree_small_02_trunk` usa só `tree_small_02_*`."""
+    yield material
+    if material.endswith("es"):
+        yield material[:-2]
+    if material.endswith("s"):
+        yield material[:-1]
+    if "_" in material:
+        yield material.rsplit("_", 1)[0]
+
+
+def find_texture(folder, material, kind):
+    for prefix in texture_prefixes(material):
+        for ext in (".png", ".jpg", ".exr"):
+            p = os.path.join(folder, f"{prefix}_{kind}_1k{ext}")
+            if os.path.exists(p):
+                return p
     return None
 
 
@@ -232,7 +252,7 @@ def optimize(asset_id, solid_budget, keep, scale, all_foliage, variant=None):
         copies.append(c)
     lod0_obj = build_lod(lod0, f"{asset_id}_LOD0", solid_budget, keep, scale, all_foliage)
     lod1_obj = build_lod(copies, f"{asset_id}_LOD1", solid_budget * LOD1_FACTOR,
-                         None if keep is None else keep * 0.45, scale * 1.35, all_foliage)
+                         None if keep is None else keep * 0.25, scale * 1.6, all_foliage)
 
     out_dir = os.path.join(DST, asset_id)
     os.makedirs(out_dir, exist_ok=True)

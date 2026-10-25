@@ -83,7 +83,7 @@ namespace Planetcraft.EditorTools
         {
             var data = new (string id, string name, double ti, string desc)[]
             {
-                ("barren", "Terra Morta", 0, "A Última Guerra queimou o ar e o solo."),
+                ("barren", "Terra Morta", 0, "A Última Guerra queimou o ar e contaminou o solo."),
                 ("haze", "Névoa", 100, "Os primeiros gases engrossam o ar."),
                 ("bluesky", "Céu Azul", 1_000, "A luz começa a se espalhar no céu."),
                 ("clouds", "Nuvens", 5_000, "Vapor condensa em nuvens."),
@@ -209,6 +209,9 @@ namespace Planetcraft.EditorTools
                 new[] { C(it["iron"], 1), C(it["titanium"], 1) }, Rates(TerraformParameter.Heat, 1.2), true, "Machines/heater");
             Add("drill_t1", "Perfuratriz", "Pressão +1/s. Consome 1 kW.", 0, 0, 1f,
                 new[] { C(it["iron"], 2) }, Rates(TerraformParameter.Pressure, 1), true, "Machines/drill");
+            Add("decon_t1", "Filtro de Radiação", "Descontaminação +1/s. Consome 1 kW.", 0, 0, 1f,
+                new[] { C(it["iron"], 2), C(it["silicon"], 1) }, Rates(TerraformParameter.Decontamination, 1), true,
+                "Machines/decontaminator");
             Add("vegetube", "Vegetubo", "Oxigênio +0.8/s. Consome 0.5 kW.", 50, 0, 0.5f,
                 new[] { C(it["ice"], 1), C(it["silicon"], 1) }, Rates(TerraformParameter.Oxygen, 0.8), true, "Machines/vegetube");
             Add("solar_panel", "Painel Solar", "+6.5 kW", 300, 6.5f, 0,
@@ -222,6 +225,9 @@ namespace Planetcraft.EditorTools
                 new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, "Machines/algae_farm");
             Add("shipyard", "Estaleiro", "Plataforma para montar a nave-mãe que leva a notícia de volta à Estação Horizonte. Só um por mundo.", 2_500_000, 0, 0,
                 new[] { C(it["alloy"], 6), C(it["titanium"], 4), C(it["iron"], 8) }, none, false, "Machines/shipyard", unique: true);
+            Add("decon_t2", "Filtro de Radiação II", "Descontaminação +15/s. Consome 4 kW.", 5_000, 0, 4f,
+                new[] { C(it["titanium"], 2), C(it["alloy"], 1), C(it["magnesium"], 1) },
+                Rates(TerraformParameter.Decontamination, 15), true, "Machines/decontaminator", 1.4f);
             Add("heater_t3", "Aquecedor III", "Calor +400/s. Consome 15 kW.", 60_000, 0, 15f,
                 new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "Machines/heater", 2.2f);
 
@@ -238,6 +244,9 @@ namespace Planetcraft.EditorTools
             Add("drill_t3", "Perfuratriz III", "Pressão +3000/s. Consome 35 kW.", 300_000, 0, 35f,
                 new[] { C(it["iron"], 6), C(it["alloy"], 3), C(it["fuel_rod"], 1) }, Rates(TerraformParameter.Pressure, 3000), true,
                 "Machines/drill", 2.2f, blueprint: "bp_drill3");
+            Add("decon_t3", "Filtro de Radiação III", "Descontaminação +3500/s. Consome 30 kW.", 300_000, 0, 30f,
+                new[] { C(it["titanium"], 4), C(it["alloy"], 3), C(it["fuel_rod"], 1) },
+                Rates(TerraformParameter.Decontamination, 3500), true, "Machines/decontaminator", 2.2f, blueprint: "bp_decon3");
             return list;
         }
 
@@ -247,15 +256,15 @@ namespace Planetcraft.EditorTools
             Directory.CreateDirectory(DataDir + "/ShipModules");
             var data = new (string id, string name, string desc, double ti, string obj, ItemAmount[] cost)[]
             {
-                ("ship_hull", "Casco", "Estrutura em cunha e blindagem.", 2_500_000, "Hull",
+                ("ship_hull", "Casco", "Casco facetado em flecha e blindagem.", 2_500_000, "Hull",
                     new[] { C(it["alloy"], 8), C(it["iron"], 10), C(it["titanium"], 6) }),
-                ("ship_engines", "Motores", "Propulsores principais e de manobra.", 4_000_000, "Engines",
+                ("ship_engines", "Motores", "Propulsores da popa e naceles sob as asas.", 4_000_000, "Engines",
                     new[] { C(it["alloy"], 6), C(it["titanium"], 4), C(it["fuel_rod"], 3) }),
-                ("ship_superstructure", "Superestrutura", "Conveses, hangares e alojamentos.", 6_000_000, "Superstructure",
+                ("ship_superstructure", "Superestrutura", "Espinha dorsal com conveses, hangares e alojamentos.", 6_000_000, "Superstructure",
                     new[] { C(it["iron"], 10), C(it["silicon"], 8), C(it["alloy"], 4) }),
-                ("ship_bridge", "Ponte de comando", "Torre de comando e domos de sensores.", 8_000_000, "Bridge",
+                ("ship_bridge", "Ponte de comando", "Cabine de comando e mastro de sensores.", 8_000_000, "Bridge",
                     new[] { C(it["silicon"], 8), C(it["magnesium"], 6), C(it["alloy"], 4) }),
-                ("ship_hyperdrive", "Reator de salto", "Núcleo de salto para deixar o sistema.", 12_000_000, "Hyperdrive",
+                ("ship_hyperdrive", "Reator de salto", "Anel ventral de salto para alcançar a órbita da estação.", 12_000_000, "Hyperdrive",
                     new[] { C(it["fuel_rod"], 4), C(it["uranium"], 6), C(it["alloy"], 6) }),
             };
             var list = new List<ShipModule>();
@@ -482,7 +491,7 @@ namespace Planetcraft.EditorTools
             var clouds = Sphere("Nuvens", center, radius * 1.006f);
             clouds.transform.SetParent(surface.transform, true);
             clouds.GetComponent<Renderer>().sharedMaterial = EarthMaterial(scorched ? "EarthDust" : "EarthClouds",
-                $"{NasaDir}/clouds_2048.png", scorched ? new Color(0.72f, 0.58f, 0.45f, 0.85f) : Color.white, 0.1f, true);
+                $"{NasaDir}/clouds_2048.png", scorched ? new Color(0.72f, 0.58f, 0.45f, 0.85f) : new Color(1f, 1f, 1f, 0.6f), 0.1f, true);
         }
 
         static GameObject Sphere(string name, Vector3 center, float radius)
@@ -681,13 +690,17 @@ namespace Planetcraft.EditorTools
                 Scaled(PolyHaven(Variant(r, "fern_02", 4), p), 0.8f + (float)r.NextDouble() * 0.7f), maxSlope: 32f, clustering: 0.5f);
             AddVegetationLayer(vegetation.transform, "Flora", stages["flora"].requiredTi, stages["forest"].requiredTi, 1500, rng, terrain, center, (p, r) =>
                 Scaled(PolyHaven(Variant(r, "shrub_02", 4), p), 0.7f + (float)r.NextDouble() * 0.7f), maxSlope: 30f, clustering: 0.6f);
-            AddVegetationLayer(vegetation.transform, "Florestas", stages["forest"].requiredTi, stages["fauna"].requiredTi * 2, 900, rng, terrain, center, (p, r) =>
+            // Bosques mistos: jacarandás grandes (10-15 m) e árvores pequenas de copa aberta (5-8 m).
+            AddVegetationLayer(vegetation.transform, "Florestas", stages["forest"].requiredTi, stages["fauna"].requiredTi * 2, 700, rng, terrain, center, (p, r) =>
             {
-                var tree = Scaled(PolyHaven("island_tree_01", p), 0.8f + (float)r.NextDouble() * 0.6f);
+                bool big = r.NextDouble() < 0.45;
+                var tree = big
+                    ? Scaled(PolyHaven("jacaranda_tree", p), 0.5f + (float)r.NextDouble() * 0.25f)
+                    : Scaled(PolyHaven("tree_small_02", p), 1.2f + (float)r.NextDouble() * 0.6f);
                 var trunk = tree.AddComponent<CapsuleCollider>();
-                trunk.radius = 0.35f;
-                trunk.height = 4f;
-                trunk.center = new Vector3(0f, 2f, 0f);
+                trunk.radius = big ? 0.9f : 0.3f;
+                trunk.height = big ? 8f : 3f;
+                trunk.center = new Vector3(0f, trunk.height / 2f, 0f);
                 return tree;
             }, minRadius: 40f, maxRadius: 235f, maxSlope: 26f, clustering: 0.8f);
 
@@ -742,7 +755,7 @@ namespace Planetcraft.EditorTools
                 (95f, 196f, "bp_nuclear", "Reator Nuclear"),
                 (165f, 184f, "bp_heater4", "Aquecedor IV"),
                 (238f, 192f, "bp_drill3", "Perfuratriz III"),
-                (308f, 200f, null, null),
+                (308f, 200f, "bp_decon3", "Filtro de Radiação III"),
             };
             var beaconMat = m.Emissive("Beacon", new Color(0.4f, 0.9f, 1f));
             for (int s = 0; s < sites.Length; s++)
@@ -753,7 +766,7 @@ namespace Planetcraft.EditorTools
                 var site = new GameObject($"Ruína_{s + 1}");
                 site.transform.SetParent(wrecks.transform, false);
                 site.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
-                Model("Props/wreck_pod", site.transform);
+                Model("Props/ruin_bunker", site.transform);
 
                 var beacon = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 beacon.name = "Farol";

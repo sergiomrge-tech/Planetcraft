@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.ShipModule
   id: ship_bridge
   displayName: Ponte de comando
-  description: Torre de comando e domos de sensores.
+  description: Cabine de comando e mastro de sensores.
   cost:
   - item: {fileID: 11400000, guid: 992d46b4fabab2a4eafbbaf792fb73d9, type: 2}
     amount: 8

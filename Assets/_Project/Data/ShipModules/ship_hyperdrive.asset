@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.ShipModule
   id: ship_hyperdrive
   displayName: Reator de salto
-  description: "N\xFAcleo de salto para deixar o sistema."
+  description: "Anel ventral de salto para alcan\xE7ar a \xF3rbita da esta\xE7\xE3o."
   cost:
   - item: {fileID: 11400000, guid: 7278e3a987e755a4b9dd4e884297c62f, type: 2}
     amount: 4
