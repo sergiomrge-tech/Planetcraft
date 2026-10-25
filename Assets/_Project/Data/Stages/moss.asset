@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: moss
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: Musgo
-  requiredTi: 10000000
+  requiredTi: 400000
   description: "Musgo cobre as rochas \xFAmidas."

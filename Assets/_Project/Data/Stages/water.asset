@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: water
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: "\xC1gua L\xEDquida"
-  requiredTi: 500000
+  requiredTi: 60000
   description: "A \xE1gua fica l\xEDquida na superf\xEDcie."

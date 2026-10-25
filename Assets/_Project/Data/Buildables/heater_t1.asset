@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
   id: heater_t1
   displayName: Aquecedor
-  description: Calor +0.5/s. Consome 1 kW.
+  description: Calor +1.2/s. Consome 1 kW.
   prefab: {fileID: 1554073365175985707, guid: 196adcf02b54fa348a782a3e70e1eb26, type: 3}
   cost:
   - item: {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
@@ -26,4 +26,4 @@ MonoBehaviour:
   powerDemand: 1
   terraformRates:
   - parameter: 1
-    perSecond: 0.5
+    perSecond: 1.2

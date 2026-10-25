@@ -17,12 +17,20 @@ namespace Planetcraft.Player
         CharacterController controller;
         float pitch;
         float verticalVelocity;
+        int ignoreLookUntilFrame;
 
         public float Yaw => transform.eulerAngles.y;
 
+        // Desligado em capturas automáticas para o mouse real não mexer na câmera.
+        public bool LookEnabled { get; set; } = true;
+
         void Awake() => controller = GetComponent<CharacterController>();
 
-        void Start() => UIState.MenuOpen = false;
+        void Start()
+        {
+            UIState.MenuOpen = false;
+            ignoreLookUntilFrame = Time.frameCount + 5;
+        }
 
         void Update()
         {
@@ -32,7 +40,8 @@ namespace Planetcraft.Player
 
             bool canAct = !UIState.MenuOpen;
             Vector2 move = Vector2.zero;
-            if (canAct)
+            // Ao travar o cursor o primeiro delta do mouse pode vir enorme; ignora os primeiros frames.
+            if (canAct && LookEnabled && Time.frameCount > ignoreLookUntilFrame)
             {
                 Vector2 look = mouse.delta.ReadValue() * lookSensitivity;
                 transform.Rotate(0f, look.x, 0f);
@@ -54,6 +63,12 @@ namespace Planetcraft.Player
             Vector3 velocity = (transform.right * move.x + transform.forward * move.y).normalized * speed;
             velocity.y = verticalVelocity;
             controller.Move(velocity * Time.deltaTime);
+        }
+
+        public void SetPitch(float degrees)
+        {
+            pitch = Mathf.Clamp(degrees, -85f, 85f);
+            cameraPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         }
 
         public void Teleport(Vector3 position, float yaw)

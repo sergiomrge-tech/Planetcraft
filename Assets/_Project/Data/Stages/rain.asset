@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: rain
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: Chuva
-  requiredTi: 100000
+  requiredTi: 20000
   description: A primeira chuva cai.

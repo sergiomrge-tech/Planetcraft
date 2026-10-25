@@ -11,9 +11,12 @@ namespace Planetcraft.World
         [SerializeField] Gradient fogColor = Gradient2(new Color(0.45f, 0.3f, 0.22f), new Color(0.65f, 0.75f, 0.85f));
         [SerializeField] AnimationCurve fogDensity = AnimationCurve.Linear(0f, 0.006f, 1f, 0.0015f);
         [SerializeField] Gradient sunColor = Gradient2(new Color(1f, 0.75f, 0.55f), new Color(1f, 0.96f, 0.9f));
+        [Tooltip("Cor que a água reflete (global _PlanetSkyColor).")]
+        [SerializeField] Gradient reflectionColor = Gradient2(new Color(0.45f, 0.32f, 0.26f), new Color(0.55f, 0.72f, 0.92f));
 
         static readonly int SkyTintId = Shader.PropertyToID("_SkyTint");
         static readonly int ThicknessId = Shader.PropertyToID("_AtmosphereThickness");
+        static readonly int ReflectionId = Shader.PropertyToID("_PlanetSkyColor");
 
         Material skyInstance;
 
@@ -38,6 +41,7 @@ namespace Planetcraft.World
             RenderSettings.fogColor = fogColor.Evaluate(t);
             RenderSettings.fogDensity = fogDensity.Evaluate(t);
             if (sun != null) sun.color = sunColor.Evaluate(t);
+            Shader.SetGlobalColor(ReflectionId, reflectionColor.Evaluate(t));
         }
 
         static Gradient Gradient2(Color from, Color to)

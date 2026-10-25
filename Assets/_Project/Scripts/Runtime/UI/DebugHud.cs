@@ -29,17 +29,14 @@ namespace Planetcraft.UI
 
         void Start()
         {
-            if (TerraformManager.Instance != null) TerraformManager.Instance.StageReached += OnStageReached;
             if (survival != null) survival.Died += OnDied;
         }
 
         void OnDestroy()
         {
-            if (TerraformManager.Instance != null) TerraformManager.Instance.StageReached -= OnStageReached;
             if (survival != null) survival.Died -= OnDied;
         }
 
-        void OnStageReached(TerraformStage stage) => ShowToast($"Novo estágio: {stage.displayName}\n{stage.description}");
         void OnDied() => ShowToast("Você desmaiou e acordou no ponto inicial.");
 
         void ShowToast(string message)
@@ -81,7 +78,12 @@ namespace Planetcraft.UI
                 GUILayout.Label($"<size=18><b>{TiFormat.Format(tm.Ti)}</b></size>", rich);
                 GUILayout.Label($"Estágio: <b>{(tm.CurrentStage != null ? tm.CurrentStage.displayName : "-")}</b>", rich);
                 var next = tm.NextStage;
-                if (next != null) GUILayout.Label($"Próximo: {next.displayName} em {TiFormat.Format(next.requiredTi)}");
+                if (next != null)
+                {
+                    GUILayout.Label($"Próximo: {next.displayName} em {TiFormat.Format(next.requiredTi)}");
+                    double from = tm.CurrentStage != null ? tm.CurrentStage.requiredTi : 0d;
+                    Bar("Progresso", Mathf.Clamp01((float)((tm.Ti - from) / (next.requiredTi - from))), warnWhenLow: false);
+                }
                 for (int i = 0; i < TerraformParameters.Count; i++)
                 {
                     var p = (TerraformParameter)i;
@@ -103,10 +105,10 @@ namespace Planetcraft.UI
             GUILayout.EndArea();
         }
 
-        void Bar(string label, float value)
+        void Bar(string label, float value, bool warnWhenLow = true)
         {
             int filled = Mathf.Clamp(Mathf.RoundToInt(value * 20f), 0, 20);
-            string color = value < 0.25f ? "#ff5555" : "#ffffff";
+            string color = warnWhenLow && value < 0.25f ? "#ff5555" : "#ffffff";
             GUILayout.Label($"<color={color}>{label,-7} {new string('|', filled)}{new string('.', 20 - filled)} {value * 100f:0}%</color>", rich);
         }
 

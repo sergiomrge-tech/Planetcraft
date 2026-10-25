@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: clouds
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: Nuvens
-  requiredTi: 20000
+  requiredTi: 5000
   description: Vapor condensa em nuvens.

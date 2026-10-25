@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: haze
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: "N\xE9voa"
-  requiredTi: 200
+  requiredTi: 100
   description: Os primeiros gases engrossam o ar.

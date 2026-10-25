@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: forest
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: Florestas
-  requiredTi: 200000000
+  requiredTi: 2500000
   description: "\xC1rvores crescem sozinhas."

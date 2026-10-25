@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: bluesky
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
   displayName: "C\xE9u Azul"
-  requiredTi: 2000
+  requiredTi: 1000
   description: "A luz come\xE7a a se espalhar no c\xE9u."

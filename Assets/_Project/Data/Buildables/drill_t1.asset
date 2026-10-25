@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
   id: drill_t1
   displayName: Perfuratriz
-  description: "Press\xE3o +0.4/s. Consome 1 kW."
+  description: "Press\xE3o +1/s. Consome 1 kW."
   prefab: {fileID: 2672855793028177438, guid: 90f086daa341fc549acc4048aaf6af54, type: 3}
   cost:
   - item: {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
@@ -24,4 +24,4 @@ MonoBehaviour:
   powerDemand: 1
   terraformRates:
   - parameter: 2
-    perSecond: 0.4
+    perSecond: 1

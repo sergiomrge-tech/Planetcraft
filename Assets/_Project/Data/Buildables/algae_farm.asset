@@ -21,7 +21,7 @@ MonoBehaviour:
     amount: 2
   - item: {fileID: 11400000, guid: 783a5425aa2cbe44295a50439d650d9e, type: 2}
     amount: 1
-  requiredTi: 100000
+  requiredTi: 20000
   powerGeneration: 0
   powerDemand: 2
   terraformRates:

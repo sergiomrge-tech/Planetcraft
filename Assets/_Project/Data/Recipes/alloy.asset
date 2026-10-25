@@ -22,4 +22,4 @@ MonoBehaviour:
     amount: 1
   output: {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}
   outputAmount: 1
-  requiredTi: 500
+  requiredTi: 300
