@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -15,8 +16,9 @@ namespace Planetcraft.EditorTools
             Directory.CreateDirectory(OutputDir);
             var options = new BuildPlayerOptions
             {
-                scenes = new[] { "Assets/_Project/Scenes/Title.unity", "Assets/_Project/Scenes/Prototype.unity" },
-                locationPathName = OutputDir + "/Planetcraft.exe",
+                // Mesma lista que o gerador grava (título, jogo, epílogo).
+                scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
+                locationPathName = OutputDir + "/ReturnToEarth.exe",
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.None,
             };

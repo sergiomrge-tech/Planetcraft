@@ -14,7 +14,7 @@ namespace Planetcraft.Building
         public GameObject prefab;
         public ItemAmount[] cost;
         public double requiredTi;
-        [Tooltip("Projeto obtido com microchip de destroço. Vazio = não precisa.")]
+        [Tooltip("Projeto obtido com microchip das ruínas. Vazio = não precisa.")]
         public string blueprintId;
         [Tooltip("Só pode existir um no mundo (ex.: estaleiro).")]
         public bool unique;

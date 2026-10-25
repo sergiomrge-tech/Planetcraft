@@ -22,6 +22,11 @@ namespace Planetcraft.UI
             UIState.MenuOpen = true;
 
             string[] args = Environment.GetCommandLineArgs();
+            if (Array.IndexOf(args, "-pc-epilogue") >= 0)
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(Scenes.Epilogue);
+                yield break;
+            }
             if (Array.Exists(args, a => a.StartsWith("-pc-") && a != "-pc-screenshot" && a != "-pc-wait" && a != "-pc-title-options"))
             {
                 GameSession.NewGame();
@@ -53,13 +58,13 @@ namespace Planetcraft.UI
             layout.style.justifyContent = Justify.Center;
             root.Add(layout);
 
-            var title = new Label("PLANETCRAFT");
+            var title = new Label("RETURN TO EARTH");
             title.style.fontSize = 84;
             title.style.color = Color.white;
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
             title.style.letterSpacing = 6;
             layout.Add(title);
-            var subtitle = new Label("Torne um planeta morto habitável.");
+            var subtitle = new Label("Um milhão de anos depois, a humanidade volta para casa.");
             subtitle.style.fontSize = 22;
             subtitle.style.color = Accent;
             subtitle.style.marginBottom = 40;

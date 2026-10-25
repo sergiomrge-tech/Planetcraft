@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a033a4aca97e6348b7b8e21923ce13e, type: 3}
   m_Name: barren
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
-  displayName: Rocha Morta
+  displayName: Terra Morta
   requiredTi: 0
-  description: Um planeta sem atmosfera.
+  description: "A \xDAltima Guerra queimou o ar e o solo."

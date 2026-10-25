@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
   id: log_02
   title: "Relat\xF3rio t\xE9cnico \u2014 Reator KR-4"
-  body: "O reator compacto KR-4 sobreviveu ao impacto. Ele roda com barras de ur\xE2nio refinado misturado com liga met\xE1lica.\n\nOs veios verdes que brilham perto das crateras s\xE3o ur\xE2nio exposto pela queda das c\xE1psulas. Cuidado ao coletar. O projeto completo do reator est\xE1 no chip deste m\xF3dulo."
+  body: "O reator compacto KR-4 roda com barras de ur\xE2nio refinado misturado com liga met\xE1lica.\n\nOs veios verdes que brilham perto das crateras s\xE3o ur\xE2nio exposto pelas ogivas da \xDAltima Guerra. Use traje ao coletar. O projeto completo do reator est\xE1 no n\xFAcleo deste abrigo."

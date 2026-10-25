@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: log_01
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
   id: log_01
-  title: "Di\xE1rio \u2014 Eng. Ilsa Moreau"
-  body: "Dia 3 depois da queda. A Aurora se partiu na \xF3rbita e as c\xE1psulas ca\xEDram espalhadas pelo vale.\n\nO ar aqui n\xE3o perdoa: cada sa\xEDda \xE9 uma conta de oxig\xEAnio. Os vegetubos do compartimento de carga ainda funcionam, e eu gravei neste chip a vers\xE3o aprimorada que est\xE1vamos testando. Se algu\xE9m encontrar isto, plante. Plante muito."
+  title: "Bunker Lisboa-7 \u2014 Di\xE1rio de Ilsa Moreau, agr\xF4noma"
+  body: "Ano 2189. As sirenes pararam ontem. L\xE1 fora o c\xE9u est\xE1 cor de ferrugem e nada que eu planto passa da primeira folha.\n\nGravei neste n\xFAcleo de dados o projeto dos vegetubos de alta efici\xEAncia. Se um dia algu\xE9m voltar a pisar aqui fora, plante. Plante muito."

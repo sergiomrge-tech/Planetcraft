@@ -3,8 +3,10 @@ using System.Linq;
 using Planetcraft.Core;
 using Planetcraft.Items;
 using Planetcraft.Player;
+using Planetcraft.Save;
 using Planetcraft.UI;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Planetcraft.Building
 {
@@ -25,7 +27,7 @@ namespace Planetcraft.Building
         public TerraformStage LaunchStage => launchStage;
         public bool AllInstalled => modules.All(m => m != null && ShipProgress.IsInstalled(m.id));
 
-        public string Prompt => ShipProgress.Launched ? "Estaleiro vazio — a nave-mãe partiu" :
+        public string Prompt => ShipProgress.Launched ? "Estaleiro vazio — a nave-mãe voltou à estação" :
             launching ? "" : "[E] Estaleiro: montar a nave-mãe";
 
         void Start()
@@ -129,12 +131,16 @@ namespace Planetcraft.Building
             ship.gameObject.SetActive(false);
             ShipProgress.Launched = true;
             launching = false;
-            if (GameHud.Instance != null)
-                GameHud.Instance.ShowEnding(
-                    $"Tempo de jogo: {PlayClock.Formatted}\n" +
-                    $"Índice de terraformação: {TiFormat.Format(TerraformManager.Instance.Ti)}\n" +
-                    $"Construções no planeta: {PlacedObject.All.Count}\n" +
-                    $"Registros encontrados: {StoryLogs.All.Count()} de 5");
+            // Salva com a nave já partida (o "Continuar explorando" do epílogo volta para este mundo) e segue
+            // para a cena da chegada à Estação Horizonte.
+            EpilogueDirector.Stats =
+                $"Tempo de jogo: {PlayClock.Formatted}\n" +
+                $"Índice de terraformação: {TiFormat.Format(TerraformManager.Instance.Ti)}\n" +
+                $"Construções na Terra: {PlacedObject.All.Count}\n" +
+                $"Registros encontrados: {StoryLogs.All.Count()} de 5";
+            var save = FindFirstObjectByType<SaveSystem>();
+            if (save != null) save.Save();
+            SceneManager.LoadScene(Scenes.Epilogue);
         }
 
 #if UNITY_EDITOR

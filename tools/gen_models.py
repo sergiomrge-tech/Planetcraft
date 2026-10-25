@@ -733,6 +733,115 @@ def mothership():
     return m
 
 
+STATION_RING_R = 150.0
+STATION_TUBE_R = 11.0
+STATION_PORT_Z = 58.0  # ponta do porto de acoplagem no eixo (vira +Z no Unity)
+
+
+def _torus(m, mat, R, r, seg_major=128, seg_minor=20, base=I4, obj=None):
+    tmp = bmesh.new()
+    vs = []
+    for i in range(seg_major):
+        a = 2 * math.pi * i / seg_major
+        for j in range(seg_minor):
+            b = 2 * math.pi * j / seg_minor
+            rad = R + r * math.cos(b)
+            vs.append(tmp.verts.new((rad * math.cos(a), rad * math.sin(a), r * math.sin(b))))
+    for i in range(seg_major):
+        for j in range(seg_minor):
+            i2, j2 = (i + 1) % seg_major, (j + 1) % seg_minor
+            f = tmp.faces.new([vs[i * seg_minor + j], vs[i2 * seg_minor + j], vs[i2 * seg_minor + j2], vs[i * seg_minor + j2]])
+            f.smooth = True
+    bmesh.ops.transform(tmp, matrix=base, verts=tmp.verts)
+    m._emit(mat, obj, tmp, I4)
+
+
+def station():
+    """Estação Horizonte (~320 m): anel habitacional em torno do eixo do hub, raios, painéis solares e radiadores
+    na popa e o porto de acoplagem na proa. Construída com o eixo em Z e girada para o eixo ficar em +Y (frente):
+    no Unity o porto fica em +Z local, a STATION_PORT_Z metros do centro."""
+    m = Model("station", "Sky")
+    m.material("hull", (0.8, 0.81, 0.83), 0.45, 0.35)
+    m.material("hull_dark", (0.3, 0.32, 0.35), 0.5, 0.5)
+    m.material("panel", (0.6, 0.62, 0.65), 0.5, 0.4)
+    m.material("solar", (0.06, 0.09, 0.2), 0.25, 0.6)
+    m.material("radiator", (0.92, 0.92, 0.9), 0.6, 0.0)
+    m.material("gold", (0.85, 0.65, 0.3), 0.35, 1.0)
+    m.material("glow_window", (1.0, 0.86, 0.6), 0.4)
+    m.material("glow_dock", (0.45, 0.85, 1.0), 0.4)
+    B = R(-90, 0, 0)  # eixo Z da construção -> +Y do Blender (frente)
+    rng = random.Random(1_000_000)
+
+    # --- Hub central com flanges e porto de acoplagem
+    m.lathe("hull", (0, 0, 0), [(0, -66), (10, -66), (16, -60), (18, -54), (18, -14), (21, -12), (21, 12),
+                                (18, 14), (18, 36), (14, 44), (9, 50), (7, 54), (7, STATION_PORT_Z - 1.5),
+                                (5.5, STATION_PORT_Z), (0, STATION_PORT_Z)], seg=48, base=B)
+    for z in (-40, -24, 24, 32):
+        m.lathe("hull_dark", (0, 0, z), [(18.2, -1.2), (19.4, -0.8), (19.4, 0.8), (18.2, 1.2)], seg=48, caps=False, base=B)
+    m.lathe("glow_dock", (0, 0, STATION_PORT_Z), [(5.6, 0.0), (6.4, 0.25), (6.4, 0.45), (5.6, 0.6)], seg=48,
+            caps=False, base=B)
+    for i in range(12):
+        a = 2 * math.pi * i / 12
+        m.blob("glow_dock", (math.cos(a) * 8.8, math.sin(a) * 8.8, 51.5), (0.35, 0.35, 0.35), sub=1, noise=0,
+               seed=i, base=B)
+    for i in range(36):  # vigias do hub
+        a = 2 * math.pi * i / 36
+        m.box("glow_window", (math.cos(a) * 21.05, math.sin(a) * 21.05, rng.choice((-6, 0, 6))), (0.2, 1.4, 0.6),
+              rot=(0, 0, math.degrees(a)), base=B)
+
+    # --- Anel habitacional
+    _torus(m, "hull", STATION_RING_R, STATION_TUBE_R, base=B)
+    for z, w in ((0.0, 1.0), (-5.5, 0.6), (5.5, 0.6)):
+        rad = STATION_RING_R + math.sqrt(STATION_TUBE_R ** 2 - z ** 2) + 0.08
+        m.lathe("glow_window", (0, 0, z), [(rad, -w / 2), (rad, w / 2)], seg=192, caps=False, smooth=False, base=B)
+    for i in range(260):  # módulos e painéis na face externa e nas laterais do anel
+        a = rng.uniform(0, 2 * math.pi)
+        b = rng.choice((-1, 1)) * rng.uniform(0.5, 1.3)
+        rad = STATION_RING_R + STATION_TUBE_R * math.cos(b)
+        z = STATION_TUBE_R * math.sin(b)
+        size = (rng.uniform(0.8, 2.0), rng.uniform(3, 12), rng.uniform(1.5, 4))
+        m.box(rng.choice(("panel", "hull_dark", "panel", "gold")), (math.cos(a) * rad, math.sin(a) * rad, z),
+              size, rot=(0, 0, math.degrees(a)), base=B)
+    for i in range(6):  # domos de observação
+        a = 2 * math.pi * (i + 0.5) / 6
+        rad = STATION_RING_R + STATION_TUBE_R - 1
+        m.blob("hull_dark", (math.cos(a) * rad, math.sin(a) * rad, 0), (5, 5, 5), sub=3, noise=0, seed=i,
+               smooth=True, base=B)
+
+    # --- Raios: seis principais, cabos de tensão e elevadores
+    for i in range(6):
+        a = 2 * math.pi * i / 6
+        d = Vector((math.cos(a), math.sin(a), 0))
+        m.tube("hull", d * 19, d * (STATION_RING_R - STATION_TUBE_R + 1), 3.2, seg=16, base=B)
+        for s in (-1, 1):
+            m.tube("hull_dark", d * 19 + Vector((0, 0, 9 * s)), d * (STATION_RING_R - 8) + Vector((0, 0, 3 * s)),
+                   0.5, seg=8, base=B)
+        for t in (0.35, 0.65):
+            p = d * (19 + t * (STATION_RING_R - 30))
+            m.cyl("panel", None, 4.2, 4.2, 6, seg=16, M=T(*p) @ aim((0, 0, 0), d), base=B)
+
+    # --- Popa: treliças com painéis solares e radiadores
+    for i in range(4):
+        a = math.pi / 4 + i * math.pi / 2
+        d = Vector((math.cos(a), math.sin(a), 0))
+        m.tube("hull_dark", d * 16 + Vector((0, 0, -58)), d * 120 + Vector((0, 0, -58)), 1.2, seg=8, base=B)
+        side = Vector((-d.y, d.x, 0))
+        for k in range(4):
+            c = d * (40 + k * 21) + Vector((0, 0, -58))
+            for s in (-1, 1):
+                center = c + side * s * 9
+                m.box("solar", tuple(center), (18, 14, 0.25), rot=(0, 0, math.degrees(a)), base=B)
+                m.box("gold", tuple(center - Vector((0, 0, 0.2))), (18.4, 14.4, 0.1), rot=(0, 0, math.degrees(a)),
+                      base=B)
+    for i in range(4):
+        a = i * math.pi / 2
+        d = Vector((math.cos(a), math.sin(a), 0))
+        for k in range(3):
+            m.box("radiator", tuple(d * (30 + k * 9) + Vector((0, 0, -30))), (8, 0.3, 22),
+                  rot=(0, 0, math.degrees(a) + 90), base=B)
+    return m
+
+
 def shipyard():
     """Estaleiro (52 x 34 m): plataforma baixa, berços de apoio, torres de montagem e console."""
     m = Model("shipyard", "Machines")
@@ -780,7 +889,7 @@ BUILDERS = {
     "nuclear_reactor": nuclear_reactor,
     "ore_uranium": lambda: crystals("ore_uranium", (0.25, 0.9, 0.35), (0.6, 1.0, 0.6), 0.3, 0.2, 43, glow=True),
     "wreck_pod": wreck_pod, "chip_crate": chip_crate, "log_terminal": log_terminal,
-    "mothership": mothership, "shipyard": shipyard,
+    "mothership": mothership, "shipyard": shipyard, "station": station,
 }
 
 

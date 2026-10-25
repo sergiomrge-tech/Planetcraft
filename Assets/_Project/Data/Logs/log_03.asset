@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: log_03
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
   id: log_03
-  title: Comandante Raul Tavares
-  body: "Ningu\xE9m nos mandou aqui para sobreviver. Mandaram para preparar o planeta.\n\nA frota espera al\xE9m do cintur\xE3o, com quarenta mil colonos em criossono, mas a Aurora era a \xFAnica nave capaz de voltar at\xE9 eles. Se algu\xE9m ler isto: monte um estaleiro e construa outra nave-m\xE3e com o que sobrou. Decole quando a atmosfera estiver est\xE1vel e leve a not\xEDcia de que este planeta respira."
+  title: "\xDAltima ordem \u2014 Conselho da Esta\xE7\xE3o Horizonte"
+  body: "Ano zero. Partimos hoje com os \xFAltimos quarenta mil. Os esterilizadores atmosf\xE9ricos que lan\xE7amos uns contra os outros n\xE3o podem mais ser desligados: v\xE3o queimar o ar e o solo por eras.\n\nA quem um dia voltar: quando a Terra respirar sozinha, monte uma nave-m\xE3e no estaleiro e traga a not\xEDcia de volta para a esta\xE7\xE3o. Vamos esperar o tempo que for preciso."

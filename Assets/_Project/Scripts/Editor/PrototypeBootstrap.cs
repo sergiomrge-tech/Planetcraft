@@ -33,6 +33,8 @@ namespace Planetcraft.EditorTools
         const string SceneDir = Root + "/Scenes";
         const string ScenePath = SceneDir + "/Prototype.unity";
         const string TitleScenePath = SceneDir + "/Title.unity";
+        const string EpilogueScenePath = SceneDir + "/Epilogue.unity";
+        const string NasaDir = "Assets/ThirdParty/NASA";
 
         const float TerrainSize = 500f;
         const float TerrainHeight = 60f;
@@ -63,11 +65,13 @@ namespace Planetcraft.EditorTools
             EditorUtility.SetDirty(db);
 
             BuildScene(stageDb, stages, db, items, mats);
-            BuildTitleScene(mats);
+            BuildTitleScene();
+            BuildEpilogueScene();
             EditorBuildSettings.scenes = new[]
             {
                 new EditorBuildSettingsScene(TitleScenePath, true),
                 new EditorBuildSettingsScene(ScenePath, true),
+                new EditorBuildSettingsScene(EpilogueScenePath, true),
             };
             AssetDatabase.SaveAssets();
             Debug.Log("[Planetcraft] Protótipo gerado: " + ScenePath);
@@ -79,7 +83,7 @@ namespace Planetcraft.EditorTools
         {
             var data = new (string id, string name, double ti, string desc)[]
             {
-                ("barren", "Rocha Morta", 0, "Um planeta sem atmosfera."),
+                ("barren", "Terra Morta", 0, "A Última Guerra queimou o ar e o solo."),
                 ("haze", "Névoa", 100, "Os primeiros gases engrossam o ar."),
                 ("bluesky", "Céu Azul", 1_000, "A luz começa a se espalhar no céu."),
                 ("clouds", "Nuvens", 5_000, "Vapor condensa em nuvens."),
@@ -90,7 +94,7 @@ namespace Planetcraft.EditorTools
                 ("flora", "Flora", 1_000_000, "Plantas se espalham pelo vale."),
                 ("forest", "Florestas", 2_500_000, "Árvores crescem sozinhas."),
                 ("fauna", "Fauna", 6_000_000, "Os primeiros animais caminham pelo vale."),
-                ("genesis", "Gênese", 15_000_000, "A atmosfera está estável. A nave-mãe pode decolar do estaleiro."),
+                ("genesis", "Renascimento", 15_000_000, "A Terra respira sozinha. A nave-mãe pode voltar à Estação Horizonte."),
             };
 
             // A tabela acima é a fonte da verdade dos estágios: sincroniza sempre.
@@ -216,7 +220,7 @@ namespace Planetcraft.EditorTools
             Add("algae_farm", "Fazenda de Algas", "Biomassa +25/s, Oxigênio +5/s. Consome 2 kW.", 20_000, 0, 2f,
                 new[] { C(it["ice"], 2), C(it["magnesium"], 1) },
                 new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, "Machines/algae_farm");
-            Add("shipyard", "Estaleiro", "Plataforma para montar a nave-mãe e deixar o planeta. Só um por planeta.", 2_500_000, 0, 0,
+            Add("shipyard", "Estaleiro", "Plataforma para montar a nave-mãe que leva a notícia de volta à Estação Horizonte. Só um por mundo.", 2_500_000, 0, 0,
                 new[] { C(it["alloy"], 6), C(it["titanium"], 4), C(it["iron"], 8) }, none, false, "Machines/shipyard", unique: true);
             Add("heater_t3", "Aquecedor III", "Calor +400/s. Consome 15 kW.", 60_000, 0, 15f,
                 new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "Machines/heater", 2.2f);
@@ -292,28 +296,28 @@ namespace Planetcraft.EditorTools
         {
             var data = new (string id, string title, string body)[]
             {
-                ("log_01", "Diário — Eng. Ilsa Moreau",
-                 "Dia 3 depois da queda. A Aurora se partiu na órbita e as cápsulas caíram espalhadas pelo vale.\n\n" +
-                 "O ar aqui não perdoa: cada saída é uma conta de oxigênio. Os vegetubos do compartimento de carga ainda " +
-                 "funcionam, e eu gravei neste chip a versão aprimorada que estávamos testando. Se alguém encontrar isto, " +
-                 "plante. Plante muito."),
+                ("log_01", "Bunker Lisboa-7 — Diário de Ilsa Moreau, agrônoma",
+                 "Ano 2189. As sirenes pararam ontem. Lá fora o céu está cor de ferrugem e nada que eu planto passa da " +
+                 "primeira folha.\n\nGravei neste núcleo de dados o projeto dos vegetubos de alta eficiência. Se um dia " +
+                 "alguém voltar a pisar aqui fora, plante. Plante muito."),
                 ("log_02", "Relatório técnico — Reator KR-4",
-                 "O reator compacto KR-4 sobreviveu ao impacto. Ele roda com barras de urânio refinado misturado com liga " +
-                 "metálica.\n\nOs veios verdes que brilham perto das crateras são urânio exposto pela queda das cápsulas. " +
-                 "Cuidado ao coletar. O projeto completo do reator está no chip deste módulo."),
-                ("log_03", "Comandante Raul Tavares",
-                 "Ninguém nos mandou aqui para sobreviver. Mandaram para preparar o planeta.\n\nA frota espera além do " +
-                 "cinturão, com quarenta mil colonos em criossono, mas a Aurora era a única nave capaz de voltar até eles. " +
-                 "Se alguém ler isto: monte um estaleiro e construa outra nave-mãe com o que sobrou. Decole quando a " +
-                 "atmosfera estiver estável e leve a notícia de que este planeta respira."),
-                ("log_04", "IA de bordo — MAIA",
-                 "Registro automático. Detecto atividade de terraformação na superfície, de origem desconhecida.\n\n" +
-                 "Atualizando projeções: com perfuratrizes de alta pressão o índice cresce em ordens de grandeza. " +
-                 "Projeto anexado ao chip. Esperança: recalculando... valor positivo."),
-                ("log_05", "Última transmissão — Dra. Nadia Okoro",
-                 "Liberei o banco genético antes de perdermos energia. Sementes, insetos, animais: tudo em estase no fundo " +
-                 "do vale.\n\nQuando o planeta respirar sozinho, eles acordam. Você vai saber que deu certo quando ouvir " +
-                 "algo correndo entre as árvores."),
+                 "O reator compacto KR-4 roda com barras de urânio refinado misturado com liga metálica.\n\nOs veios " +
+                 "verdes que brilham perto das crateras são urânio exposto pelas ogivas da Última Guerra. Use traje ao " +
+                 "coletar. O projeto completo do reator está no núcleo deste abrigo."),
+                ("log_03", "Última ordem — Conselho da Estação Horizonte",
+                 "Ano zero. Partimos hoje com os últimos quarenta mil. Os esterilizadores atmosféricos que lançamos uns " +
+                 "contra os outros não podem mais ser desligados: vão queimar o ar e o solo por eras.\n\nA quem um dia " +
+                 "voltar: quando a Terra respirar sozinha, monte uma nave-mãe no estaleiro e traga a notícia de volta " +
+                 "para a estação. Vamos esperar o tempo que for preciso."),
+                ("log_04", "IA de defesa — ATLAS",
+                 "Registro automático. Esterilizadores atmosféricos: sem energia há 999.412 anos.\n\nDetecto " +
+                 "atividade de terraformação na superfície, de origem humana. Atualizando projeções: com perfuratrizes " +
+                 "de alta pressão o índice cresce em ordens de grandeza. Projeto anexado. Esperança: recalculando... " +
+                 "valor positivo."),
+                ("log_05", "Cofre genético — Dra. Nadia Okoro",
+                 "Selei o cofre genético antes do último apagão. Sementes, insetos, animais: tudo em estase no fundo " +
+                 "do vale, fundo o bastante para atravessar a radiação.\n\nQuando a Terra respirar sozinha, eles " +
+                 "acordam. Você vai saber que deu certo quando ouvir algo correndo entre as árvores."),
             };
             var list = new List<StoryLog>();
             foreach (var d in data)
@@ -400,61 +404,21 @@ namespace Planetcraft.EditorTools
             return prefab;
         }
 
-        // Tela de título: planeta enferrujado, nave-mãe em órbita, estrelas e o menu em UI Toolkit.
-        static void BuildTitleScene(MaterialLibrary m)
+        // Tela de título: a Terra queimada vista da órbita (Blue Marble tingida de ferrugem, tempestades de poeira),
+        // a nave-mãe em órbita, estrelas e o menu em UI Toolkit.
+        static void BuildTitleScene()
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-
-            var sunGo = new GameObject("Sol");
-            var sun = sunGo.AddComponent<Light>();
-            sun.type = LightType.Directional;
-            sun.intensity = 100000f;
-            sun.color = new Color(1f, 0.95f, 0.88f);
-            sunGo.transform.rotation = Quaternion.Euler(20f, 120f, 0f);
-
-            var space = new GameObject("Espaço").AddComponent<Volume>();
-            space.isGlobal = true;
-            space.sharedProfile = HdrpSetup.TitleProfile();
-
-            var planet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            planet.name = "Planeta";
-            Object.DestroyImmediate(planet.GetComponent<Collider>());
-            planet.transform.position = new Vector3(0f, -130f, 0f);
-            planet.transform.localScale = Vector3.one * 240f;
-            planet.GetComponent<Renderer>().sharedMaterial = m.Lit("TitlePlanet", new Color(0.55f, 0.3f, 0.2f), 0.15f);
+            SpaceLighting(Quaternion.Euler(20f, 120f, 0f));
+            Earth(new Vector3(0f, -130f, 0f), 120f, scorched: true);
 
             var shipRoot = new GameObject("Nave");
             shipRoot.transform.position = new Vector3(0f, 12f, 0f);
             Model("Sky/mothership", shipRoot.transform).transform.localRotation = Quaternion.Euler(0f, 0f, 8f);
 
-            var stars = new GameObject("Estrelas").AddComponent<ParticleSystem>();
-            stars.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            var main = stars.main;
-            main.loop = false;
-            main.duration = 1f;
-            main.startLifetime = 100000f;
-            main.startSpeed = 0f;
-            main.startSize = new ParticleSystem.MinMaxCurve(0.6f, 1.8f);
-            main.maxParticles = 1500;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            var emission = stars.emission;
-            emission.rateOverTime = 0f;
-            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 1500) });
-            var shape = stars.shape;
-            shape.shapeType = ParticleSystemShapeType.Sphere;
-            shape.radius = 600f;
-            shape.radiusThickness = 0f;
-            stars.GetComponent<ParticleSystemRenderer>().sharedMaterial = StarMaterial();
-
-            var camGo = new GameObject("Câmera") { tag = "MainCamera" };
-            var cam = camGo.AddComponent<Camera>();
-            cam.farClipPlane = 2000f;
-            // Fundo preto: as estrelas são partículas.
-            var hdCam = camGo.AddComponent<HDAdditionalCameraData>();
-            hdCam.clearColorMode = HDAdditionalCameraData.ClearColorMode.Color;
-            hdCam.backgroundColorHDR = Color.black;
-            camGo.AddComponent<AudioListener>();
-            var orbit = camGo.AddComponent<Orbiter>();
+            Stars(600f, 0.6f, 1.8f);
+            var cam = SpaceCamera(2000f);
+            var orbit = cam.gameObject.AddComponent<Orbiter>();
             SetRef(orbit, "target", shipRoot.transform);
             var orbitSo = new SerializedObject(orbit);
             orbitSo.FindProperty("lookOffset").vector3Value = new Vector3(0f, -6f, 0f);
@@ -465,6 +429,123 @@ namespace Planetcraft.EditorTools
             ui.AddComponent<TitleMenu>();
 
             EditorSceneManager.SaveScene(scene, TitleScenePath);
+        }
+
+        // Epílogo: a Terra viva lá embaixo, a Estação Horizonte em órbita e a nave-mãe chegando para acoplar.
+        static void BuildEpilogueScene()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            SpaceLighting(Quaternion.Euler(18f, -35f, 0f));
+            Earth(new Vector3(-2500f, -9800f, -4000f), 8000f, scorched: false);
+
+            var station = new GameObject("EstaçãoHorizonte");
+            station.transform.rotation = Quaternion.Euler(0f, -25f, 0f);
+            // O porto do modelo fica no -Z local; meia-volta para o porto apontar para o +Z da raiz.
+            Model("Sky/station", station.transform).transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+
+            var ship = new GameObject("NaveMae");
+            Model("Sky/mothership", ship.transform);
+
+            Stars(30000f, 40f, 110f);
+            var cam = SpaceCamera(60000f);
+            cam.transform.position = new Vector3(330f, 70f, 120f);
+            cam.transform.LookAt(new Vector3(0f, 0f, 200f));
+
+            var ui = new GameObject("Epílogo");
+            ui.AddComponent<UIDocument>().panelSettings = HudPanelSettings();
+            ui.AddComponent<EpilogueDirector>().EditorSetup(station.transform, ship.transform, cam.transform);
+
+            EditorSceneManager.SaveScene(scene, EpilogueScenePath);
+        }
+
+        static void SpaceLighting(Quaternion sunRotation)
+        {
+            var sunGo = new GameObject("Sol");
+            var sun = sunGo.AddComponent<Light>();
+            sun.type = LightType.Directional;
+            sun.intensity = 100000f;
+            sun.color = new Color(1f, 0.95f, 0.88f);
+            sunGo.transform.rotation = sunRotation;
+
+            var space = new GameObject("Espaço").AddComponent<Volume>();
+            space.isGlobal = true;
+            space.sharedProfile = HdrpSetup.TitleProfile();
+        }
+
+        // Terra com a imagem Blue Marble (NASA). Queimada: superfície tingida de ferrugem e nuvens de poeira.
+        static void Earth(Vector3 center, float radius, bool scorched)
+        {
+            var surface = Sphere(scorched ? "TerraQueimada" : "Terra", center, radius);
+            surface.GetComponent<Renderer>().sharedMaterial = EarthMaterial(scorched ? "EarthScorched" : "EarthAlive",
+                $"{NasaDir}/earth_4096.jpg", scorched ? new Color(0.78f, 0.5f, 0.34f) : new Color(0.85f, 0.9f, 1f), 0.25f, false);
+            surface.transform.rotation = Quaternion.Euler(0f, 0f, 23f);
+            var clouds = Sphere("Nuvens", center, radius * 1.006f);
+            clouds.transform.SetParent(surface.transform, true);
+            clouds.GetComponent<Renderer>().sharedMaterial = EarthMaterial(scorched ? "EarthDust" : "EarthClouds",
+                $"{NasaDir}/clouds_2048.png", scorched ? new Color(0.72f, 0.58f, 0.45f, 0.85f) : Color.white, 0.1f, true);
+        }
+
+        static GameObject Sphere(string name, Vector3 center, float radius)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = name;
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.position = center;
+            go.transform.localScale = Vector3.one * radius * 2f;
+            return go;
+        }
+
+        static Material EarthMaterial(string name, string texturePath, Color tint, float smoothness, bool transparent)
+        {
+            string path = $"{MatDir}/{name}.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            bool created = mat == null;
+            if (created) mat = new Material(Shader.Find("HDRP/Lit"));
+            mat.SetColor("_BaseColor", tint);
+            mat.SetTexture("_BaseColorMap", AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath));
+            mat.SetFloat("_Smoothness", smoothness);
+            mat.SetFloat("_Metallic", 0f);
+            if (transparent) HDMaterial.SetSurfaceType(mat, true);
+            HDMaterial.ValidateMaterial(mat);
+            if (created) AssetDatabase.CreateAsset(mat, path);
+            else EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        static void Stars(float radius, float minSize, float maxSize)
+        {
+            var stars = new GameObject("Estrelas").AddComponent<ParticleSystem>();
+            stars.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = stars.main;
+            main.loop = false;
+            main.duration = 1f;
+            main.startLifetime = 100000f;
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(minSize, maxSize);
+            main.maxParticles = 1500;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var emission = stars.emission;
+            emission.rateOverTime = 0f;
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 1500) });
+            var shape = stars.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = radius;
+            shape.radiusThickness = 0f;
+            stars.GetComponent<ParticleSystemRenderer>().sharedMaterial = StarMaterial();
+        }
+
+        static Camera SpaceCamera(float far)
+        {
+            var camGo = new GameObject("Câmera") { tag = "MainCamera" };
+            var cam = camGo.AddComponent<Camera>();
+            cam.nearClipPlane = 0.5f;
+            cam.farClipPlane = far;
+            // Fundo preto: as estrelas são partículas.
+            var hdCam = camGo.AddComponent<HDAdditionalCameraData>();
+            hdCam.clearColorMode = HDAdditionalCameraData.ClearColorMode.Color;
+            hdCam.backgroundColorHDR = Color.black;
+            camGo.AddComponent<AudioListener>();
+            return cam;
         }
 
         // PanelSettings + tema padrão de runtime para o HUD em UI Toolkit.
@@ -653,8 +734,8 @@ namespace Planetcraft.EditorTools
                 node.AddComponent<ResourceNode>().EditorSetup($"node_{i}", items[kind.item], 1);
             }
 
-            // Destroços da expedição Aurora: farol, registro, microchip e urânio em volta.
-            var wrecks = new GameObject("Destroços");
+            // Ruínas do velho mundo (abrigos de antes da guerra): farol, registro, microchip e urânio em volta.
+            var wrecks = new GameObject("Ruínas");
             var sites = new (float angle, float radius, string blueprint, string label)[]
             {
                 (22f, 186f, "bp_vegetube2", "Vegetubo II"),
@@ -669,7 +750,7 @@ namespace Planetcraft.EditorTools
                 float a = sites[s].angle * Mathf.Deg2Rad;
                 var pos = center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * sites[s].radius;
                 pos.y = terrain.SampleHeight(pos);
-                var site = new GameObject($"Destroço_{s + 1}");
+                var site = new GameObject($"Ruína_{s + 1}");
                 site.transform.SetParent(wrecks.transform, false);
                 site.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
                 Model("Props/wreck_pod", site.transform);

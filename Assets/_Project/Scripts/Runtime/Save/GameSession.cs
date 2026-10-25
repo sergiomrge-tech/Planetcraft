@@ -10,6 +10,7 @@ namespace Planetcraft.Save
     {
         public const string Title = "Title";
         public const string Game = "Prototype";
+        public const string Epilogue = "Epilogue";
     }
 
     // Transições entre título e jogo. O estado global (projetos, registros, nós coletados...) vive em

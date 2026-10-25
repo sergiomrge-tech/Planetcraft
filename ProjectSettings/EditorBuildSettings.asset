@@ -11,5 +11,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Project/Scenes/Prototype.unity
     guid: 60720093fccfc0346b8d662815634005
+  - enabled: 1
+    path: Assets/_Project/Scenes/Epilogue.unity
+    guid: 43ecab75773ba704d87abdabd9ac2295
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

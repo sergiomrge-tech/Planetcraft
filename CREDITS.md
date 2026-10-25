@@ -18,3 +18,9 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 - Modelo: [Island Tree 01](https://polyhaven.com/a/island_tree_01) — Rob Tuytel, Rico Cilliers
 - Modelo: [Shrub 02](https://polyhaven.com/a/shrub_02) — Rico Cilliers
 - Modelo: [Fern 02](https://polyhaven.com/a/fern_02) — Rob Tuytel, Rico Cilliers
+
+## NASA Visible Earth (domínio público)
+
+- Imagens da Terra: [Blue Marble — Land Surface, Shallow Water, and Shaded Topography](https://visibleearth.nasa.gov/images/57752)
+  e [Blue Marble — Clouds](https://visibleearth.nasa.gov/images/57747), NASA Goddard Space Flight Center.
+  Baixadas e convertidas por `tools/fetch_nasa.py`. O uso não implica endosso da NASA.

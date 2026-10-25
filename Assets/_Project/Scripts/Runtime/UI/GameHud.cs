@@ -30,7 +30,7 @@ namespace Planetcraft.UI
         static readonly Color PanelColor = new(0.04f, 0.06f, 0.09f, 0.78f);
         static readonly Color Accent = new(0.55f, 0.85f, 1f);
         static readonly Color Warn = new(1f, 0.38f, 0.32f);
-        static readonly Color Muted = new(0.62f, 0.66f, 0.7f);
+        internal static readonly Color Muted = new(0.62f, 0.66f, 0.7f);
 
         class Meter
         {
@@ -39,9 +39,8 @@ namespace Planetcraft.UI
         }
 
         VisualElement menu, banner, flash, chestColumn, craftColumn, buildColumn, logsColumn, logPanel;
-        VisualElement pausePanel, pauseButtons, pauseOptions, endPanel, shipColumn, shipList;
+        VisualElement pausePanel, pauseButtons, pauseOptions, shipColumn, shipList;
         Shipyard openShipyard;
-        Label endStats;
         VisualElement invList, craftList, buildList, chestList, logsList;
         Label logTitle, logBody;
         int logOpenedFrame = -1;
@@ -131,7 +130,6 @@ namespace Planetcraft.UI
         }
 
         bool PauseOpen => pausePanel != null && pausePanel.style.display == DisplayStyle.Flex;
-        bool EndOpen => endPanel != null && endPanel.style.display == DisplayStyle.Flex;
 
         public void SetPaused(bool paused)
         {
@@ -147,21 +145,6 @@ namespace Planetcraft.UI
             pauseOptions.Clear();
             if (show) pauseOptions.Add(OptionsUi.Build(() => ShowPauseOptions(false)));
             pauseOptions.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        public void ShowEnding(string stats)
-        {
-            if (UIState.MenuOpen && menu.style.display == DisplayStyle.Flex) ToggleMenu(false);
-            if (LogOpen) CloseLog();
-            endStats.text = stats;
-            endPanel.style.display = DisplayStyle.Flex;
-            UIState.MenuOpen = true;
-        }
-
-        void CloseEnding()
-        {
-            endPanel.style.display = DisplayStyle.None;
-            UIState.MenuOpen = false;
         }
 
         public void ShowToast(string message, float seconds = 3f)
@@ -193,9 +176,9 @@ namespace Planetcraft.UI
         {
             if (menu == null) return;
             var kb = Keyboard.current;
-            if (kb != null && (EndOpen || PauseOpen))
+            if (kb != null && PauseOpen)
             {
-                if (PauseOpen && kb.escapeKey.wasPressedThisFrame && pauseButtons.style.display == DisplayStyle.Flex) SetPaused(false);
+                if (kb.escapeKey.wasPressedThisFrame && pauseButtons.style.display == DisplayStyle.Flex) SetPaused(false);
             }
             else if (kb != null && LogOpen)
             {
@@ -379,7 +362,7 @@ namespace Planetcraft.UI
                 row.Add(MakeButton("Ler", () => ShowLog(entry)));
                 logsList.Add(row);
             }
-            if (!anyLog) logsList.Add(MakeLabel("Nenhum registro encontrado.\nProcure destroços: os faróis marcam onde estão.", 13, Muted));
+            if (!anyLog) logsList.Add(MakeLabel("Nenhum registro encontrado.\nProcure ruínas: os faróis marcam onde estão.", 13, Muted));
         }
 
         void RebuildShipyard(Inventory inv)
@@ -424,7 +407,7 @@ namespace Planetcraft.UI
         }
 
         static string LockReason(double requiredTi, string blueprintId, double ti) =>
-            !Blueprints.Has(blueprintId) ? "requer microchip de destroço" : $"requer {TiFormat.Format(requiredTi)}";
+            !Blueprints.Has(blueprintId) ? "requer microchip das ruínas" : $"requer {TiFormat.Format(requiredTi)}";
 
         void FillInventory(VisualElement list, Inventory inv, System.Func<Inventory.Slot, Button> action)
         {
@@ -621,38 +604,6 @@ namespace Planetcraft.UI
             pausePanel.Add(pauseOptions);
             pausePanel.style.display = DisplayStyle.None;
             root.Add(pausePanel);
-
-            // Final
-            endPanel = FullScreen();
-            endPanel.pickingMode = PickingMode.Position;
-            endPanel.style.backgroundColor = new Color(0.02f, 0.04f, 0.06f, 0.55f);
-            endPanel.style.alignItems = Align.Center;
-            endPanel.style.justifyContent = Justify.Center;
-            var endSheet = Panel();
-            endSheet.style.width = 680;
-            endSheet.style.alignItems = Align.Center;
-            endSheet.Add(MakeLabel("MISSÃO CUMPRIDA", 14, new Color(0.45f, 0.95f, 0.75f), bold: true));
-            var endTitle = MakeLabel("Rumo às estrelas", 40, Color.white, bold: true);
-            endTitle.style.marginTop = 4;
-            endSheet.Add(endTitle);
-            var endText = MakeLabel(
-                "A nave-mãe que você montou deixa a órbita levando a notícia:\n" +
-                "o planeta respira. Os quarenta mil colonos da frota já podem vir.", 16, new Color(0.88f, 0.9f, 0.92f));
-            endText.style.unityTextAlign = TextAnchor.MiddleCenter;
-            endText.style.marginTop = 10;
-            endText.style.marginBottom = 14;
-            endSheet.Add(endText);
-            endStats = MakeLabel("", 15, Muted);
-            endStats.style.unityTextAlign = TextAnchor.MiddleCenter;
-            endStats.style.marginBottom = 16;
-            endSheet.Add(endStats);
-            var endButtons = Row();
-            endButtons.Add(BigButton("Continuar jogando", CloseEnding));
-            endButtons.Add(BigButton("Menu principal", () => Planetcraft.Save.GameSession.ToTitle()));
-            endSheet.Add(endButtons);
-            endPanel.Add(endSheet);
-            endPanel.style.display = DisplayStyle.None;
-            root.Add(endPanel);
         }
 
         VisualElement Column(string title, out VisualElement list, out Label titleLabel)
@@ -728,7 +679,7 @@ namespace Planetcraft.UI
             return v;
         }
 
-        static VisualElement Panel()
+        internal static VisualElement Panel()
         {
             var v = new VisualElement();
             v.style.backgroundColor = PanelColor;
@@ -744,7 +695,7 @@ namespace Planetcraft.UI
             return v;
         }
 
-        static Label MakeLabel(string text, int size, Color? color = null, bool bold = false)
+        internal static Label MakeLabel(string text, int size, Color? color = null, bool bold = false)
         {
             var l = new Label(text) { pickingMode = PickingMode.Ignore, enableRichText = true };
             l.style.fontSize = size;
@@ -755,7 +706,7 @@ namespace Planetcraft.UI
             return l;
         }
 
-        static Button BigButton(string text, System.Action onClick)
+        internal static Button BigButton(string text, System.Action onClick)
         {
             var b = MakeButton(text, onClick);
             b.style.height = 38;

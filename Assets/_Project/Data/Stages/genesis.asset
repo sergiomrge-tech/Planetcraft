@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a033a4aca97e6348b7b8e21923ce13e, type: 3}
   m_Name: genesis
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.TerraformStage
-  displayName: "G\xEAnese"
+  displayName: Renascimento
   requiredTi: 15000000
-  description: "A atmosfera est\xE1 est\xE1vel. A nave-m\xE3e pode decolar do estaleiro."
+  description: "A Terra respira sozinha. A nave-m\xE3e pode voltar \xE0 Esta\xE7\xE3o Horizonte."

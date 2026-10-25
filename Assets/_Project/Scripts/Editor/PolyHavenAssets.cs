@@ -13,6 +13,14 @@ namespace Planetcraft.EditorTools
 
         void OnPreprocessTexture()
         {
+            // Imagens da Terra (tools/fetch_nasa.py): resolução cheia e nuvens com transparência.
+            if (assetPath.StartsWith("Assets/ThirdParty/NASA/"))
+            {
+                var nasa = (TextureImporter)assetImporter;
+                nasa.maxTextureSize = 4096;
+                nasa.alphaIsTransparency = assetPath.EndsWith(".png");
+                return;
+            }
             if (!assetPath.StartsWith(Root)) return;
             var importer = (TextureImporter)assetImporter;
             if (assetPath.Contains("_nor_gl")) importer.textureType = TextureImporterType.NormalMap;

@@ -96,7 +96,7 @@ namespace Planetcraft.Building
             }
             if (!Blueprints.Has(selected.blueprintId))
             {
-                reason = "Requer microchip de destroço";
+                reason = "Requer microchip das ruínas";
                 return false;
             }
             if (hit.normal.y < minGroundNormalY)

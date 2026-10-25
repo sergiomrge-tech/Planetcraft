@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: log_05
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
   id: log_05
-  title: "\xDAltima transmiss\xE3o \u2014 Dra. Nadia Okoro"
-  body: "Liberei o banco gen\xE9tico antes de perdermos energia. Sementes, insetos, animais: tudo em estase no fundo do vale.\n\nQuando o planeta respirar sozinho, eles acordam. Voc\xEA vai saber que deu certo quando ouvir algo correndo entre as \xE1rvores."
+  title: "Cofre gen\xE9tico \u2014 Dra. Nadia Okoro"
+  body: "Selei o cofre gen\xE9tico antes do \xFAltimo apag\xE3o. Sementes, insetos, animais: tudo em estase no fundo do vale, fundo o bastante para atravessar a radia\xE7\xE3o.\n\nQuando a Terra respirar sozinha, eles acordam. Voc\xEA vai saber que deu certo quando ouvir algo correndo entre as \xE1rvores."

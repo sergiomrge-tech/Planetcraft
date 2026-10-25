@@ -1,4 +1,4 @@
-# Planetcraft
+# Return to Earth
 
 Jogo de sobrevivência e terraformação em primeira pessoa, inspirado em *The Planet Crafter*.
 Unity **6000.6.2f1**, URP, Input System.
@@ -61,7 +61,7 @@ e depois **Planetcraft → Gerar Protótipo**.
 
 ## Testes visuais automáticos
 
-`Planetcraft.exe -pc-ti <Ti> -pc-yaw <graus> -pc-pitch <graus> [-pc-rain] [-pc-showcase] [-pc-menu] -pc-wait <s> -pc-screenshot <png>`
+`ReturnToEarth.exe -pc-ti <Ti> -pc-yaw <graus> -pc-pitch <graus> [-pc-rain] [-pc-showcase] [-pc-menu] -pc-wait <s> -pc-screenshot <png>`
 — `-pc-showcase` constrói uma de cada máquina na frente do jogador; `-pc-menu` abre o menu.
 
 ## Próximos passos

@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: log_04
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
   id: log_04
-  title: "IA de bordo \u2014 MAIA"
-  body: "Registro autom\xE1tico. Detecto atividade de terraforma\xE7\xE3o na superf\xEDcie, de origem desconhecida.\n\nAtualizando proje\xE7\xF5es: com perfuratrizes de alta press\xE3o o \xEDndice cresce em ordens de grandeza. Projeto anexado ao chip. Esperan\xE7a: recalculando... valor positivo."
+  title: "IA de defesa \u2014 ATLAS"
+  body: "Registro autom\xE1tico. Esterilizadores atmosf\xE9ricos: sem energia h\xE1 999.412 anos.\n\nDetecto atividade de terraforma\xE7\xE3o na superf\xEDcie, de origem humana. Atualizando proje\xE7\xF5es: com perfuratrizes de alta press\xE3o o \xEDndice cresce em ordens de grandeza. Projeto anexado. Esperan\xE7a: recalculando... valor positivo."
