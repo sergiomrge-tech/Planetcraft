@@ -24,6 +24,8 @@ MODELS = [
     "jacaranda_tree", "tree_small_02",
     "shrub_02", "fern_02",
 ]
+# Superfícies das máquinas (baixadas e preparadas por tools/fetch_surfaces.py; aqui só para os créditos).
+SURFACES = ["metal_plate_02", "concrete_floor_worn_001", "rusty_metal_02"]
 MODEL_RES = "1k"
 
 
@@ -90,7 +92,7 @@ def main():
     for asset_id in MODELS:
         print("modelo", asset_id); sys.stdout.flush()
         fetch_model(asset_id)
-    write_credits([("Textura", TEXTURES), ("Modelo", MODELS)])
+    write_credits([("Textura", TEXTURES), ("Modelo", MODELS), ("Superfície", SURFACES)])
     print("ok")
 
 

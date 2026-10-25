@@ -17,6 +17,9 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 - Modelo: [Tree Small 02](https://polyhaven.com/a/tree_small_02) — Rico Cilliers
 - Modelo: [Shrub 02](https://polyhaven.com/a/shrub_02) — Rico Cilliers
 - Modelo: [Fern 02](https://polyhaven.com/a/fern_02) — Rob Tuytel, Rico Cilliers
+- Superfície: [Metal Plate 02](https://polyhaven.com/a/metal_plate_02) — Rob Tuytel
+- Superfície: [Concrete Floor Worn 001](https://polyhaven.com/a/concrete_floor_worn_001) — Dimitrios Savva, Rico Cilliers
+- Superfície: [Rusty Metal 02](https://polyhaven.com/a/rusty_metal_02) — Rob Tuytel
 
 ## NASA Visible Earth (domínio público)
 

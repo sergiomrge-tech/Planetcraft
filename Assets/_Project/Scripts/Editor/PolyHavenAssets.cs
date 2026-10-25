@@ -25,6 +25,9 @@ namespace Planetcraft.EditorTools
             var importer = (TextureImporter)assetImporter;
             if (assetPath.Contains("_nor_gl")) importer.textureType = TextureImporterType.NormalMap;
             if (assetPath.Contains("_diff") && assetPath.EndsWith(".png")) importer.alphaIsTransparency = true;
+            // Superfícies das máquinas (tools/fetch_surfaces.py): normal e máscara do HDRP são dados lineares.
+            if (assetPath.EndsWith("/normal.png")) importer.textureType = TextureImporterType.NormalMap;
+            if (assetPath.EndsWith("/mask.png")) importer.sRGBTexture = false;
             importer.maxTextureSize = 2048;
         }
 

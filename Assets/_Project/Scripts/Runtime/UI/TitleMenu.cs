@@ -12,7 +12,6 @@ namespace Planetcraft.UI
     [RequireComponent(typeof(UIDocument))]
     public class TitleMenu : MonoBehaviour
     {
-        static readonly Color Accent = new(0.55f, 0.85f, 1f);
 
         VisualElement buttons, options;
 
@@ -50,6 +49,7 @@ namespace Planetcraft.UI
         void BuildUi(VisualElement root)
         {
             root.style.flexGrow = 1;
+            root.AddToClassList(HudStyle.RootClass);
             var layout = new VisualElement();
             layout.style.position = Position.Absolute;
             layout.style.left = 120;
@@ -58,16 +58,17 @@ namespace Planetcraft.UI
             layout.style.justifyContent = Justify.Center;
             root.Add(layout);
 
-            var title = new Label("RETURN TO EARTH");
-            title.style.fontSize = 84;
-            title.style.color = Color.white;
-            title.style.unityFontStyleAndWeight = FontStyle.Bold;
-            title.style.letterSpacing = 6;
+            layout.Add(HudStyle.Tag("Estação Horizonte  ·  Missão de retorno", HudStyle.Accent));
+            var title = HudStyle.MakeLabel("RETURN TO EARTH", 96, HudStyle.Ink, bold: true);
+            title.style.letterSpacing = 10;
+            title.style.marginTop = -6;
             layout.Add(title);
-            var subtitle = new Label("Um milhão de anos depois, a humanidade volta para casa.");
-            subtitle.style.fontSize = 22;
-            subtitle.style.color = Accent;
-            subtitle.style.marginBottom = 40;
+            var subtitle = HudStyle.MakeLabel("Um milhão de anos depois, a humanidade volta para casa.", 22,
+                new Color(0.8f, 0.78f, 0.72f));
+            subtitle.style.marginBottom = 44;
+            subtitle.style.paddingLeft = 12;
+            subtitle.style.borderLeftWidth = 2;
+            subtitle.style.borderLeftColor = HudStyle.Accent;
             layout.Add(subtitle);
 
             buttons = new VisualElement();
@@ -84,12 +85,11 @@ namespace Planetcraft.UI
             options.style.display = DisplayStyle.None;
             layout.Add(options);
 
-            var hint = new Label("WASD mover · E interagir · Tab menu · X desmontar · Esc pausa");
+            var hint = HudStyle.MakeLabel(HudStyle.KeyCaps("[WASD] mover   ·   [E] interagir   ·   [TAB] menu   ·   [X] desmontar   ·   [ESC] pausa"),
+                14, HudStyle.Muted);
             hint.style.position = Position.Absolute;
             hint.style.left = 120;
             hint.style.bottom = 36;
-            hint.style.fontSize = 14;
-            hint.style.color = new Color(1f, 1f, 1f, 0.55f);
             root.Add(hint);
         }
 
@@ -103,12 +103,10 @@ namespace Planetcraft.UI
 
         static Button MenuButton(string text, Action onClick)
         {
-            var b = new Button(() => { Sfx.Click(); onClick(); }) { text = text };
-            b.style.height = 48;
-            b.style.fontSize = 20;
-            b.style.marginTop = b.style.marginBottom = 6;
-            b.style.unityTextAlign = TextAnchor.MiddleLeft;
-            b.style.paddingLeft = 18;
+            var b = HudStyle.BigButton(text, onClick);
+            b.style.height = 50;
+            b.style.fontSize = 21;
+            b.style.marginLeft = 0;
             return b;
         }
     }

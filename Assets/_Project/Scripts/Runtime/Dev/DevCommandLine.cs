@@ -39,7 +39,8 @@ namespace Planetcraft.Dev
             if (weather != null && HasFlag(args, "-pc-rain")) weather.ForceRain();
             if (player != null && TryNumber(args, "-pc-pitch", out double pitch)) player.SetPitch((float)pitch);
             if (player != null && TryNumber(args, "-pc-yaw", out double startYaw)) player.Teleport(player.transform.position, (float)startYaw);
-            if (HasFlag(args, "-pc-showcase")) Showcase();
+            // -pc-showcase [-pc-showcase-radius <m>]: uma de cada construção em arco à frente.
+            if (HasFlag(args, "-pc-showcase")) Showcase(TryNumber(args, "-pc-showcase-radius", out double radius) ? (float)radius : 16f);
             if (HasFlag(args, "-pc-unlock-all") && database != null)
             {
                 foreach (var b in database.buildables) if (b != null) Blueprints.Unlock(b.blueprintId);
@@ -168,7 +169,7 @@ namespace Planetcraft.Dev
         }
 
         // Constrói uma de cada construção num arco à frente do jogador, viradas para ele.
-        void Showcase()
+        void Showcase(float radius)
         {
             var terrain = Terrain.activeTerrain;
             if (database == null || player == null || terrain == null) return;
@@ -181,7 +182,7 @@ namespace Planetcraft.Dev
                 if (def == null || def.prefab == null) continue;
                 float angle = Mathf.Lerp(-55f, 55f, n == 1 ? 0.5f : i / (float)(n - 1));
                 var dir = Quaternion.Euler(0f, angle, 0f) * forward;
-                var pos = origin + dir * 16f;
+                var pos = origin + dir * radius;
                 pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;
                 PlacedObject.Spawn(def, pos, Quaternion.LookRotation(-dir, Vector3.up));
             }

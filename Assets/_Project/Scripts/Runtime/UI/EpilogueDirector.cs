@@ -105,6 +105,7 @@ namespace Planetcraft.UI
         void BuildUi(VisualElement root)
         {
             root.style.flexGrow = 1;
+            root.AddToClassList(HudStyle.RootClass);
             panel = new VisualElement { pickingMode = PickingMode.Position };
             panel.style.position = Position.Absolute;
             panel.style.left = panel.style.right = panel.style.top = panel.style.bottom = 0;
@@ -112,14 +113,14 @@ namespace Planetcraft.UI
             panel.style.justifyContent = Justify.FlexEnd;
             panel.style.paddingBottom = 70;
 
-            var sheet = GameHud.Panel();
+            var sheet = HudStyle.Panel();
             sheet.style.width = 720;
             sheet.style.alignItems = Align.Center;
-            sheet.Add(GameHud.MakeLabel("MISSÃO CUMPRIDA", 14, new Color(0.45f, 0.95f, 0.75f), bold: true));
-            var title = GameHud.MakeLabel("Dever cumprido", 40, Color.white, bold: true);
+            sheet.Add(HudStyle.MakeLabel("MISSÃO CUMPRIDA", 14, new Color(0.45f, 0.95f, 0.75f), bold: true));
+            var title = HudStyle.MakeLabel("Dever cumprido", 40, Color.white, bold: true);
             title.style.marginTop = 4;
             sheet.Add(title);
-            var text = GameHud.MakeLabel(
+            var text = HudStyle.MakeLabel(
                 "A nave-mãe acopla na Estação Horizonte levando a notícia\n" +
                 "que a humanidade esperou por um milhão de anos: a Terra respira de novo.", 16,
                 new Color(0.88f, 0.9f, 0.92f));
@@ -129,18 +130,18 @@ namespace Planetcraft.UI
             sheet.Add(text);
             if (!string.IsNullOrEmpty(Stats))
             {
-                var stats = GameHud.MakeLabel(Stats, 15, GameHud.Muted);
+                var stats = HudStyle.MakeLabel(Stats, 15, HudStyle.Muted);
                 stats.style.unityTextAlign = TextAnchor.MiddleCenter;
                 stats.style.marginBottom = 16;
                 sheet.Add(stats);
             }
             var buttons = new VisualElement();
             buttons.style.flexDirection = FlexDirection.Row;
-            buttons.Add(GameHud.BigButton("Continuar explorando", () =>
+            buttons.Add(HudStyle.BigButton("Continuar explorando", () =>
             {
                 if (!GameSession.ContinueGame()) GameSession.ToTitle();
             }));
-            buttons.Add(GameHud.BigButton("Menu principal", GameSession.ToTitle));
+            buttons.Add(HudStyle.BigButton("Menu principal", GameSession.ToTitle));
             sheet.Add(buttons);
             panel.Add(sheet);
             panel.style.display = DisplayStyle.None;

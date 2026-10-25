@@ -19,7 +19,7 @@ namespace Planetcraft.EditorTools
         public override int GetPostprocessOrder() => 100;
 
         // Incrementar quando mudar a conversão: força o Unity a reimportar os modelos.
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 5;
 
         void OnPreprocessModel()
         {
@@ -46,7 +46,44 @@ namespace Planetcraft.EditorTools
             ConfigureLit(material, color, name.StartsWith("glass_") ? 0.9f : 0.3f);
             if (name.StartsWith("glow_")) MakeEmissive(material, color, GlowNits);
             else if (name.StartsWith("glass_")) MakeTransparent(material, 0.35f);
+            else ApplySurface(material, name, color);
             HDMaterial.ValidateMaterial(material);
+        }
+
+        const string SurfaceDir = "Assets/ThirdParty/PolyHaven/Surfaces/";
+
+        // Textura PBR por família, escolhida pelo nome do material, em projeção triplanar no espaço do objeto
+        // (os modelos gerados não têm UV, e a textura acompanha peças que se movem). A cor do Blender tinge o albedo.
+        void ApplySurface(Material material, string name, Color color)
+        {
+            string n = name.ToLowerInvariant();
+            if (n.Contains("solar") || n.Contains("water")) return;
+            string family = n.Contains("concrete") ? "concrete" : n.Contains("rust") || n.Contains("scorch") ? "rust" : "panel";
+            var albedo = Surface<Texture2D>(family, "albedo.png");
+            if (albedo == null) return;
+            bool metal = n.Contains("steel") || n.Contains("pipe") || n.Contains("metal") || n.Contains("gold") ||
+                         n.Contains("chrome");
+
+            // O albedo cinza claro (~0.78) escurece a cor; compensa para manter o tom escolhido no Blender.
+            material.SetColor("_BaseColor", family == "rust" ? Color.Lerp(Color.white, color, 0.35f) : new Color(color.r * 1.25f, color.g * 1.25f, color.b * 1.25f, 1f));
+            material.SetTexture("_BaseColorMap", albedo);
+            material.SetTexture("_NormalMap", Surface<Texture2D>(family, "normal.png"));
+            material.SetFloat("_NormalScale", 1.2f);
+            material.SetTexture("_MaskMap", Surface<Texture2D>(family, "mask.png"));
+            material.SetFloat("_MetallicRemapMin", 0f);
+            material.SetFloat("_MetallicRemapMax", metal ? 1f : 0f);
+            material.SetFloat("_SmoothnessRemapMin", 0.05f);
+            material.SetFloat("_SmoothnessRemapMax", metal ? 0.8f : 0.6f);
+            material.SetFloat("_UVBase", 5f); // triplanar
+            material.SetFloat("_ObjectSpaceUVMapping", 1f);
+            material.SetFloat("_TexWorldScale", family == "concrete" ? 0.5f : 0.9f);
+        }
+
+        T Surface<T>(string family, string file) where T : Object
+        {
+            string path = SurfaceDir + family + "/" + file;
+            context.DependsOnSourceAsset(path);
+            return AssetDatabase.LoadAssetAtPath<T>(path);
         }
 
         public static void ConfigureLit(Material material, Color color, float smoothness, float metallic = 0f)

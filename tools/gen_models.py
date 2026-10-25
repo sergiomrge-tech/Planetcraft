@@ -44,9 +44,58 @@ class Model:
         self.mats = {}
         self.bms = {}
         self.origins = {}
+        # Máquinas ganham detalhe automático (emendas, faixas, rebites, anéis) nas peças grandes e retas.
+        self.greeble = category == "Machines"
 
     def material(self, name, color, rough=0.7, metal=0.0):
         self.mats[name] = (color, rough, metal)
+
+    # ---- detalhe automático ------------------------------------------------------
+    def _detail_mat(self):
+        if "detail_seam" not in self.mats:
+            self.material("detail_seam", (0.07, 0.075, 0.08), 0.8, 0.2)
+            self.material("detail_bolt", (0.42, 0.43, 0.45), 0.4, 0.8)
+        return "detail_seam"
+
+    def _greeble_box(self, mat, pos, size, base, obj):
+        """Emendas verticais nas faces laterais, faixa a 85% da altura e rebites no topo de uma caixa alinhada."""
+        sx, sy, sz = size
+        if mat.startswith(("glow_", "glass_", "detail_")) or min(sx, sy) < 0.45 or sz < 0.35:
+            return
+        seam = self._detail_mat()
+        x0, y0, z0 = pos
+        top = z0 + sz / 2
+        for axis, length, depth in (("x", sx, sy), ("y", sy, sx)):
+            n = max(1, int(length / 0.55))
+            for side in (-1, 1):
+                for k in range(1, n):
+                    t = -length / 2 + k * length / n
+                    p = (x0 + t, y0 + side * (depth / 2 + 0.004), z0) if axis == "x" else \
+                        (x0 + side * (depth / 2 + 0.004), y0 + t, z0)
+                    s = (0.018, 0.01, sz * 0.86) if axis == "x" else (0.01, 0.018, sz * 0.86)
+                    self.box(seam, p, s, base=base, obj=obj)
+                band = (x0, y0 + side * (depth / 2 + 0.006), top - sz * 0.15) if axis == "x" else \
+                       (x0 + side * (depth / 2 + 0.006), y0, top - sz * 0.15)
+                bs = (sx * 0.98, 0.012, 0.035) if axis == "x" else (0.012, sy * 0.98, 0.035)
+                self.box(seam, band, bs, base=base, obj=obj)
+        for axis, length, depth in (("x", sx, sy), ("y", sy, sx)):
+            n = max(2, int(length / 0.22))
+            for side in (-1, 1):
+                for k in range(n):
+                    t = -length / 2 + (k + 0.5) * length / n
+                    p = (x0 + t, y0 + side * (depth / 2 - 0.06), top + 0.012) if axis == "x" else \
+                        (x0 + side * (depth / 2 - 0.06), y0 + t, top + 0.012)
+                    self.box("detail_bolt", p, (0.035, 0.035, 0.025), base=base, obj=obj)
+
+    def _greeble_cyl(self, mat, pos, r, h, seg, base, obj):
+        """Anéis de reforço perto da base e do topo de um cilindro vertical."""
+        if mat.startswith(("glow_", "glass_", "detail_")) or r < 0.22 or h < 0.5:
+            return
+        seam = self._detail_mat()
+        x0, y0, z0 = pos
+        for zr in (-0.38, 0.38):
+            self.lathe(seam, (x0, y0, z0 + zr * h), [(r + 0.012, -0.03), (r + 0.012, 0.03)], seg=max(seg, 16),
+                       caps=False, base=base, obj=obj)
 
     # ---- acumulação de geometria -------------------------------------------------
     def _emit(self, mat, obj, tmp, base):
@@ -76,6 +125,8 @@ class Model:
                             offset=bevel, segments=2, affect="EDGES")
         bmesh.ops.transform(tmp, matrix=T(*pos) @ R(*rot), verts=tmp.verts)
         self._emit(mat, obj, tmp, base)
+        if self.greeble and rot == (0, 0, 0) and taper is None:
+            self._greeble_box(mat, pos, size, base, obj)
 
     def cyl(self, mat, pos, r1, r2, h, seg=12, rot=(0, 0, 0), smooth=True, M=None, base=I4, obj=None):
         tmp = bmesh.new()
@@ -86,6 +137,8 @@ class Model:
             f.smooth = smooth and abs(f.normal.z) < 0.9
         bmesh.ops.transform(tmp, matrix=M if M is not None else T(*pos) @ R(*rot), verts=tmp.verts)
         self._emit(mat, obj, tmp, base)
+        if self.greeble and M is None and rot == (0, 0, 0) and abs(r1 - r2) < 0.05:
+            self._greeble_cyl(mat, pos, max(r1, r2), h, seg, base, obj)
 
     def tube(self, mat, a, b, r1, r2=None, seg=8, base=I4, obj=None):
         a, b = Vector(a), Vector(b)
@@ -380,40 +433,164 @@ def hopper():
 # Construções
 # =============================================================================
 def base_module():
+    """Módulo de base pressurizado (4 x 4 m, entra-se pela câmara de ar na face -Y): paredes em painéis com relevo,
+    janelas com mainel, tanques de O2, tubulação, climatização e antena no teto e mobília por dentro."""
     m = Model("base_module", "Machines")
+    m.greeble = False  # detalhe feito à mão abaixo
     m.material("wall", (0.86, 0.86, 0.82), 0.6)
+    m.material("panel", (0.8, 0.8, 0.77), 0.55)
     m.material("trim", (0.28, 0.3, 0.33), 0.5, 0.4)
+    m.material("steel", (0.55, 0.57, 0.6), 0.4, 0.8)
     m.material("accent", (0.9, 0.5, 0.12), 0.6)
+    m.material("stripe", (0.92, 0.72, 0.1), 0.6)
+    m.material("dark", (0.1, 0.105, 0.11), 0.7, 0.3)
     m.material("glass_win", (0.5, 0.75, 0.9), 0.1)
     m.material("glow_lamp", (1.0, 0.95, 0.75), 0.4)
+    m.material("glow_screen", (0.35, 0.95, 0.8), 0.4)
     m.material("floor", (0.45, 0.46, 0.48), 0.8)
-    m.box("floor", (0, 0, 0.1), (4.0, 4.0, 0.2), bevel=0.02)
-    m.box("trim", (0, 0, 3.12), (4.3, 4.3, 0.22), bevel=0.04)
-    m.box("wall", (0, 1.925, 1.6), (4.0, 0.15, 2.8))
-    m.box("wall", (-1.925, 0, 1.6), (0.15, 3.7, 2.8))
-    m.box("wall", (1.925, 0, 1.6), (0.15, 3.7, 2.8))
-    for sx in (-1, 1):
-        m.box("wall", (sx * 1.35, -1.925, 1.6), (1.3, 0.15, 2.8))
-    m.box("wall", (0, -1.925, 2.75), (1.4, 0.15, 0.5))
-    m.box("trim", (-0.72, -1.93, 1.2), (0.08, 0.2, 2.0))
-    m.box("trim", (0.72, -1.93, 1.2), (0.08, 0.2, 2.0))
-    m.box("trim", (0, -1.93, 2.18), (1.52, 0.2, 0.08))
+    H = 2.8  # altura das paredes
+
+    # Piso elevado sobre pés niveladores.
+    m.box("floor", (0, 0, 0.32), (4.0, 4.0, 0.2), bevel=0.02)
     for sx in (-1, 1):
         for sy in (-1, 1):
-            m.box("trim", (sx * 1.98, sy * 1.98, 1.65), (0.2, 0.2, 2.95), bevel=0.03)
-    m.box("accent", (0, 1.99, 0.45), (3.9, 0.04, 0.3))
+            x, y = sx * 1.75, sy * 1.75
+            m.box("steel", (x, y, 0.03), (0.42, 0.42, 0.06), bevel=0.01)
+            m.cyl("steel", (x, y, 0.15), 0.07, 0.07, 0.24, seg=10)
+            m.cyl("trim", (x, y, 0.2), 0.11, 0.11, 0.06, seg=6)
+            for bx in (-0.15, 0.15):
+                for by in (-0.15, 0.15):
+                    m.cyl("dark", (x + bx, y + by, 0.07), 0.025, 0.025, 0.02, seg=6)
+    z0 = 0.42  # base das paredes
+
+    # Paredes (a frente, -Y, tem o vão da porta).
+    m.box("wall", (0, 1.925, z0 + H / 2), (4.0, 0.15, H))
     for sx in (-1, 1):
-        m.box("accent", (sx * 1.99, 0, 0.45), (0.04, 3.7, 0.3))
-        m.box("trim", (sx * 1.99, 0, 1.75), (0.06, 1.5, 0.95), bevel=0.02)
-        m.box("glass_win", (sx * 2.01, 0, 1.75), (0.04, 1.36, 0.82))
-    m.box("trim", (0, 2.0, 1.75), (1.5, 0.06, 0.95), bevel=0.02)
-    m.box("glass_win", (0, 2.02, 1.75), (1.36, 0.04, 0.82))
-    m.box("glow_lamp", (0, -2.0, 2.45), (0.6, 0.06, 0.1))
-    m.box("glow_lamp", (0, 0, 2.9), (2.2, 0.3, 0.06))
-    m.box("trim", (1.1, 1.0, 3.35), (0.9, 0.9, 0.3), bevel=0.04)
-    m.cyl("trim", (-1.1, -1.0, 3.5), 0.22, 0.22, 0.5, seg=10)
-    m.tube("trim", (-1.4, 1.3, 3.2), (-1.4, 1.3, 4.8), 0.03, 0.02, seg=6)
-    m.blob("accent", (-1.4, 1.3, 4.85), (0.07, 0.07, 0.07), sub=1, noise=0, seed=1)
+        m.box("wall", (sx * 1.925, 0, z0 + H / 2), (0.15, 3.7, H))
+        m.box("wall", (sx * 1.35, -1.925, z0 + H / 2), (1.3, 0.15, H))
+    m.box("wall", (0, -1.925, z0 + H - 0.25), (1.4, 0.15, 0.5))
+    m.box("trim", (0, 0, z0 + H + 0.11), (4.3, 4.3, 0.22), bevel=0.04)
+    m.box("trim", (0, 0, z0 + 0.06), (4.12, 4.12, 0.12))
+
+    # Painéis em relevo nas faces externas (3 por parede, com emendas escuras entre eles).
+    def wall_panels(face, skip_middle=False):
+        for k in (-1, 0, 1):
+            if skip_middle and k == 0:
+                continue
+            for row, (zc, hgt) in enumerate(((z0 + 0.75, 1.1), (z0 + 2.05, 1.2))):
+                if face in ("+y", "-y"):
+                    y = 2.0 if face == "+y" else -2.0
+                    m.box("panel", (k * 1.27, y + (0.012 if face == "+y" else -0.012), zc), (1.18, 0.03, hgt), bevel=0.01)
+                else:
+                    x = 2.0 if face == "+x" else -2.0
+                    m.box("panel", (x + (0.012 if face == "+x" else -0.012), k * 1.2, zc), (0.03, 1.1, hgt), bevel=0.01)
+    wall_panels("+y")
+    wall_panels("+x")
+    wall_panels("-x")
+    wall_panels("-y", skip_middle=True)
+
+    # Pilares de canto com placas de rebites.
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            m.box("trim", (sx * 1.98, sy * 1.98, z0 + H / 2 + 0.05), (0.22, 0.22, H + 0.1), bevel=0.03)
+            for z in (z0 + 0.3, z0 + H - 0.3):
+                m.box("steel", (sx * 2.06, sy * 2.06, z), (0.1, 0.1, 0.18), bevel=0.01)
+
+    # Faixa de identificação.
+    m.box("accent", (0, 2.03, z0 + 0.32), (3.7, 0.03, 0.22))
+    for sx in (-1, 1):
+        m.box("accent", (sx * 2.03, 0, z0 + 0.32), (0.03, 3.5, 0.22))
+
+    # Janelas com moldura grossa, mainel e rebites.
+    def window(cx, cy, along_x):
+        w, h, zc = 1.36, 0.82, z0 + 1.55
+        d = (0.0, 0.035) if along_x else (0.035, 0.0)
+        sgn = 1 if (cy if along_x else cx) > 0 else -1
+        off = (0, sgn * 0.03) if along_x else (sgn * 0.03, 0)
+        frame = (w + 0.16, 0.08, h + 0.16) if along_x else (0.08, w + 0.16, h + 0.16)
+        m.box("trim", (cx + off[0], cy + off[1], zc), frame, bevel=0.02)
+        glass = (w, 0.04, h) if along_x else (0.04, w, h)
+        m.box("glass_win", (cx + off[0] * 1.8, cy + off[1] * 1.8, zc), glass)
+        mull = (0.05, 0.06, h) if along_x else (0.06, 0.05, h)
+        m.box("trim", (cx + off[0] * 2.0, cy + off[1] * 2.0, zc), mull)
+        for t in (-0.6, -0.2, 0.2, 0.6):
+            for zz in (zc - h / 2 - 0.05, zc + h / 2 + 0.05):
+                p = (cx + t * w + off[0] * 2.4, cy + off[1] * 2.4, zz) if along_x else \
+                    (cx + off[0] * 2.4, cy + t * w + off[1] * 2.4, zz)
+                m.box("steel", p, (0.04, 0.04, 0.04))
+    window(0, 2.0, True)
+    window(2.0, 0, False)
+    window(-2.0, 0, False)
+
+    # Câmara de ar: moldura grossa, faixas de alerta, teclado, luz e degraus.
+    m.box("trim", (-0.74, -2.03, z0 + 1.0), (0.12, 0.3, 2.05), bevel=0.02)
+    m.box("trim", (0.74, -2.03, z0 + 1.0), (0.12, 0.3, 2.05), bevel=0.02)
+    m.box("trim", (0, -2.03, z0 + 2.06), (1.6, 0.3, 0.14), bevel=0.02)
+    for i in range(6):
+        m.box("stripe" if i % 2 == 0 else "dark", (-0.62 + i * 0.25, -2.19, z0 + 2.06), (0.24, 0.02, 0.1), rot=(0, 0, 0))
+    for sx in (-1, 1):
+        for i in range(7):
+            m.box("stripe" if i % 2 == 0 else "dark", (sx * 0.74, -2.19, z0 + 0.15 + i * 0.28), (0.1, 0.02, 0.26))
+    m.box("dark", (1.0, -2.02, z0 + 1.15), (0.2, 0.06, 0.28), bevel=0.01)
+    m.box("glow_screen", (1.0, -2.06, z0 + 1.2), (0.13, 0.01, 0.1))
+    m.box("trim", (0, -2.18, z0 + 2.32), (0.8, 0.25, 0.08))
+    m.box("glow_lamp", (0, -2.2, z0 + 2.27), (0.6, 0.12, 0.03))
+    for k in range(2):
+        m.box("steel", (0, -2.25 - k * 0.3, 0.12 + k * 0.0 + (1 - k) * 0.16), (1.3, 0.3, 0.08 + (1 - k) * 0.0), bevel=0.01)
+        m.box("trim", (0, -2.25 - k * 0.3, 0.06 + (1 - k) * 0.08), (1.3, 0.3, 0.04))
+
+    # Tanques de O2 na lateral +X, presos com cintas, e tubulação até a parede.
+    for k, y in enumerate((-1.25, -0.85)):
+        m.lathe("accent" if k == 0 else "panel", (2.42, y, z0), [(0, 0), (0.17, 0.03), (0.18, 0.15), (0.18, 1.25),
+                                                                (0.12, 1.4), (0.05, 1.45), (0, 1.45)], seg=16)
+        for zz in (0.35, 1.0):
+            m.lathe("dark", (2.42, y, z0 + zz), [(0.19, -0.025), (0.19, 0.025)], seg=16, caps=False)
+        m.tube("steel", (2.42, y, z0 + 1.45), (2.08, y, z0 + 1.7), 0.025, seg=6)
+    m.tube("steel", (2.08, -1.25, z0 + 1.7), (2.08, -0.5, z0 + 1.7), 0.04, seg=8)
+    m.box("dark", (2.08, -0.45, z0 + 1.7), (0.12, 0.12, 0.16))
+
+    # Conduítes ao longo da parede de trás, com suportes.
+    for z in (z0 + 2.45, z0 + 2.58):
+        m.tube("steel", (-1.8, 2.09, z), (1.8, 2.09, z), 0.035, seg=8)
+    for x in (-1.6, -0.6, 0.4, 1.4):
+        m.box("trim", (x, 2.06, z0 + 2.52), (0.06, 0.1, 0.24))
+
+    # Venezianas na lateral -X.
+    for i in range(6):
+        m.box("dark", (-2.07, 1.2, z0 + 0.5 + i * 0.09), (0.05, 0.7, 0.04), rot=(0, 25, 0))
+    m.box("trim", (-2.05, 1.2, z0 + 0.72), (0.04, 0.8, 0.62))
+
+    # Teto: unidade de climatização com hélice, painel solar, antena parabólica, luzes de topo.
+    roof = z0 + H + 0.22
+    m.box("trim", (0.95, 0.9, roof + 0.25), (1.2, 1.2, 0.5), bevel=0.04)
+    m.cyl("dark", (0.95, 0.9, roof + 0.51), 0.45, 0.45, 0.04, seg=24)
+    for i in range(5):
+        m.box("steel", (0.95, 0.9, roof + 0.54), (0.8, 0.07, 0.02), rot=(0, 0, i * 36))
+    for i in range(5):
+        m.box("dark", (0.95, 0.31, roof + 0.1 + i * 0.07), (1.0, 0.02, 0.03))
+    m.box("dark", (-0.9, 0.6, roof + 0.18), (1.4, 0.9, 0.04), rot=(12, 0, 0))
+    m.box("steel", (-0.9, 0.6, roof + 0.08), (0.08, 0.08, 0.16))
+    m.tube("trim", (-1.4, -1.2, roof), (-1.4, -1.2, roof + 0.9), 0.05, seg=8)
+    m.lathe("panel", (-1.4, -1.2, roof + 0.95), [(0, -0.12), (0.42, 0.0), (0.45, 0.04)], seg=20, caps=False,
+            base=I4)
+    m.tube("steel", (-1.4, -1.2, roof + 0.85), (-1.4, -1.2, roof + 1.3), 0.015, seg=6)
+    m.tube("trim", (1.6, -1.6, roof), (1.6, -1.6, roof + 1.6), 0.025, 0.015, seg=6)
+    m.blob("glow_lamp", (1.6, -1.6, roof + 1.62), (0.05, 0.05, 0.05), sub=1, noise=0, seed=2)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            m.blob("accent", (sx * 1.98, sy * 1.98, roof + 0.05), (0.06, 0.06, 0.06), sub=1, noise=0, seed=3)
+
+    # Interior: luz de teto, console com tela, bancada e armários.
+    m.box("glow_lamp", (0, 0, z0 + H - 0.04), (2.2, 0.3, 0.05))
+    m.box("trim", (0, 1.62, z0 + 0.45), (2.4, 0.5, 0.9), bevel=0.02)
+    m.box("glow_screen", (0, 1.4, z0 + 1.15), (1.2, 0.03, 0.5), rot=(-15, 0, 0))
+    m.box("dark", (0, 1.43, z0 + 1.15), (1.3, 0.04, 0.6), rot=(-15, 0, 0))
+    for y in (-0.9, -0.2, 0.5):
+        m.box("panel", (-1.62, y, z0 + 1.0), (0.5, 0.62, 2.0), bevel=0.015)
+        m.box("dark", (-1.36, y, z0 + 1.0), (0.02, 0.56, 1.9))
+    m.box("trim", (1.55, -0.2, z0 + 0.45), (0.6, 1.6, 0.08))
+    for y in (-0.85, 0.45):
+        m.box("trim", (1.55, y, z0 + 0.22), (0.5, 0.06, 0.44))
     return m
 
 

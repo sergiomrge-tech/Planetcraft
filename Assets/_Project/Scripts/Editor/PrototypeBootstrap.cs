@@ -563,9 +563,11 @@ namespace Planetcraft.EditorTools
             string dir = Root + "/UI";
             Directory.CreateDirectory(dir);
             string themePath = dir + "/HudTheme.tss";
-            if (!File.Exists(themePath))
+            // Tema padrão + estilo do visor (fontes, botões e barras em Hud.uss).
+            const string themeText = "@import url(\"unity-theme://default\");\n@import url(\"Hud.uss\");\n";
+            if (!File.Exists(themePath) || File.ReadAllText(themePath) != themeText)
             {
-                File.WriteAllText(themePath, "@import url(\"unity-theme://default\");\n");
+                File.WriteAllText(themePath, themeText);
                 AssetDatabase.ImportAsset(themePath, ImportAssetOptions.ForceSynchronousImport);
             }
             var theme = AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(themePath);

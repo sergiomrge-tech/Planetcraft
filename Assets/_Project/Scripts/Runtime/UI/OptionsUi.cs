@@ -11,18 +11,11 @@ namespace Planetcraft.UI
     {
         public static VisualElement Build(Action onBack)
         {
-            var panel = new VisualElement();
-            panel.style.width = 520;
-            panel.style.backgroundColor = new Color(0.04f, 0.06f, 0.09f, 0.9f);
-            panel.style.paddingTop = panel.style.paddingBottom = 18;
-            panel.style.paddingLeft = panel.style.paddingRight = 22;
-            panel.style.borderTopLeftRadius = panel.style.borderTopRightRadius = 8;
-            panel.style.borderBottomLeftRadius = panel.style.borderBottomRightRadius = 8;
-
-            var title = new Label("Opções");
-            title.style.fontSize = 26;
-            title.style.color = new Color(0.55f, 0.85f, 1f);
-            title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            var panel = HudStyle.Panel();
+            panel.style.width = 540;
+            HudStyle.Pad(panel, 18, 22);
+            panel.Add(HudStyle.Tag("Sistema"));
+            var title = HudStyle.MakeLabel("OPÇÕES", 30, HudStyle.Ink, bold: true);
             title.style.marginBottom = 12;
             panel.Add(title);
 
@@ -51,10 +44,8 @@ namespace Planetcraft.UI
             fullscreen.RegisterValueChangedCallback(e => Settings.Fullscreen = e.newValue);
             panel.Add(Style(fullscreen));
 
-            var back = new Button(() => { Sfx.Click(); onBack(); }) { text = "Voltar" };
+            var back = HudStyle.BigButton("Voltar", onBack);
             back.style.marginTop = 16;
-            back.style.height = 34;
-            back.style.fontSize = 15;
             panel.Add(back);
             return panel;
         }
@@ -63,8 +54,8 @@ namespace Planetcraft.UI
         static VisualElement Style<T>(BaseField<T> field)
         {
             field.style.marginTop = field.style.marginBottom = 6;
-            field.labelElement.style.color = new Color(0.9f, 0.92f, 0.95f);
-            field.labelElement.style.fontSize = 15;
+            field.labelElement.style.color = HudStyle.Ink;
+            field.labelElement.style.fontSize = 16;
             field.labelElement.style.minWidth = 200;
             return field;
         }
