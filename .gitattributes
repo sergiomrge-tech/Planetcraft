@@ -15,3 +15,6 @@
 *.mp3 binary
 *.ogg binary
 *.terrainlayer text eol=lf
+
+# TerrainData é serializado em binário pelo Unity
+Assets/_Project/Terrain/*.asset binary
