@@ -40,6 +40,13 @@ namespace Planetcraft.EditorTools
 
             EnsureGlobalSettings();
             AssetDatabase.SaveAssets();
+
+            // Num projeto recém-clonado os FBX podem ter sido importados antes dos shaders do HDRP existirem
+            // (Shader.Find devolve null e o material fica rosa). Reimporta os modelos com o pipeline já ativo.
+            if (Shader.Find("HDRP/Lit") == null)
+                Debug.LogError("[Planetcraft] Shader HDRP/Lit não encontrado; os modelos ficarão sem material.");
+            AssetDatabase.ImportAsset("Assets/_Project/Models",
+                ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
             Debug.Log("[Planetcraft] HDRP configurado: " + PipelinePath);
         }
 

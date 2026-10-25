@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 8971873386572400755}
   - component: {fileID: 7030181360157009434}
-  - component: {fileID: 710981435024749676}
-  - component: {fileID: 2821530498977803795}
+  - component: {fileID: 5028389475514401938}
+  - component: {fileID: 7571422998107846726}
   m_Layer: 0
   m_Name: shipyard
   m_TagString: Untagged
@@ -33,7 +33,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5636248574029319947}
-  - {fileID: 806876390370917783}
+  - {fileID: 5702566839357559832}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7030181360157009434
@@ -50,7 +50,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.PlacedObject
   definition: {fileID: 11400000, guid: 8d2f1a70837d75249aaf51d660b4961a, type: 2}
   guid: 
---- !u!82 &710981435024749676
+--- !u!82 &5028389475514401938
 AudioSource:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -147,7 +147,7 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!114 &2821530498977803795
+--- !u!114 &7571422998107846726
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -159,7 +159,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eee04c6ccf6879349a754acdf6779678, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Shipyard
-  ship: {fileID: 806876390370917783}
+  ship: {fileID: 5702566839357559832}
   modules:
   - {fileID: 11400000, guid: 88774dda64754f34087550de21815679, type: 2}
   - {fileID: 11400000, guid: cdc0af90ed7793841abab20961c881f3, type: 2}
@@ -167,8 +167,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 53844a54d377d084d88d0dcc6826209e, type: 2}
   - {fileID: 11400000, guid: e6becef8d3acf0b47ba9bb103e2c5c34, type: 2}
   launchStage: {fileID: 11400000, guid: e1cad7c78c4c9354ebdc480440370d7e, type: 2}
-  rumble: {fileID: 710981435024749676}
---- !u!1001 &916518465245305468
+  rumble: {fileID: 5028389475514401938}
+--- !u!1001 &5235767919923246067
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -225,10 +225,10 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e9dab0eed87c5ef4eab2ce4aaa02ab2d, type: 3}
---- !u!4 &806876390370917783 stripped
+--- !u!4 &5702566839357559832 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e9dab0eed87c5ef4eab2ce4aaa02ab2d, type: 3}
-  m_PrefabInstance: {fileID: 916518465245305468}
+  m_PrefabInstance: {fileID: 5235767919923246067}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5313477121386784992
 PrefabInstance:
