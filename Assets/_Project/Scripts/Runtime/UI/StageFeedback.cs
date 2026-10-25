@@ -40,14 +40,36 @@ namespace Planetcraft.UI
             lastTi = tm.Ti;
             tm.StageReached += OnStageReached;
             tm.TiChanged += OnTiChanged;
+            Blueprints.Unlocked += OnBlueprintUnlocked;
         }
 
         void OnDestroy()
         {
+            Blueprints.Unlocked -= OnBlueprintUnlocked;
             var tm = TerraformManager.Instance;
             if (tm == null) return;
             tm.StageReached -= OnStageReached;
             tm.TiChanged -= OnTiChanged;
+        }
+
+        void OnBlueprintUnlocked(string id)
+        {
+            if (database == null) return;
+            double ti = TerraformManager.Instance != null ? TerraformManager.Instance.Ti : 0;
+            var names = new List<string>();
+            double needTi = 0;
+            foreach (var b in database.buildables)
+                if (b != null && b.blueprintId == id) { names.Add(b.displayName); needTi = System.Math.Max(needTi, b.requiredTi); }
+            foreach (var r in database.recipes)
+                if (r != null && r.output != null && r.blueprintId == id) { names.Add(r.output.displayName); needTi = System.Math.Max(needTi, r.requiredTi); }
+            if (names.Count == 0) return;
+            queue.Add(new Banner
+            {
+                title = "PROJETO OBTIDO",
+                subtitle = string.Join(", ", names),
+                body = ti >= needTi ? "Disponível no menu [Tab]." : $"Disponível a partir de {TiFormat.Format(needTi)}.",
+                frame = Time.frameCount,
+            });
         }
 
         void OnStageReached(TerraformStage stage)
@@ -70,9 +92,10 @@ namespace Planetcraft.UI
             if (database != null && ti > lastTi)
             {
                 foreach (var b in database.buildables)
-                    if (b != null && b.requiredTi > lastTi && b.requiredTi <= ti) unlocked.Add(b.displayName);
+                    if (b != null && b.requiredTi > lastTi && b.requiredTi <= ti && Blueprints.Has(b.blueprintId)) unlocked.Add(b.displayName);
                 foreach (var r in database.recipes)
-                    if (r != null && r.output != null && r.requiredTi > lastTi && r.requiredTi <= ti) unlocked.Add(r.output.displayName);
+                    if (r != null && r.output != null && r.requiredTi > lastTi && r.requiredTi <= ti && Blueprints.Has(r.blueprintId))
+                        unlocked.Add(r.output.displayName);
             }
             lastTi = ti;
             if (unlocked.Count == 0) return;

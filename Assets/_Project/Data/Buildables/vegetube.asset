@@ -22,6 +22,7 @@ MonoBehaviour:
   - item: {fileID: 11400000, guid: 992d46b4fabab2a4eafbbaf792fb73d9, type: 2}
     amount: 1
   requiredTi: 50
+  blueprintId: 
   powerGeneration: 0
   powerDemand: 0.5
   terraformRates:

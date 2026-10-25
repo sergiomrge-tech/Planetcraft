@@ -277,11 +277,12 @@ def ore_iron():
     return m
 
 
-def crystals(name, base, tip, rough, metal, seeds):
+def crystals(name, base, tip, rough, metal, seeds, glow=False):
     m = Model(name, "Ore")
+    crystal, crystal_tip = ("glow_crystal", "glow_crystal_tip") if glow else ("crystal", "crystal_tip")
     m.material("base_rock", (0.27, 0.27, 0.3), 0.9)
-    m.material("crystal", base, rough, metal)
-    m.material("crystal_tip", tip, rough, metal)
+    m.material(crystal, base, rough, metal)
+    m.material(crystal_tip, tip, rough, metal)
     m.blob("base_rock", (0, 0, 0.1), (0.5, 0.48, 0.18), sub=1, noise=0.25, seed=seeds)
     rng = random.Random(seeds)
     for i in range(6):
@@ -290,8 +291,8 @@ def crystals(name, base, tip, rough, metal, seeds):
         length = rng.uniform(0.5, 0.95) if i else 1.15
         b = Vector((math.cos(a) * 0.12, math.sin(a) * 0.12, 0.12)) if i else Vector((0, 0, 0.12))
         tip_pos = b + d * length
-        m.tube("crystal", b, tip_pos - d * 0.12, 0.1, 0.085, seg=6)
-        m.tube("crystal_tip", tip_pos - d * 0.12, tip_pos, 0.085, 0.01, seg=6)
+        m.tube(crystal, b, tip_pos - d * 0.12, 0.1, 0.085, seg=6)
+        m.tube(crystal_tip, tip_pos - d * 0.12, tip_pos, 0.085, 0.01, seg=6)
     return m
 
 
@@ -567,6 +568,77 @@ def storage_chest():
     return m
 
 
+def nuclear_reactor():
+    m = Model("nuclear_reactor", "Machines")
+    m.material("concrete", (0.62, 0.62, 0.6), 0.85)
+    m.material("metal", (0.55, 0.57, 0.6), 0.4, 0.7)
+    m.material("dark", (0.16, 0.17, 0.19), 0.6, 0.3)
+    m.material("hazard", (0.95, 0.75, 0.1), 0.6)
+    m.material("glow_core", (0.35, 1.0, 0.5), 0.4)
+    m.box("concrete", (0, 0, 0.2), (4.2, 4.2, 0.4), bevel=0.05)
+    for i in range(8):
+        m.box("hazard" if i % 2 == 0 else "dark", (-1.75 + i * 0.5, -2.08, 0.25), (0.5, 0.06, 0.25))
+    m.lathe("concrete", (0, 0, 0.4), [(1.4, 0), (1.35, 1.6), (1.15, 2.4), (0.7, 2.9), (0.0, 3.05)], seg=20)
+    m.cyl("glow_core", (0, 0, 1.25), 1.43, 1.43, 0.28, seg=20)
+    m.cyl("metal", (0, 0, 3.5), 0.18, 0.18, 0.5, seg=10)
+    for sx in (-1, 1):
+        m.lathe("concrete", (sx * 1.6, 1.3, 0.4), [(0.55, 0), (0.4, 1.0), (0.45, 2.0), (0.5, 2.1)], seg=14)
+        m.tube("metal", (sx * 0.9, 0.7, 1.0), (sx * 1.3, 1.1, 1.6), 0.12, 0.12, seg=8)
+    m.box("dark", (1.6, -1.3, 0.9), (0.6, 0.5, 1.0), bevel=0.05)
+    m.box("glow_core", (1.6, -1.56, 1.1), (0.3, 0.02, 0.15))
+    return m
+
+
+def wreck_pod():
+    m = Model("wreck_pod", "Props")
+    m.material("hull", (0.55, 0.56, 0.6), 0.5, 0.6)
+    m.material("scorch", (0.12, 0.11, 0.1), 0.95)
+    m.material("panel", (0.85, 0.42, 0.12), 0.6)
+    m.material("glow_light", (1.0, 0.35, 0.2), 0.4)
+    lay = T(0, 0, 0.9) @ R(78, 0, 18)
+    m.lathe("hull", (0, 0, -3.0), [(0.0, -0.2), (0.9, 0.2), (1.35, 1.0), (1.45, 3.5), (1.2, 5.2), (0.6, 5.8), (0.0, 5.9)],
+            seg=16, base=lay)
+    m.lathe("scorch", (0, 0, -3.25), [(0.0, 0), (1.0, 0.2), (1.1, 0.5), (0.0, 0.55)], seg=16, base=lay)
+    for i in range(3):
+        a = i * 120
+        m.box("hull", (0, 0, 0), (0.08, 1.4, 1.3), base=lay @ R(0, 0, a) @ T(1.3, 0, -2.0), taper=(1.0, 0.4))
+    m.box("panel", (0, 0, 0), (1.6, 0.06, 1.0), base=lay @ T(0, -1.42, 0.8))
+    m.box("scorch", (0, 0, 0), (0.9, 0.08, 0.7), base=lay @ T(0.4, -1.44, 2.0))
+    m.blob("glow_light", (0, 0, 0), (0.12, 0.12, 0.12), sub=1, noise=0, seed=1, base=lay @ T(0, -1.4, 2.8))
+    rng = random.Random(77)
+    for i in range(7):
+        a = rng.uniform(0, 6.28)
+        r = rng.uniform(2.5, 5.0)
+        m.box("hull" if i % 2 else "scorch", (math.cos(a) * r, math.sin(a) * r, 0.08),
+              (rng.uniform(0.4, 1.1), rng.uniform(0.3, 0.8), 0.06), rot=(rng.uniform(-15, 15), rng.uniform(-15, 15), rng.uniform(0, 360)))
+    return m
+
+
+def chip_crate():
+    m = Model("chip_crate", "Props")
+    m.material("case", (0.25, 0.27, 0.3), 0.5, 0.5)
+    m.material("accent", (0.9, 0.5, 0.12), 0.6)
+    m.material("glow_chip", (0.3, 0.9, 1.0), 0.4)
+    m.box("case", (0, 0, 0.25), (0.8, 0.55, 0.5), bevel=0.04)
+    m.box("accent", (0, 0, 0.42), (0.82, 0.57, 0.06))
+    m.box("glow_chip", (0, 0, 0.52), (0.34, 0.24, 0.04))
+    m.box("case", (0, 0, 0.55), (0.22, 0.14, 0.03))
+    return m
+
+
+def log_terminal():
+    m = Model("log_terminal", "Props")
+    m.material("metal", (0.4, 0.42, 0.46), 0.5, 0.5)
+    m.material("dark", (0.12, 0.13, 0.15), 0.6, 0.3)
+    m.material("glow_screen", (0.45, 0.95, 0.75), 0.4)
+    m.box("dark", (0, 0, 0.08), (0.9, 0.7, 0.16), bevel=0.03)
+    m.box("metal", (0, 0, 0.6), (0.3, 0.3, 1.0), bevel=0.04)
+    tilt = T(0, 0.05, 1.2) @ R(-30, 0, 0)
+    m.box("dark", (0, 0, 0), (0.85, 0.12, 0.6), bevel=0.03, base=tilt)
+    m.box("glow_screen", (0, 0, 0), (0.72, 0.02, 0.48), base=tilt @ T(0, 0.065, 0))
+    return m
+
+
 # =============================================================================
 BUILDERS = {
     "tree_broad_0": lambda: tree_broad(0), "tree_broad_1": lambda: tree_broad(1), "tree_broad_2": lambda: tree_broad(2),
@@ -580,6 +652,9 @@ BUILDERS = {
     "base_module": base_module, "wind_turbine": wind_turbine, "heater": heater, "drill": drill,
     "vegetube": vegetube, "solar_panel": solar_panel, "algae_farm": algae_farm,
     "storage_chest": storage_chest,
+    "nuclear_reactor": nuclear_reactor,
+    "ore_uranium": lambda: crystals("ore_uranium", (0.25, 0.9, 0.35), (0.6, 1.0, 0.6), 0.3, 0.2, 43, glow=True),
+    "wreck_pod": wreck_pod, "chip_crate": chip_crate, "log_terminal": log_terminal,
 }
 
 

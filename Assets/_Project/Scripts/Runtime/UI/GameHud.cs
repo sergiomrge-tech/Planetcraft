@@ -38,8 +38,10 @@ namespace Planetcraft.UI
             public Label value;
         }
 
-        VisualElement menu, banner, flash, chestColumn, craftColumn, buildColumn;
-        VisualElement invList, craftList, buildList, chestList;
+        VisualElement menu, banner, flash, chestColumn, craftColumn, buildColumn, logsColumn, logPanel;
+        VisualElement invList, craftList, buildList, chestList, logsList;
+        Label logTitle, logBody;
+        int logOpenedFrame = -1;
         Label tiLabel, stageLabel, detailLabel, prompt, toast, bannerTitle, bannerSubtitle, bannerBody;
         Meter progress, oxygen, water, food;
         InventoryComponent openChest;
@@ -52,6 +54,7 @@ namespace Planetcraft.UI
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            Blueprints.Unlocked -= OnBlueprintUnlocked;
             if (survival != null) survival.Died -= OnDied;
             if (TerraformManager.Instance != null) TerraformManager.Instance.TiChanged -= OnTiChanged;
         }
@@ -62,7 +65,10 @@ namespace Planetcraft.UI
             inventory.Inventory.Changed += MarkMenuDirty;
             if (survival != null) survival.Died += OnDied;
             if (TerraformManager.Instance != null) TerraformManager.Instance.TiChanged += OnTiChanged;
+            Blueprints.Unlocked += OnBlueprintUnlocked;
         }
+
+        void OnBlueprintUnlocked(string _) => MarkMenuDirty();
 
         void OnDied() => ShowToast("Você desmaiou e acordou no ponto inicial.", 5f);
         void OnTiChanged(double _) => MarkMenuDirty();
@@ -88,6 +94,25 @@ namespace Planetcraft.UI
             openChest = chest;
             openChest.Inventory.Changed += MarkMenuDirty;
             ToggleMenu(true);
+        }
+
+        public void ShowLog(StoryLog log)
+        {
+            if (log == null) return;
+            if (UIState.MenuOpen) ToggleMenu(false);
+            logTitle.text = log.title;
+            logBody.text = log.body;
+            logPanel.style.display = DisplayStyle.Flex;
+            UIState.MenuOpen = true;
+            logOpenedFrame = Time.frameCount;
+        }
+
+        bool LogOpen => logPanel != null && logPanel.style.display == DisplayStyle.Flex;
+
+        void CloseLog()
+        {
+            logPanel.style.display = DisplayStyle.None;
+            UIState.MenuOpen = false;
         }
 
         public void ShowToast(string message, float seconds = 3f)
@@ -119,7 +144,14 @@ namespace Planetcraft.UI
         {
             if (menu == null) return;
             var kb = Keyboard.current;
-            if (kb != null)
+            if (kb != null && LogOpen)
+            {
+                // O mesmo E que abriu o registro não pode fechá-lo no mesmo frame.
+                if (Time.frameCount > logOpenedFrame &&
+                    (kb.eKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame || kb.tabKey.wasPressedThisFrame))
+                    CloseLog();
+            }
+            else if (kb != null)
             {
                 if (kb.tabKey.wasPressedThisFrame) ToggleMenu(!UIState.MenuOpen);
                 else if (UIState.MenuOpen && kb.escapeKey.wasPressedThisFrame) ToggleMenu(false);
@@ -211,6 +243,7 @@ namespace Planetcraft.UI
             craftColumn.style.display = chestMode ? DisplayStyle.None : DisplayStyle.Flex;
             buildColumn.style.display = chestMode ? DisplayStyle.None : DisplayStyle.Flex;
             chestColumn.style.display = chestMode ? DisplayStyle.Flex : DisplayStyle.None;
+            logsColumn.style.display = chestMode ? DisplayStyle.None : DisplayStyle.Flex;
 
             invList.Clear();
             FillInventory(invList, inv, slot =>
@@ -234,9 +267,9 @@ namespace Planetcraft.UI
             foreach (var r in database.recipes)
             {
                 if (r == null || r.output == null) continue;
-                if (ti < r.requiredTi)
+                if (!r.IsUnlocked(ti))
                 {
-                    craftList.Add(MakeLabel($"{r.output.displayName}  (requer {TiFormat.Format(r.requiredTi)})", 13, Muted));
+                    craftList.Add(MakeLabel($"{r.output.displayName}  ({LockReason(r.requiredTi, r.blueprintId, ti)})", 13, Muted));
                     continue;
                 }
                 var card = Card(r.output.displayName, CostText(r.ingredients));
@@ -251,9 +284,9 @@ namespace Planetcraft.UI
             foreach (var b in database.buildables)
             {
                 if (b == null) continue;
-                if (ti < b.requiredTi)
+                if (!b.IsUnlocked(ti))
                 {
-                    buildList.Add(MakeLabel($"{b.displayName}  (requer {TiFormat.Format(b.requiredTi)})", 13, Muted));
+                    buildList.Add(MakeLabel($"{b.displayName}  ({LockReason(b.requiredTi, b.blueprintId, ti)})", 13, Muted));
                     continue;
                 }
                 var card = Card(b.displayName, $"{CostText(b.cost)}\n<color=#9aa4ad>{b.description}</color>");
@@ -267,7 +300,29 @@ namespace Planetcraft.UI
                 card.Add(button);
                 buildList.Add(card);
             }
+
+            logsList.Clear();
+            bool anyLog = false;
+            foreach (var log in database.logs)
+            {
+                if (log == null || !StoryLogs.IsRead(log.id)) continue;
+                anyLog = true;
+                var row = Row();
+                row.style.justifyContent = Justify.SpaceBetween;
+                row.style.marginBottom = 4;
+                var name = MakeLabel(log.title, 14);
+                name.style.flexGrow = 1;
+                name.style.whiteSpace = WhiteSpace.Normal;
+                row.Add(name);
+                var entry = log;
+                row.Add(MakeButton("Ler", () => ShowLog(entry)));
+                logsList.Add(row);
+            }
+            if (!anyLog) logsList.Add(MakeLabel("Nenhum registro encontrado.\nProcure destroços: os faróis marcam onde estão.", 13, Muted));
         }
+
+        static string LockReason(double requiredTi, string blueprintId, double ti) =>
+            !Blueprints.Has(blueprintId) ? "requer microchip de destroço" : $"requer {TiFormat.Format(requiredTi)}";
 
         void FillInventory(VisualElement list, Inventory inv, System.Func<Inventory.Slot, Button> action)
         {
@@ -396,11 +451,43 @@ namespace Planetcraft.UI
             craftColumn = Column("Fabricar", out craftList, out _);
             buildColumn = Column("Construir", out buildList, out _);
             chestColumn = Column("Baú", out chestList, out _);
+            logsColumn = Column("Registros", out logsList, out _);
+            logsColumn.style.width = 280;
             columns.Add(craftColumn);
             columns.Add(buildColumn);
             columns.Add(chestColumn);
+            columns.Add(logsColumn);
             menu.style.display = DisplayStyle.None;
             root.Add(menu);
+
+            // Leitor de registros
+            logPanel = FullScreen();
+            logPanel.pickingMode = PickingMode.Position;
+            logPanel.style.backgroundColor = new Color(0f, 0f, 0f, 0.55f);
+            logPanel.style.alignItems = Align.Center;
+            logPanel.style.justifyContent = Justify.Center;
+            var sheet = Panel();
+            sheet.style.width = 760;
+            sheet.style.maxHeight = new Length(80, LengthUnit.Percent);
+            sheet.style.borderLeftWidth = 3;
+            sheet.style.borderLeftColor = new Color(0.45f, 0.95f, 0.75f);
+            sheet.Add(MakeLabel("REGISTRO RECUPERADO", 12, new Color(0.45f, 0.95f, 0.75f), bold: true));
+            logTitle = MakeLabel("", 24, Color.white, bold: true);
+            logTitle.style.marginBottom = 10;
+            sheet.Add(logTitle);
+            var bodyScroll = new ScrollView(ScrollViewMode.Vertical);
+            bodyScroll.style.flexShrink = 1;
+            logBody = MakeLabel("", 16, new Color(0.88f, 0.9f, 0.92f));
+            logBody.style.whiteSpace = WhiteSpace.Normal;
+            bodyScroll.Add(logBody);
+            sheet.Add(bodyScroll);
+            var close = MakeButton("Fechar  [E / Esc]", CloseLog);
+            close.style.alignSelf = Align.FlexEnd;
+            close.style.marginTop = 10;
+            sheet.Add(close);
+            logPanel.Add(sheet);
+            logPanel.style.display = DisplayStyle.None;
+            root.Add(logPanel);
         }
 
         VisualElement Column(string title, out VisualElement list, out Label titleLabel)

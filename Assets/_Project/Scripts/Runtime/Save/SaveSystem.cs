@@ -79,6 +79,8 @@ namespace Planetcraft.Save
             }
 
             data.collectedNodes.AddRange(ResourceNode.CollectedIds);
+            data.blueprints.AddRange(Blueprints.All);
+            data.logsRead.AddRange(StoryLogs.All);
             File.WriteAllText(FilePath, JsonUtility.ToJson(data, true));
             Notify("Jogo salvo");
         }
@@ -102,6 +104,8 @@ namespace Planetcraft.Save
 
         void Apply(SaveData data)
         {
+            Blueprints.Restore(data.blueprints);
+            StoryLogs.Restore(data.logsRead);
             if (data.terraform != null) TerraformManager.Instance.SetValues(data.terraform);
 
             ReadSlots(data.inventory, playerInventory.Inventory);

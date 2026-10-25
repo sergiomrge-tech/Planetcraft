@@ -1,3 +1,4 @@
+using Planetcraft.Core;
 using Planetcraft.Items;
 using UnityEngine;
 
@@ -12,6 +13,10 @@ namespace Planetcraft.Crafting
         [Min(1)] public int outputAmount = 1;
         [Tooltip("Ti mínimo para desbloquear a receita.")]
         public double requiredTi;
+        [Tooltip("Projeto obtido com microchip de destroço. Vazio = não precisa.")]
+        public string blueprintId;
+
+        public bool IsUnlocked(double ti) => ti >= requiredTi && Blueprints.Has(blueprintId);
     }
 
     public static class CraftingService

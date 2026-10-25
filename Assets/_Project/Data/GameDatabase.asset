@@ -22,11 +22,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8df24d248906dc54ab5dafb5a1719455, type: 2}
   - {fileID: 11400000, guid: 37147624ef6608e41b14f43b8f53d748, type: 2}
   - {fileID: 11400000, guid: 2ebf10a21cafb27458949ef86328ae7e, type: 2}
+  - {fileID: 11400000, guid: 1be6f13bc6bce4f478a07c985b315de6, type: 2}
+  - {fileID: 11400000, guid: 7278e3a987e755a4b9dd4e884297c62f, type: 2}
   recipes:
   - {fileID: 11400000, guid: a36d199561e581b4f93ef8da32dd7963, type: 2}
   - {fileID: 11400000, guid: 420697a94957efc4f91de703a27ab180, type: 2}
   - {fileID: 11400000, guid: a0dbe9df5524f764b8eb86f4fe3c8b4a, type: 2}
   - {fileID: 11400000, guid: b678bcc44f2c4ed4b87b6dce6a0d2343, type: 2}
+  - {fileID: 11400000, guid: f9c674d3c3a053846bc4f53ae87f5f12, type: 2}
   buildables:
   - {fileID: 11400000, guid: fc31631a87bb89a4a87b99c35c031151, type: 2}
   - {fileID: 11400000, guid: ade840a34baf2354ebc51c3d1620d771, type: 2}
@@ -39,3 +42,13 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 20f126fa420350c409143ff5c82b80e3, type: 2}
   - {fileID: 11400000, guid: dff3b87ded5fefb4899c8b7c7ad57ccf, type: 2}
   - {fileID: 11400000, guid: 48a11405a83ee654685af691c52a4061, type: 2}
+  - {fileID: 11400000, guid: 8c3beab109439a544b1e6c6d99b931b7, type: 2}
+  - {fileID: 11400000, guid: 9bc7e12d779b76f4380c1ee1e67c55ef, type: 2}
+  - {fileID: 11400000, guid: 3d4c5b3180ab5734b932333f38ec0114, type: 2}
+  - {fileID: 11400000, guid: 02123488a6acaa146bfb062c61eb06a2, type: 2}
+  logs:
+  - {fileID: 11400000, guid: c89616d26fa3e2f47a2dc17cd6fb6a41, type: 2}
+  - {fileID: 11400000, guid: 9d9f85cbce6ee3a47bc4ae503f59df49, type: 2}
+  - {fileID: 11400000, guid: 722512916f87e6a4f98783ca57909c3c, type: 2}
+  - {fileID: 11400000, guid: 681f94c7757e89d428c64d9f32097b05, type: 2}
+  - {fileID: 11400000, guid: 49a4ab8e16f05404b94dabf0102d643f, type: 2}

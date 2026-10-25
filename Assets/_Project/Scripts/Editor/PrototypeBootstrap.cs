@@ -39,7 +39,7 @@ namespace Planetcraft.EditorTools
         [MenuItem("Planetcraft/Gerar Protótipo")]
         public static void Build()
         {
-            foreach (var dir in new[] { DataDir + "/Stages", DataDir + "/Items", DataDir + "/Recipes", DataDir + "/Buildables", PrefabDir, MatDir, TerrainDir, SceneDir })
+            foreach (var dir in new[] { DataDir + "/Stages", DataDir + "/Items", DataDir + "/Recipes", DataDir + "/Buildables", DataDir + "/Logs", PrefabDir, MatDir, TerrainDir, SceneDir })
                 Directory.CreateDirectory(dir);
             AssetDatabase.Refresh();
 
@@ -53,6 +53,7 @@ namespace Planetcraft.EditorTools
             db.items = new List<ItemDefinition>(items.Values);
             db.recipes = recipes;
             db.buildables = buildables;
+            db.logs = CreateLogs();
             EditorUtility.SetDirty(db);
 
             BuildScene(stageDb, stages, db, items, mats);
@@ -110,6 +111,8 @@ namespace Planetcraft.EditorTools
                 ("o2_capsule", "Cápsula de O2", 5, 40, 0, 0),
                 ("water_bottle", "Garrafa d'Água", 5, 0, 35, 0),
                 ("nutrient_bar", "Barra Nutritiva", 5, 0, 0, 40),
+                ("uranium", "Urânio", 10, 0, 0, 0),
+                ("fuel_rod", "Barra de Combustível", 5, 0, 0, 0),
             };
 
             var result = new Dictionary<string, ItemDefinition>();
@@ -130,22 +133,24 @@ namespace Planetcraft.EditorTools
 
         static List<RecipeDefinition> CreateRecipes(Dictionary<string, ItemDefinition> it)
         {
-            RecipeDefinition R(string id, string output, double ti, params ItemAmount[] ingredients) =>
+            RecipeDefinition R(string id, string output, double ti, string blueprint, params ItemAmount[] ingredients) =>
                 Asset<RecipeDefinition>($"{DataDir}/Recipes/{id}.asset", a =>
                 {
                     a.id = id;
                     a.output = it[output];
                     a.outputAmount = 1;
                     a.requiredTi = ti;
+                    a.blueprintId = blueprint;
                     a.ingredients = ingredients;
                 });
 
             return new List<RecipeDefinition>
             {
-                R("o2_capsule", "o2_capsule", 0, C(it["ice"], 1), C(it["silicon"], 1)),
-                R("water_bottle", "water_bottle", 0, C(it["ice"], 1)),
-                R("nutrient_bar", "nutrient_bar", 0, C(it["ice"], 1), C(it["magnesium"], 1)),
-                R("alloy", "alloy", 300, C(it["iron"], 1), C(it["titanium"], 1), C(it["magnesium"], 1)),
+                R("o2_capsule", "o2_capsule", 0, null, C(it["ice"], 1), C(it["silicon"], 1)),
+                R("water_bottle", "water_bottle", 0, null, C(it["ice"], 1)),
+                R("nutrient_bar", "nutrient_bar", 0, null, C(it["ice"], 1), C(it["magnesium"], 1)),
+                R("alloy", "alloy", 300, null, C(it["iron"], 1), C(it["titanium"], 1), C(it["magnesium"], 1)),
+                R("fuel_rod", "fuel_rod", 50_000, "bp_nuclear", C(it["uranium"], 2), C(it["alloy"], 1)),
             };
         }
 
@@ -154,7 +159,8 @@ namespace Planetcraft.EditorTools
             var list = new List<BuildableDefinition>();
 
             void Add(string id, string name, string desc, double ti, float gen, float demand, ItemAmount[] cost,
-                TerraformRate[] rates, bool isMachine, string model, float scale = 1f, bool pressurized = false, bool storage = false)
+                TerraformRate[] rates, bool isMachine, string model, float scale = 1f, bool pressurized = false, bool storage = false,
+                string blueprint = null)
             {
                 var def = Asset<BuildableDefinition>($"{DataDir}/Buildables/{id}.asset", a =>
                 {
@@ -167,6 +173,7 @@ namespace Planetcraft.EditorTools
                     a.cost = cost;
                     a.terraformRates = rates;
                 });
+                def.blueprintId = blueprint; // projeto exigido faz parte do design: sempre sincroniza
                 // Prefab é derivado do modelo: sempre regenera para pegar mudanças do gen_models.py.
                 def.prefab = SavePrefab(def, isMachine, pressurized, model, scale, storage);
                 EditorUtility.SetDirty(def);
@@ -197,6 +204,60 @@ namespace Planetcraft.EditorTools
                 new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, "Machines/algae_farm");
             Add("heater_t3", "Aquecedor III", "Calor +400/s. Consome 15 kW.", 60_000, 0, 15f,
                 new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "Machines/heater", 2.2f);
+
+            // Tier 4: exigem microchip de destroço (blueprint) além do Ti.
+            Add("vegetube_t2", "Vegetubo II", "Oxigênio +60/s. Consome 6 kW.", 60_000, 0, 6f,
+                new[] { C(it["silicon"], 3), C(it["alloy"], 1), C(it["ice"], 2) }, Rates(TerraformParameter.Oxygen, 60), true,
+                "Machines/vegetube", 1.6f, blueprint: "bp_vegetube2");
+            Add("nuclear_reactor", "Reator Nuclear", "+80 kW. Precisa de barras de combustível para construir.", 50_000, 80f, 0,
+                new[] { C(it["alloy"], 3), C(it["titanium"], 2), C(it["fuel_rod"], 1) }, none, true,
+                "Machines/nuclear_reactor", blueprint: "bp_nuclear");
+            Add("heater_t4", "Aquecedor IV", "Calor +6000/s. Consome 40 kW.", 300_000, 0, 40f,
+                new[] { C(it["titanium"], 5), C(it["alloy"], 3), C(it["fuel_rod"], 1) }, Rates(TerraformParameter.Heat, 6000), true,
+                "Machines/heater", 3f, blueprint: "bp_heater4");
+            Add("drill_t3", "Perfuratriz III", "Pressão +3000/s. Consome 35 kW.", 300_000, 0, 35f,
+                new[] { C(it["iron"], 6), C(it["alloy"], 3), C(it["fuel_rod"], 1) }, Rates(TerraformParameter.Pressure, 3000), true,
+                "Machines/drill", 2.2f, blueprint: "bp_drill3");
+            return list;
+        }
+
+        // Registros de história encontrados nos destroços (a tabela é a fonte da verdade).
+        static List<StoryLog> CreateLogs()
+        {
+            var data = new (string id, string title, string body)[]
+            {
+                ("log_01", "Diário — Eng. Ilsa Moreau",
+                 "Dia 3 depois da queda. A Aurora se partiu na órbita e as cápsulas caíram espalhadas pelo vale.\n\n" +
+                 "O ar aqui não perdoa: cada saída é uma conta de oxigênio. Os vegetubos do compartimento de carga ainda " +
+                 "funcionam, e eu gravei neste chip a versão aprimorada que estávamos testando. Se alguém encontrar isto, " +
+                 "plante. Plante muito."),
+                ("log_02", "Relatório técnico — Reator KR-4",
+                 "O reator compacto KR-4 sobreviveu ao impacto. Ele roda com barras de urânio refinado misturado com liga " +
+                 "metálica.\n\nOs veios verdes que brilham perto das crateras são urânio exposto pela queda das cápsulas. " +
+                 "Cuidado ao coletar. O projeto completo do reator está no chip deste módulo."),
+                ("log_03", "Comandante Raul Tavares",
+                 "Ninguém nos mandou aqui para sobreviver. Mandaram para preparar o planeta.\n\nA nave-mãe Gênese está " +
+                 "parada além do cinturão, com quarenta mil colonos em criossono. Ela só desce quando a atmosfera aguentar " +
+                 "vida sem capacete. Até lá, cada aquecedor e cada perfuratriz que ligarmos é um passo deles."),
+                ("log_04", "IA de bordo — MAIA",
+                 "Registro automático. Detecto atividade de terraformação na superfície, de origem desconhecida.\n\n" +
+                 "Atualizando projeções: com perfuratrizes de alta pressão o índice cresce em ordens de grandeza. " +
+                 "Projeto anexado ao chip. Esperança: recalculando... valor positivo."),
+                ("log_05", "Última transmissão — Dra. Nadia Okoro",
+                 "Liberei o banco genético antes de perdermos energia. Sementes, insetos, animais: tudo em estase no fundo " +
+                 "do vale.\n\nQuando o planeta respirar sozinho, eles acordam. Você vai saber que deu certo quando ouvir " +
+                 "algo correndo entre as árvores."),
+            };
+            var list = new List<StoryLog>();
+            foreach (var d in data)
+            {
+                var log = Asset<StoryLog>($"{DataDir}/Logs/{d.id}.asset", a => { });
+                log.id = d.id;
+                log.title = d.title;
+                log.body = d.body;
+                EditorUtility.SetDirty(log);
+                list.Add(log);
+            }
             return list;
         }
 
@@ -279,6 +340,13 @@ namespace Planetcraft.EditorTools
             settings.match = 0.5f;
             EditorUtility.SetDirty(settings);
             return settings;
+        }
+
+        static void SnapToGround(Transform t, Terrain terrain)
+        {
+            var p = t.position;
+            p.y = terrain.SampleHeight(p) + terrain.transform.position.y;
+            t.position = p;
         }
 
         static GameObject Scaled(GameObject go, float scale)
@@ -422,6 +490,66 @@ namespace Planetcraft.EditorTools
                 node.transform.SetPositionAndRotation(pos - Vector3.up * 0.05f, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
                 Scaled(Model("Ore/ore_" + kind.item, node.transform), 0.8f + (float)rng.NextDouble() * 0.4f);
                 node.AddComponent<ResourceNode>().EditorSetup($"node_{i}", items[kind.item], 1);
+            }
+
+            // Destroços da expedição Aurora: farol, registro, microchip e urânio em volta.
+            var wrecks = new GameObject("Destroços");
+            var sites = new (float angle, float radius, string blueprint, string label)[]
+            {
+                (22f, 186f, "bp_vegetube2", "Vegetubo II"),
+                (95f, 196f, "bp_nuclear", "Reator Nuclear"),
+                (165f, 184f, "bp_heater4", "Aquecedor IV"),
+                (238f, 192f, "bp_drill3", "Perfuratriz III"),
+                (308f, 200f, null, null),
+            };
+            var beaconMat = m.Emissive("Beacon", new Color(0.4f, 0.9f, 1f));
+            for (int s = 0; s < sites.Length; s++)
+            {
+                float a = sites[s].angle * Mathf.Deg2Rad;
+                var pos = center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * sites[s].radius;
+                pos.y = terrain.SampleHeight(pos);
+                var site = new GameObject($"Destroço_{s + 1}");
+                site.transform.SetParent(wrecks.transform, false);
+                site.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
+                Model("Props/wreck_pod", site.transform);
+
+                var beacon = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                beacon.name = "Farol";
+                Object.DestroyImmediate(beacon.GetComponent<Collider>());
+                beacon.transform.SetParent(site.transform, false);
+                beacon.transform.localPosition = new Vector3(0f, 60f, 0f);
+                beacon.transform.localScale = new Vector3(0.35f, 60f, 0.35f);
+                var beaconRenderer = beacon.GetComponent<Renderer>();
+                beaconRenderer.sharedMaterial = beaconMat;
+                beaconRenderer.shadowCastingMode = ShadowCastingMode.Off;
+
+                var terminal = Model("Props/log_terminal", site.transform);
+                terminal.transform.localPosition = new Vector3(3.5f, 0f, -2.5f);
+                terminal.transform.localRotation = Quaternion.Euler(0f, 200f, 0f);
+                SnapToGround(terminal.transform, terrain);
+                terminal.AddComponent<LogTerminal>().EditorSetup(db.logs[s]);
+
+                if (sites[s].blueprint != null)
+                {
+                    var chip = new GameObject("Microchip");
+                    chip.transform.SetParent(site.transform, false);
+                    chip.transform.localPosition = new Vector3(-3f, 0f, 2f);
+                    SnapToGround(chip.transform, terrain);
+                    Model("Props/chip_crate", chip.transform);
+                    chip.AddComponent<ChipPickup>().EditorSetup(sites[s].blueprint, sites[s].label, new[] { beacon });
+                }
+
+                for (int i = 0; i < 4; i++)
+                {
+                    float na = i * Mathf.PI / 2f + (float)rng.NextDouble() * 0.6f;
+                    var np = pos + new Vector3(Mathf.Cos(na), 0f, Mathf.Sin(na)) * (6f + (float)rng.NextDouble() * 5f);
+                    np.y = terrain.SampleHeight(np) - 0.05f;
+                    var node = new GameObject("Nó_uranium");
+                    node.transform.SetParent(site.transform, true);
+                    node.transform.SetPositionAndRotation(np, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
+                    Scaled(Model("Ore/ore_uranium", node.transform), 0.9f);
+                    node.AddComponent<ResourceNode>().EditorSetup($"node_wreck_{s}_{i}", items["uranium"], 1);
+                }
             }
 
             // Jogador

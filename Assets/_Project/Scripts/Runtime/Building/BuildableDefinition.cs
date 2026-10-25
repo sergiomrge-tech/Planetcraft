@@ -14,6 +14,10 @@ namespace Planetcraft.Building
         public GameObject prefab;
         public ItemAmount[] cost;
         public double requiredTi;
+        [Tooltip("Projeto obtido com microchip de destroço. Vazio = não precisa.")]
+        public string blueprintId;
+
+        public bool IsUnlocked(double ti) => ti >= requiredTi && Blueprints.Has(blueprintId);
 
         [Header("Máquina")]
         [Min(0f)] public float powerGeneration;

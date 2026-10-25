@@ -86,6 +86,11 @@ namespace Planetcraft.Building
                 reason = $"Requer {TiFormat.Format(selected.requiredTi)}";
                 return false;
             }
+            if (!Blueprints.Has(selected.blueprintId))
+            {
+                reason = "Requer microchip de destroço";
+                return false;
+            }
             if (hit.normal.y < minGroundNormalY)
             {
                 reason = "Terreno muito inclinado";

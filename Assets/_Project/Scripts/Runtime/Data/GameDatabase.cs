@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Planetcraft.Building;
+using Planetcraft.Core;
 using Planetcraft.Crafting;
 using Planetcraft.Items;
 using UnityEngine;
@@ -14,6 +15,7 @@ namespace Planetcraft.Data
         public List<ItemDefinition> items = new();
         public List<RecipeDefinition> recipes = new();
         public List<BuildableDefinition> buildables = new();
+        public List<StoryLog> logs = new();
 
         Dictionary<string, ItemDefinition> itemById;
         Dictionary<string, BuildableDefinition> buildableById;

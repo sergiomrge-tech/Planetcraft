@@ -15,11 +15,14 @@ namespace Planetcraft.EditorTools
         // Depois do pré-processador de materiais do próprio URP.
         public override int GetPostprocessOrder() => 100;
 
+        // Incrementar quando mudar a conversão: força o Unity a reimportar os modelos.
+        public override uint GetVersion() => 2;
+
         void OnPreprocessModel()
         {
             if (!assetPath.StartsWith(ModelRoot)) return;
             var importer = (ModelImporter)assetImporter;
-            importer.addCollider = assetPath.Contains("/Machines/") || assetPath.Contains("/Ore/");
+            importer.addCollider = assetPath.Contains("/Machines/") || assetPath.Contains("/Ore/") || assetPath.Contains("/Props/");
             importer.importAnimation = false;
             importer.importCameras = false;
             importer.importLights = false;
@@ -45,7 +48,8 @@ namespace Planetcraft.EditorTools
             if (name.StartsWith("glow_"))
             {
                 material.EnableKeyword("_EMISSION");
-                material.SetColor("_EmissionColor", color * 2.5f);
+                // Acima de ~1x a cor estoura para branco sem tonemapping; o brilho vem da própria cor.
+                material.SetColor("_EmissionColor", color * 0.9f);
                 material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             }
             else if (name.StartsWith("glass_"))

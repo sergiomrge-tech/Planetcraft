@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d05df1c84e3d59143983b32ed329f720, type: 3}
+  m_Name: drill_t3
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
+  id: drill_t3
+  displayName: Perfuratriz III
+  description: "Press\xE3o +3000/s. Consome 35 kW."
+  prefab: {fileID: 3336327828256841048, guid: 1c1390843b19b5c4194be5339d65702c, type: 3}
+  cost:
+  - item: {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
+    amount: 6
+  - item: {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}
+    amount: 3
+  - item: {fileID: 11400000, guid: 7278e3a987e755a4b9dd4e884297c62f, type: 2}
+    amount: 1
+  requiredTi: 300000
+  blueprintId: bp_drill3
+  powerGeneration: 0
+  powerDemand: 35
+  terraformRates:
+  - parameter: 2
+    perSecond: 3000

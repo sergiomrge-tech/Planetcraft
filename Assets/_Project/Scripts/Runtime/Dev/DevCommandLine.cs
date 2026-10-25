@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Globalization;
+using System.Linq;
 using Planetcraft.Building;
 using Planetcraft.Core;
 using Planetcraft.Data;
@@ -36,6 +37,19 @@ namespace Planetcraft.Dev
             if (player != null && TryNumber(args, "-pc-pitch", out double pitch)) player.SetPitch((float)pitch);
             if (player != null && TryNumber(args, "-pc-yaw", out double startYaw)) player.Teleport(player.transform.position, (float)startYaw);
             if (HasFlag(args, "-pc-showcase")) Showcase();
+            if (HasFlag(args, "-pc-unlock-all") && database != null)
+            {
+                foreach (var b in database.buildables) if (b != null) Blueprints.Unlock(b.blueprintId);
+                foreach (var r in database.recipes) if (r != null) Blueprints.Unlock(r.blueprintId);
+            }
+            if (player != null && TryNumber(args, "-pc-wreck", out double wreckIndex)) GoToWreck((int)wreckIndex);
+            if (TryNumber(args, "-pc-log", out double logIndex) && database != null && database.logs.Count > 0)
+            {
+                yield return null;
+                var log = database.logs[Mathf.Clamp((int)logIndex, 0, database.logs.Count - 1)];
+                StoryLogs.MarkRead(log.id);
+                if (GameHud.Instance != null) GameHud.Instance.ShowLog(log);
+            }
             if (HasFlag(args, "-pc-menu"))
             {
                 yield return null; // deixa o HUD montar a UI
@@ -55,6 +69,22 @@ namespace Planetcraft.Dev
             ScreenCapture.CaptureScreenshot(shot);
             yield return new WaitForSecondsRealtime(1f);
             Application.Quit();
+        }
+
+        // Coloca o jogador a ~14 m do destroço n (ordem dos terminais de registro), olhando para ele.
+        void GoToWreck(int index)
+        {
+            var terminals = FindObjectsByType<LogTerminal>(FindObjectsSortMode.None)
+                .OrderBy(t => t.transform.parent != null ? t.transform.parent.name : t.name).ToArray();
+            var terrain = Terrain.activeTerrain;
+            if (terminals.Length == 0 || terrain == null) return;
+            var site = terminals[Mathf.Clamp(index, 0, terminals.Length - 1)].transform.parent ?? terminals[0].transform;
+            var target = site.position;
+            var dir = new Vector3(target.x - 250f, 0f, target.z - 250f).normalized; // aproxima pelo lado do vale
+            var pos = target - dir * 14f;
+            pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y + 0.2f;
+            var look = target - pos;
+            player.Teleport(pos, Mathf.Atan2(look.x, look.z) * Mathf.Rad2Deg);
         }
 
         // Constrói uma de cada construção num arco à frente do jogador, viradas para ele.

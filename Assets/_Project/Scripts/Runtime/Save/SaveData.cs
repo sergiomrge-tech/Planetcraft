@@ -14,6 +14,8 @@ namespace Planetcraft.Save
         public List<SlotData> inventory = new();
         public List<PlacedData> placed = new();
         public List<string> collectedNodes = new();
+        public List<string> blueprints = new();
+        public List<string> logsRead = new();
         public Vector3 playerPosition;
         public float playerYaw;
         public float oxygen;

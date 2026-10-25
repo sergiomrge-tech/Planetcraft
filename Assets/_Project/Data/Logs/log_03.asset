@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70b01dfe29c224549b8108c490d73eff, type: 3}
+  m_Name: log_03
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
+  id: log_03
+  title: Comandante Raul Tavares
+  body: "Ningu\xE9m nos mandou aqui para sobreviver. Mandaram para preparar o planeta.\n\nA nave-m\xE3e G\xEAnese est\xE1 parada al\xE9m do cintur\xE3o, com quarenta mil colonos em criossono. Ela s\xF3 desce quando a atmosfera aguentar vida sem capacete. At\xE9 l\xE1, cada aquecedor e cada perfuratriz que ligarmos \xE9 um passo deles."
