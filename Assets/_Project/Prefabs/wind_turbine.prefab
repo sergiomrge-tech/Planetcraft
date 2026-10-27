@@ -60,7 +60,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d75d210e89d59644b29a239c9e66475, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Machine
-  runningIndicator: {fileID: 0}
+  runningIndicator: {fileID: 7814704133975251690}
 --- !u!1001 &1905897359760099197
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -145,3 +145,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.World.Spinner
   axis: {x: 0, y: 0, z: 1}
   degreesPerSecond: 90
+--- !u!1 &7814704133975251690 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8502923143630036375, guid: b4b41090085745c478d91c74efb04e11, type: 3}
+  m_PrefabInstance: {fileID: 1905897359760099197}
+  m_PrefabAsset: {fileID: 0}

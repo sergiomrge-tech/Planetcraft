@@ -486,12 +486,12 @@ namespace Planetcraft.EditorTools
         {
             var surface = Sphere(scorched ? "TerraQueimada" : "Terra", center, radius);
             surface.GetComponent<Renderer>().sharedMaterial = EarthMaterial(scorched ? "EarthScorched" : "EarthAlive",
-                $"{NasaDir}/earth_4096.jpg", scorched ? new Color(0.78f, 0.5f, 0.34f) : new Color(0.85f, 0.9f, 1f), 0.25f, false);
+                $"{NasaDir}/earth_4096.jpg", scorched ? new Color(0.78f, 0.5f, 0.34f) : new Color(1f, 1.04f, 1.1f), 0.25f, false);
             surface.transform.rotation = Quaternion.Euler(0f, 0f, 23f);
             var clouds = Sphere("Nuvens", center, radius * 1.006f);
             clouds.transform.SetParent(surface.transform, true);
             clouds.GetComponent<Renderer>().sharedMaterial = EarthMaterial(scorched ? "EarthDust" : "EarthClouds",
-                $"{NasaDir}/clouds_2048.png", scorched ? new Color(0.72f, 0.58f, 0.45f, 0.85f) : new Color(1f, 1f, 1f, 0.6f), 0.1f, true);
+                $"{NasaDir}/clouds_2048.png", scorched ? new Color(0.72f, 0.58f, 0.45f, 0.85f) : new Color(1f, 1f, 1f, 0.45f), 0.1f, true);
         }
 
         static GameObject Sphere(string name, Vector3 center, float radius)

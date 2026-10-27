@@ -35,7 +35,7 @@ def main():
     gray = Image.open(os.path.join(SRC, "clouds_2048.jpg")).convert("L")
     clouds = Image.new("RGBA", gray.size, (255, 255, 255, 0))
     # Gama na transparência: só as nuvens densas ficam opacas; a névoa fina não esconde os oceanos.
-    clouds.putalpha(gray.point(lambda v: int(255 * (v / 255) ** 2.2)))
+    clouds.putalpha(gray.point(lambda v: int(255 * (v / 255) ** 3.0)))
     clouds.save(os.path.join(DST, "clouds_2048.png"))
     print("ok:", os.listdir(DST))
 
