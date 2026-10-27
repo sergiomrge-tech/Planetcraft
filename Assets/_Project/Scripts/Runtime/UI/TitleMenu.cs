@@ -33,6 +33,8 @@ namespace Planetcraft.UI
             }
 
             BuildUi(GetComponent<UIDocument>().rootVisualElement);
+            // Foco inicial no primeiro botão: com controle, o direcional navega e A confirma.
+            buttons.Q<Button>()?.Focus();
             if (Array.IndexOf(args, "-pc-title-options") >= 0) ShowOptions(true);
 
             // Captura automática da própria tela de título.

@@ -86,6 +86,7 @@ namespace Planetcraft.EditorTools
         {
             var profile = LoadOrCreate(AtmospherePath, out bool created);
             EnsureFoliageProfile(profile);
+            EnsureGroundingEffects(profile);
             if (!created) return profile;
 
             var env = Add<VisualEnvironment>(profile);
@@ -141,6 +142,43 @@ namespace Planetcraft.EditorTools
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();
             return profile;
+        }
+
+        // Efeitos que "assentam" os objetos no mundo: reflexos em espaço de tela (água e metal), sombras de contato
+        // para frestas e pés de máquinas, micro-sombras dos normal maps e uma vinheta leve. Adiciona o que faltar.
+        static void EnsureGroundingEffects(VolumeProfile profile)
+        {
+            bool changed = false;
+            if (!profile.Has<ScreenSpaceReflection>())
+            {
+                var ssr = Add<ScreenSpaceReflection>(profile);
+                ssr.enabled.Override(true);
+                ssr.enabledTransparent.Override(true);
+                changed = true;
+            }
+            if (!profile.Has<ContactShadows>())
+            {
+                var contact = Add<ContactShadows>(profile);
+                contact.enable.Override(true);
+                contact.length.Override(0.25f);
+                contact.maxDistance.Override(60f);
+                changed = true;
+            }
+            if (!profile.Has<MicroShadowing>())
+            {
+                Add<MicroShadowing>(profile).enable.Override(true);
+                changed = true;
+            }
+            if (!profile.Has<Vignette>())
+            {
+                var vignette = Add<Vignette>(profile);
+                vignette.intensity.Override(0.22f);
+                vignette.smoothness.Override(0.6f);
+                changed = true;
+            }
+            if (!changed) return;
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssets();
         }
 
         // As folhas translúcidas (PolyHavenMaterials) usam o perfil Foliage; ele precisa estar na lista da cena.

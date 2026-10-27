@@ -157,6 +157,7 @@ namespace Planetcraft.UI
             pausePanel.style.display = paused ? DisplayStyle.Flex : DisplayStyle.None;
             ShowPauseOptions(false);
             Time.timeScale = paused ? 0f : 1f;
+            if (paused) pauseButtons.Q<Button>()?.Focus();
             UIState.MenuOpen = paused;
         }
 

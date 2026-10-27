@@ -40,7 +40,8 @@
     transition-duration: 0.12s;
 }
 
-.rte-button:hover {
+.rte-button:hover,
+.rte-button:focus {
     background-color: rgba(255, 184, 72, 0.2);
     border-color: rgb(255, 184, 72);
     color: rgb(255, 255, 255);

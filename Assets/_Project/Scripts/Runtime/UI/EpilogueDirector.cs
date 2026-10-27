@@ -94,6 +94,7 @@ namespace Planetcraft.UI
         {
             yield return new WaitForSeconds(2.5f);
             panel.style.display = DisplayStyle.Flex;
+            panel.Q<Button>()?.Focus();
             for (float f = 0f; f < 1f; f += Time.deltaTime / 1.5f)
             {
                 panel.style.opacity = f;
