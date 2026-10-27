@@ -719,12 +719,13 @@ namespace Planetcraft.EditorTools
                 piece.transform.rotation = Quaternion.Euler(0f, rng.Next(0, 360), 0f);
             }
 
-            // Fauna: herbívoros e saltadores que passeiam fora d'água
+            // Fauna (Sketchfab, CC BY): cervos pastando e lobos em bandos, fora d'água.
+            SketchfabAnimals.ClearCache();
             var fauna = new GameObject("Fauna");
             AddVegetationLayer(fauna.transform, "Herbívoros", stages["fauna"].requiredTi, stages["fauna"].requiredTi * 5, 45, rng, terrain, center,
-                (p, r) => CreateGrazer(p, r, m), minRadius: 150f, maxRadius: 220f);
-            AddVegetationLayer(fauna.transform, "Saltadores", stages["fauna"].requiredTi, stages["fauna"].requiredTi * 5, 40, rng, terrain, center,
-                (p, r) => CreateHopper(p, r, m), minRadius: 140f, maxRadius: 220f);
+                (p, r) => CreateAnimal(p, r, "Cervo", "deer", 1.75f, 1.6f, 30f, 1f), minRadius: 150f, maxRadius: 220f, clustering: 0.6f);
+            AddVegetationLayer(fauna.transform, "Lobos", stages["fauna"].requiredTi * 2, stages["fauna"].requiredTi * 6, 18, rng, terrain, center,
+                (p, r) => CreateAnimal(p, r, "Lobo", "wolf", 0.9f, 2.6f, 45f, 0.55f), minRadius: 140f, maxRadius: 225f, clustering: 0.9f);
 
             // Recursos
             var resources = new GameObject("Recursos");
@@ -924,37 +925,35 @@ namespace Planetcraft.EditorTools
             EditorSceneManager.SaveScene(scene, ScenePath);
         }
 
-        static GameObject CreateGrazer(Transform parent, System.Random r, MaterialLibrary m)
+        // Animal do Sketchfab com Animator (parado/andando); sem o modelo baixado, usa o herbívoro procedural.
+        static GameObject CreateAnimal(Transform parent, System.Random r, string label, string id, float height, float speed,
+            float wanderRadius, float moveAnimSpeed)
         {
-            var root = new GameObject("Herbívoro");
+            var root = new GameObject(label);
             root.transform.SetParent(parent, false);
-            root.transform.localScale = Vector3.one * (0.85f + (float)r.NextDouble() * 0.35f);
-            var body = FaceForward(Model("Fauna/grazer", root.transform)).transform;
-
             var wander = root.AddComponent<AnimalWander>();
             var so = new SerializedObject(wander);
-            so.FindProperty("body").objectReferenceValue = body;
-            so.FindProperty("speed").floatValue = 1.8f;
-            so.FindProperty("wanderRadius").floatValue = 30f;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            return root;
-        }
+            so.FindProperty("speed").floatValue = speed;
+            so.FindProperty("wanderRadius").floatValue = wanderRadius;
 
-        static GameObject CreateHopper(Transform parent, System.Random r, MaterialLibrary m)
-        {
-            var root = new GameObject("Saltador");
-            root.transform.SetParent(parent, false);
-            root.transform.localScale = Vector3.one * (1.1f + (float)r.NextDouble() * 0.3f);
-            var body = FaceForward(Model("Fauna/hopper", root.transform)).transform;
+            var asset = SketchfabAnimals.Model(id);
+            if (asset == null)
+            {
+                root.transform.localScale = Vector3.one * (0.85f + (float)r.NextDouble() * 0.35f);
+                so.FindProperty("body").objectReferenceValue = FaceForward(Model("Fauna/grazer", root.transform)).transform;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                return root;
+            }
 
-            var wander = root.AddComponent<AnimalWander>();
-            var so = new SerializedObject(wander);
-            so.FindProperty("body").objectReferenceValue = body;
-            so.FindProperty("hops").boolValue = true;
-            so.FindProperty("speed").floatValue = 3.2f;
-            so.FindProperty("bobHeight").floatValue = 0.1f;
-            so.FindProperty("stepFrequency").floatValue = 2.5f;
-            so.FindProperty("wanderRadius").floatValue = 15f;
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(asset, root.transform);
+            model.transform.localPosition = Vector3.zero;
+            SketchfabAnimals.FitToHeight(model, height * (0.9f + (float)r.NextDouble() * 0.2f));
+            var animator = model.GetComponent<Animator>();
+            if (animator == null) animator = model.AddComponent<Animator>();
+            animator.runtimeAnimatorController = SketchfabAnimals.Controller(id, moveAnimSpeed);
+            animator.applyRootMotion = false;
+            animator.cullingMode = AnimatorCullingMode.CullCompletely;
+            so.FindProperty("animator").objectReferenceValue = animator;
             so.ApplyModifiedPropertiesWithoutUndo();
             return root;
         }

@@ -15,7 +15,10 @@ namespace Planetcraft.World
         [SerializeField] bool hops;
         [SerializeField] float bobHeight = 0.08f;
         [SerializeField] float stepFrequency = 4f;
+        [Tooltip("Modelos animados (Sketchfab): o parâmetro bool \"Moving\" troca entre parado e andando; sem balanço procedural.")]
+        [SerializeField] Animator animator;
 
+        static readonly int MovingId = Animator.StringToHash("Moving");
         static WaterReactor water;
 
         Terrain terrain;
@@ -71,6 +74,11 @@ namespace Planetcraft.World
 
         void Animate(bool moving)
         {
+            if (animator != null)
+            {
+                animator.SetBool(MovingId, moving);
+                return;
+            }
             if (body == null) return;
             if (!moving)
             {
