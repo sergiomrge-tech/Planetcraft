@@ -385,6 +385,14 @@ namespace Planetcraft.EditorTools
                 ("power_box_01", new Vector3(-1.6f, 0.4f, -1.9f), 0f),
                 ("security_light", new Vector3(-1.6f, 1.5f, 1.15f), 0f),
             },
+            // Plantas escaneadas dentro do tubo de vidro (raio interno ~0,5 m): três andares de samambaia e um arbusto.
+            ["vegetube"] = new[]
+            {
+                ("fern_02_b", new Vector3(0f, 0.4f, 0f), 20f),
+                ("fern_02_c", new Vector3(0.05f, 0.95f, -0.03f), 110f),
+                ("fern_02_a", new Vector3(-0.04f, 1.5f, 0.04f), 200f),
+                ("shrub_02_c", new Vector3(0f, 0.4f, 0.12f), 70f),
+            },
             ["wind_turbine"] = new[] { ("utility_box_01", new Vector3(0.95f, 0.3f, 0.2f), 90f) },
             ["solar_panel"] = new[] { ("utility_box_01", new Vector3(0.75f, 0.2f, 0.1f), 90f) },
             ["algae_farm"] = new[]
@@ -413,7 +421,10 @@ namespace Planetcraft.EditorTools
             if (!Decor.TryGetValue(id, out var parts)) return;
             foreach (var (part, pos, yaw) in parts)
             {
-                var go = PhProp(part, root.transform, 1f); // com colisor: o jogador não atravessa as peças
+                bool plant = part.StartsWith("fern") || part.StartsWith("shrub");
+                // Plantas: sem colisor e em escala de vaso; as demais peças têm colisor (o jogador não as atravessa).
+                var go = plant ? PolyHaven(part, root.transform) : PhProp(part, root.transform, 1f);
+                if (plant) go.transform.localScale = Vector3.one * (part.StartsWith("fern") ? 1.5f : 0.55f);
                 go.transform.localPosition = pos;
                 go.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
             }

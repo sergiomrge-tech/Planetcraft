@@ -157,12 +157,12 @@ class Model:
         bmesh.ops.transform(tmp, matrix=T(*pos) @ R(*rot) @ S(*radii), verts=tmp.verts)
         self._emit(mat, obj, tmp, base)
 
-    def poly(self, mat, verts, faces, base=I4, obj=None):
+    def poly(self, mat, verts, faces, base=I4, obj=None, smooth=False):
         """Malha livre: lista de vértices e faces (índices). Normais recalculadas no build."""
         tmp = bmesh.new()
         vs = [tmp.verts.new(v) for v in verts]
         for f in faces:
-            tmp.faces.new([vs[i] for i in f])
+            tmp.faces.new([vs[i] for i in f]).smooth = smooth
         self._emit(mat, obj, tmp, base)
 
     def lathe(self, mat, pos, profile, seg=12, smooth=True, base=I4, obj=None, caps=True):
@@ -769,54 +769,121 @@ def indicator(m, pos):
     m.blob("glow_run", pos, (0.09, 0.09, 0.09), sub=1, noise=0, seed=1, obj="Indicator", smooth=True)
 
 
+def airfoil_blade(m, mat, length, root_chord, tip_chord, root_twist, tip_twist, thick=0.15, sections=18,
+                  base=I4, obj=None, camber=0.035, tip_mat=None, tip_from=0.9):
+    """Pá aerodinâmica: seções de perfil NACA (espessura simétrica + curvatura), corda que afina da raiz à ponta e
+    torção que gira cada seção em torno do eixo da pá. Eixo da pá = +Z, corda em X, espessura em Y."""
+    n_pts = 14
+    betas = [math.pi * k / (n_pts - 1) for k in range(n_pts)]
+    xs = [(1 - math.cos(b)) / 2 for b in betas]
+
+    def thickness(x):
+        return 5 * thick * (0.2969 * math.sqrt(x) - 0.126 * x - 0.3516 * x ** 2 + 0.2843 * x ** 3 - 0.1015 * x ** 4)
+
+    outline = [(x, thickness(x) + camber * 4 * x * (1 - x)) for x in xs] + \
+              [(x, -thickness(x) + camber * 4 * x * (1 - x)) for x in reversed(xs[1:-1])]
+    ring = len(outline)
+    verts = []
+    for s in range(sections):
+        t = s / (sections - 1)
+        # Raiz cilíndrica arredondada (primeiros 8%), depois corda máxima perto de 18% e afina até a ponta.
+        if t < 0.08:
+            chord = root_chord * (0.45 + 0.55 * t / 0.08)
+            th = 1.0 + (0.08 - t) / 0.08 * 1.8
+        else:
+            u = (t - 0.08) / 0.92
+            chord = tip_chord + (root_chord - tip_chord) * (1 - u) ** 1.7
+            th = 1.0
+        twist = math.radians(root_twist * (1 - t) ** 1.6 + tip_twist * t)
+        ct, st = math.cos(twist), math.sin(twist)
+        for (x, y) in outline:
+            px, py = (x - 0.3) * chord, y * chord * th
+            verts.append((px * ct - py * st, px * st + py * ct, t * length))
+    faces = []
+    for s in range(sections - 1):
+        for j in range(ring):
+            j2 = (j + 1) % ring
+            a, b = s * ring + j, s * ring + j2
+            faces.append((a, b, b + ring, a + ring))
+    root_cap = tuple(reversed(range(ring)))
+    tip_cap = tuple(range((sections - 1) * ring, sections * ring))
+    if tip_mat:
+        # Ponta pintada: separa as últimas seções num material próprio.
+        split = int(tip_from * (sections - 1))
+        body = [f for f in faces if f[0] // ring < split]
+        tipf = [f for f in faces if f[0] // ring >= split]
+        m.poly(mat, verts, body + [root_cap], base=base, obj=obj, smooth=True)
+        m.poly(tip_mat, verts, tipf + [tip_cap], base=base, obj=obj, smooth=True)
+    else:
+        m.poly(mat, verts, faces + [root_cap, tip_cap], base=base, obj=obj, smooth=True)
+
+
 def wind_turbine():
-    """Gerador eólico (~8 m): base de concreto com parafusos, torre cônica com porta e escada, nacele com
-    radiador e para-raios, rotor de três pás com bordas vermelhas (Rotor gira no eixo da frente)."""
+    """Gerador eólico (~8,5 m): base de concreto com parafusos, torre cônica com flanges, porta e escada, nacele
+    aerodinâmica com aletas de resfriamento, anemômetro e biruta, cubo carenado e rotor de três pás de perfil
+    aerodinâmico torcido com pontas vermelhas (Rotor gira no eixo da frente)."""
     m = Model("wind_turbine", "Machines")
     m.greeble = False
-    m.material("white", (0.92, 0.93, 0.95), 0.4)
+    m.material("white", (0.92, 0.93, 0.95), 0.35, 0.05)
     m.material("grey", (0.45, 0.47, 0.5), 0.5, 0.5)
     m.material("dark", (0.14, 0.15, 0.16), 0.6, 0.3)
     m.material("concrete", (0.58, 0.57, 0.55), 0.9)
-    m.material("red", (0.85, 0.15, 0.12), 0.5)
+    m.material("red", (0.85, 0.15, 0.12), 0.45)
     m.material("steel", (0.6, 0.62, 0.65), 0.35, 0.8)
-    m.lathe("concrete", (0, 0, 0), [(0, 0), (1.05, 0), (1.05, 0.18), (0.85, 0.3), (0, 0.3)], seg=24)
-    bolt_ring(m, "steel", (0, 0, 0.32), 0.62, 12, size=0.04)
-    m.lathe("grey", (0, 0, 0.3), [(0.55, 0), (0.55, 0.14), (0.47, 0.16)], seg=24, caps=False)
-    m.lathe("white", (0, 0, 0.3), [(0.44, 0), (0.36, 3.4), (0.24, 6.85)], seg=24)
-    for z in (2.4, 4.6):  # emendas dos segmentos da torre
-        r = 0.44 - (0.44 - 0.24) * (z - 0.3) / 6.85
-        m.lathe("grey", (0, 0, z), [(r + 0.012, -0.03), (r + 0.012, 0.03)], seg=24, caps=False)
+    # Fundação com parafusos de ancoragem e flange da torre.
+    m.lathe("concrete", (0, 0, 0), [(0, 0), (1.15, 0), (1.15, 0.18), (0.95, 0.3), (0, 0.3)], seg=32)
+    bolt_ring(m, "steel", (0, 0, 0.32), 0.62, 16, size=0.04)
+    m.lathe("grey", (0, 0, 0.3), [(0.58, 0), (0.58, 0.14), (0.47, 0.16)], seg=32, caps=False)
+    # Torre em três seções cônicas, com flange e anel de parafusos entre elas.
+    sections = [(0.3, 2.5, 0.44, 0.36), (2.8, 2.2, 0.36, 0.30), (5.0, 2.15, 0.30, 0.24)]
+    for z, h, r0, r1 in sections:
+        m.lathe("white", (0, 0, z), [(r0, 0), (r1, h)], seg=36, caps=False)
+    for z, r in ((2.8, 0.36), (5.0, 0.30)):
+        m.lathe("grey", (0, 0, z - 0.04), [(r + 0.04, 0), (r + 0.04, 0.09)], seg=36, caps=False)
+        bolt_ring(m, "steel", (0, 0, z + 0.06), r + 0.045, 20, size=0.018)
     m.box("grey", (0, -0.43, 1.05), (0.42, 0.06, 1.3), bevel=0.02)
     m.box("dark", (0, -0.46, 1.05), (0.34, 0.02, 1.2))
     m.box("steel", (0.12, -0.47, 1.05), (0.03, 0.03, 0.12))
-    for z in range(13):  # escada externa
+    for z in range(14):  # escada externa e guarda-corpo
         zz = 1.9 + z * 0.36
         r = 0.44 - (0.44 - 0.24) * (zz - 0.3) / 6.85
         m.box("steel", (0, r + 0.12, zz), (0.32, 0.03, 0.03))
     for sx in (-0.15, 0.15):
-        m.tube("steel", (sx, 0.52, 1.9), (sx, 0.38, 6.3), 0.015, seg=5)
-    # Nacele
-    m.box("white", (0, 0.15, 7.35), (0.72, 1.9, 0.72), bevel=0.14)
-    m.box("grey", (0, 0.15, 7.73), (0.5, 1.6, 0.06))
-    for i in range(6):
-        m.box("dark", (0.37, 0.75 - i * 0.12, 7.3), (0.02, 0.06, 0.45))
-    m.box("grey", (0, 1.15, 7.35), (0.5, 0.18, 0.5), bevel=0.04)
-    m.tube("steel", (0, 0.95, 7.75), (0, 0.95, 8.35), 0.015, seg=5)
-    m.blob("red", (0, 0.95, 8.38), (0.04, 0.04, 0.04), sub=1, noise=0, seed=4)
-    m.cyl("grey", (0, -0.85, 7.35), 0.32, 0.26, 0.2, seg=16, rot=(90, 0, 0))
-    hub = (0, -1.05, 7.35)
+        m.tube("steel", (sx, 0.52, 1.9), (sx, 0.38, 6.8), 0.015, seg=5)
+    # Nacele aerodinâmica (revolução ao longo de Y) + capô de acesso e aletas.
+    nac = T(0, 0.15, 7.45) @ R(-90, 0, 0)
+    m.lathe("white", (0, 0, 0), [(0.0, -0.98), (0.2, -0.93), (0.34, -0.74), (0.41, -0.35), (0.43, 0.3), (0.4, 0.8),
+                                  (0.32, 1.1), (0.18, 1.24), (0.0, 1.28)], seg=32, base=nac)
+    m.box("white", (0, 0.35, 7.88), (0.34, 0.9, 0.1), bevel=0.04)
+    m.box("grey", (0, 0.35, 7.935), (0.26, 0.74, 0.02))
+    for i in range(7):
+        m.box("dark", (0.0, 0.1 + i * 0.12, 7.85), (0.2, 0.025, 0.06))
+    m.box("grey", (0, 1.28, 7.45), (0.12, 0.08, 0.16))
+    # Anemômetro de copos e biruta no topo.
+    m.tube("steel", (0, 0.9, 7.9), (0, 0.9, 8.5), 0.018, seg=8)
+    for k in range(3):
+        a = k * 2 * math.pi / 3
+        m.tube("steel", (0, 0.9, 8.5), (math.cos(a) * 0.14, 0.9 + math.sin(a) * 0.14, 8.5), 0.008, seg=5)
+        m.blob("steel", (math.cos(a) * 0.15, 0.9 + math.sin(a) * 0.15, 8.5), (0.035, 0.035, 0.035), sub=1, noise=0, seed=k)
+    m.tube("steel", (0.3, 0.75, 7.9), (0.3, 0.75, 8.35), 0.012, seg=6)
+    m.box("red", (0.3, 0.98, 8.34), (0.015, 0.4, 0.07))
+    m.blob("red", (0.3, 0.75, 8.4), (0.03, 0.03, 0.03), sub=1, noise=0, seed=7)
+    # Cubo carenado e pás. O rotor gira em torno do eixo Y a partir do cubo.
+    hub = (0, -1.1, 7.45)
     m.origins["Rotor"] = hub
-    m.lathe("white", (0, 0, 0), [(0, -0.45), (0.12, -0.36), (0.26, -0.12), (0.3, 0.1), (0.3, 0.2)], seg=20,
-            obj="Rotor", base=T(*hub) @ R(-90, 0, 0))
+    m.lathe("white", (0, 0, 0), [(0.0, -0.5), (0.1, -0.46), (0.22, -0.34), (0.3, -0.12), (0.34, 0.1), (0.33, 0.2),
+                                  (0.0, 0.2)], seg=32, obj="Rotor", base=T(*hub) @ R(-90, 0, 0))
     for i in range(3):
         rot = R(0, i * 120, 0)
-        m.cyl("grey", None, 0.13, 0.13, 0.3, seg=12, M=T(*hub) @ rot @ T(0, 0, 0.36), obj="Rotor")
-        m.box("white", (0, 0, 0), (0.42, 0.07, 1.4), taper=(0.75, 1.0), obj="Rotor", base=T(*hub) @ rot @ T(0, 0, 1.2))
-        m.box("white", (0, 0, 0), (0.32, 0.05, 2.1), taper=(0.35, 1.0), obj="Rotor", base=T(*hub) @ rot @ T(0, 0, 2.95))
-        m.box("red", (0, 0, 0), (0.12, 0.055, 0.45), obj="Rotor", base=T(*hub) @ rot @ T(0, 0, 3.78))
+        # Mancal de passo (anel) e pá torcida de 3,9 m.
+        m.lathe("grey", (0, 0, 0), [(0.13, 0.0), (0.145, 0.04), (0.145, 0.22), (0.13, 0.26)], seg=24, caps=False,
+                obj="Rotor", base=T(*hub) @ rot @ T(0, 0, 0.3))
+        airfoil_blade(m, "white", 3.9, 0.62, 0.1, 16, -3, thick=0.16, obj="Rotor", tip_mat="red", tip_from=0.9,
+                      base=T(*hub) @ rot @ T(0, 0, 0.4))
     indicator(m, (0.25, -0.47, 1.8))
     return m
+
+
 
 
 def heater():
@@ -929,88 +996,113 @@ def drill():
     return m
 
 
+def solar_panel():
+    """Painel solar (~2,6 x 1,6 m): sapata com parafusos, mastro com motor de rastreamento e atuador linear, estrutura
+    traseira em perfis C, moldura de alumínio com lábio, 60 células monocristalinas com barramentos e caixa de
+    junção com cabo."""
+    m = Model("solar_panel", "Machines")
+    m.greeble = False
+    m.material("metal", (0.65, 0.67, 0.7), 0.4, 0.7)
+    m.material("alu", (0.78, 0.8, 0.83), 0.3, 0.85)
+    m.material("dark", (0.1, 0.11, 0.12), 0.6, 0.3)
+    m.material("cell", (0.035, 0.07, 0.22), 0.12, 0.45)
+    m.material("cell_edge", (0.012, 0.02, 0.05), 0.2, 0.3)
+    m.material("grid", (0.82, 0.84, 0.88), 0.25, 0.9)
+    m.material("concrete", (0.58, 0.57, 0.55), 0.9)
+    m.box("concrete", (0, 0, 0.1), (0.95, 0.95, 0.2), bevel=0.03)
+    bolt_ring(m, "metal", (0, 0, 0.21), 0.3, 8, size=0.028)
+    m.cyl("metal", (0, 0, 0.23), 0.22, 0.22, 0.06, seg=16)
+    m.cyl("metal", (0, 0, 0.85), 0.09, 0.11, 1.25, seg=14)
+    for z in (0.5, 1.2):
+        m.lathe("dark", (0, 0, z), [(0.115, -0.02), (0.115, 0.02)], seg=16, caps=False)
+    # Cabeça de rastreamento: caixa do motor, eixo horizontal e atuador linear até a traseira do painel.
+    m.box("dark", (0, 0, 1.52), (0.4, 0.34, 0.26), bevel=0.03)
+    m.cyl("metal", (0, 0, 1.68), 0.07, 0.07, 0.5, seg=12, rot=(0, 90, 0))
+    tilt = T(0, 0, 1.78) @ R(-28, 0, 0)
+    m.tube("metal", (0, -0.12, 1.12), (0, -0.42, 1.68), 0.035, seg=10)
+    m.tube("alu", (0, -0.42, 1.68), (0, -0.55, 1.96), 0.022, seg=10)
+    m.cyl("dark", (0, -0.12, 1.12), 0.05, 0.05, 0.1, seg=10, rot=(0, 90, 0))
+    # Estrutura traseira: perfis C longitudinais e travessas.
+    for x in (-0.95, -0.35, 0.35, 0.95):
+        m.box("metal", (x, 0, -0.07), (0.05, 1.42, 0.07), bevel=0.008, base=tilt)
+    for y in (-0.55, 0.0, 0.55):
+        m.box("metal", (0, y, -0.12), (2.2, 0.06, 0.05), bevel=0.008, base=tilt)
+    # Moldura de alumínio: perfil com aba externa e lábio sobre o vidro.
+    W, H = 2.56, 1.56
+    for sy in (-1, 1):
+        m.box("alu", (0, sy * (H / 2 - 0.022), 0.0), (W, 0.044, 0.056), bevel=0.006, base=tilt)
+        m.box("alu", (0, sy * (H / 2 - 0.05), 0.026), (W - 0.04, 0.012, 0.014), base=tilt)
+    for sx in (-1, 1):
+        m.box("alu", (sx * (W / 2 - 0.022), 0, 0.0), (0.044, H - 0.088, 0.056), bevel=0.006, base=tilt)
+        m.box("alu", (sx * (W / 2 - 0.05), 0, 0.026), (0.012, H - 0.1, 0.014), base=tilt)
+    m.box("cell_edge", (0, 0, 0.012), (W - 0.1, H - 0.1, 0.02), base=tilt)
+    # 60 células (10 x 6) com cantos chanfrados e 3 barramentos cada.
+    cols, rows = 10, 6
+    cw, ch = (W - 0.16) / cols, (H - 0.16) / rows
+    for i in range(cols):
+        for j in range(rows):
+            cx, cy = -(W - 0.16) / 2 + (i + 0.5) * cw, -(H - 0.16) / 2 + (j + 0.5) * ch
+            m.box("cell", (cx, cy, 0.027), (cw - 0.016, ch - 0.016, 0.012), bevel=0.012, base=tilt)
+            for b in (-1, 0, 1):
+                m.box("grid", (cx + b * cw * 0.28, cy, 0.0343), (0.0035, ch - 0.03, 0.002), base=tilt)
+    # Caixa de junção, diodos e cabo.
+    m.box("dark", (0.5, 0.2, -0.1), (0.24, 0.17, 0.07), bevel=0.012, base=tilt)
+    m.box("metal", (0.5, 0.2, -0.14), (0.05, 0.05, 0.03), base=tilt)
+    cable(m, "dark", (0.08, 0.08, 1.45), (0.3, 0.6, 0.05), sag=0.15, r=0.016)
+    return m
+
+
 def vegetube():
-    """Vegetubo (~2.6 m): base técnica com bomba e mangueiras, cilindro de vidro com anéis de reforço e grade de
-    luz de cultivo, planta em espiral com folhas, tampa com ventilação e cabo."""
+    """Vegetubo (~2,7 m): base técnica com bomba e mangueiras, cilindro de vidro com anéis e montantes, barras de luz
+    de cultivo, solo e raízes, tampa com ventilação e cabo. As plantas são scans do Poly Haven montados no Unity."""
     m = Model("vegetube", "Machines")
     m.greeble = False
     m.material("dark", (0.2, 0.21, 0.24), 0.55, 0.3)
     m.material("steel", (0.6, 0.62, 0.65), 0.35, 0.8)
     m.material("glass_tube", (0.65, 0.9, 0.8), 0.1)
-    m.material("plant", (0.3, 0.7, 0.28), 0.8)
-    m.material("plant_b", (0.45, 0.78, 0.3), 0.8)
-    m.material("soil", (0.28, 0.2, 0.14), 0.95)
+    m.material("soil", (0.22, 0.15, 0.1), 0.95)
+    m.material("root", (0.34, 0.26, 0.18), 0.9)
     m.material("glow_grow", (1.0, 0.35, 0.85), 0.4)
     m.lathe("dark", (0, 0, 0), [(0, 0), (0.78, 0), (0.78, 0.08), (0.7, 0.12), (0.7, 0.3), (0.6, 0.34), (0, 0.34)], seg=24)
-    bolt_ring(m, "steel", (0, 0, 0.35), 0.64, 12, size=0.025)
-    m.cyl("soil", (0, 0, 0.36), 0.5, 0.5, 0.05, seg=20)
-    m.cyl("glass_tube", (0, 0, 1.35), 0.52, 0.52, 1.95, seg=24)
-    for z in (0.42, 1.0, 1.7, 2.28):
-        m.lathe("steel", (0, 0, z), [(0.53, -0.025), (0.55, 0), (0.53, 0.025)], seg=24, caps=False)
+    bolt_ring(m, "steel", (0, 0, 0.35), 0.64, 16, size=0.025)
+    m.lathe("soil", (0, 0, 0.34), [(0, 0.02), (0.3, 0.05), (0.5, 0.0), (0.5, 0.0)], seg=32, caps=False)
+    m.cyl("soil", (0, 0, 0.37), 0.5, 0.5, 0.06, seg=32)
+    rng = random.Random(8)
+    for i in range(22):  # montículos de terra e raízes aparentes
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.05, 0.42)
+        m.blob("soil", (math.cos(a) * r, math.sin(a) * r, 0.41), (0.09, 0.08, 0.04), sub=1, noise=0.25, seed=i, smooth=True)
+    for i in range(7):
+        a = rng.uniform(0, 2 * math.pi)
+        p0 = Vector((math.cos(a) * 0.05, math.sin(a) * 0.05, 0.43))
+        p1 = Vector((math.cos(a) * rng.uniform(0.18, 0.4), math.sin(a) * rng.uniform(0.18, 0.4), 0.41))
+        m.tube("root", p0, p1, 0.012, 0.006, seg=6)
+    m.cyl("glass_tube", (0, 0, 1.4), 0.52, 0.52, 2.0, seg=32)
+    for z in (0.42, 1.0, 1.7, 2.33):
+        m.lathe("steel", (0, 0, z), [(0.53, -0.03), (0.56, 0), (0.53, 0.03)], seg=32, caps=False)
+        bolt_ring(m, "steel", (0, 0, z + 0.035), 0.545, 12, size=0.014)
     for i in range(4):  # montantes verticais
         a = math.radians(45 + i * 90)
-        m.box("steel", (math.cos(a) * 0.54, math.sin(a) * 0.54, 1.35), (0.04, 0.04, 1.95), rot=(0, 0, math.degrees(a)))
-    for i in range(3):  # barras de luz de cultivo
-        a = math.radians(i * 120)
-        m.box("glow_grow", (math.cos(a) * 0.46, math.sin(a) * 0.46, 1.35), (0.02, 0.05, 1.6), rot=(0, 0, math.degrees(a)))
-    m.lathe("dark", (0, 0, 2.32), [(0.58, 0), (0.58, 0.12), (0.4, 0.22), (0.2, 0.26), (0, 0.26)], seg=24)
-    m.cyl("steel", (0, 0, 2.62), 0.12, 0.12, 0.08, seg=12)
+        m.box("steel", (math.cos(a) * 0.55, math.sin(a) * 0.55, 1.4), (0.045, 0.045, 2.0), rot=(0, 0, math.degrees(a)), bevel=0.008)
+    for i in range(3):  # barras de luz de cultivo com suportes
+        a = math.radians(i * 120 + 20)
+        x, y = math.cos(a) * 0.47, math.sin(a) * 0.47
+        m.box("glow_grow", (x, y, 1.4), (0.02, 0.05, 1.7), rot=(0, 0, math.degrees(a)))
+        for z in (0.6, 1.4, 2.2):
+            m.box("dark", (x * 1.05, y * 1.05, z), (0.04, 0.06, 0.05), rot=(0, 0, math.degrees(a)))
+    m.lathe("dark", (0, 0, 2.38), [(0.58, 0), (0.58, 0.12), (0.4, 0.22), (0.2, 0.26), (0, 0.26)], seg=32)
+    m.cyl("steel", (0, 0, 2.68), 0.12, 0.12, 0.08, seg=16)
     for i in range(6):
-        m.box("dark", (0, 0, 2.67), (0.22, 0.02, 0.02), rot=(0, 0, i * 30))
-    # Planta: caule em espiral e folhas
-    prev = Vector((0, 0, 0.38))
-    for i in range(1, 13):
-        a = i * 0.9
-        p = Vector((math.cos(a) * 0.08, math.sin(a) * 0.08, 0.38 + i * 0.13))
-        m.tube("plant", prev, p, 0.035 - i * 0.002, seg=6)
-        prev = p
-        if i % 2 == 0:
-            la = a + 1.2
-            m.blob("plant" if i % 4 else "plant_b", (math.cos(la) * 0.22, math.sin(la) * 0.22, p.z),
-                   (0.2, 0.08, 0.025), sub=1, noise=0.08, seed=i, rot=(0, -15, math.degrees(la)))
-    m.blob("plant_b", (0, 0, 2.0), (0.16, 0.16, 0.12), sub=2, noise=0.15, seed=11)
-    # Bomba lateral, mangueiras e cabo
-    m.box("dark", (0.72, 0.0, 0.2), (0.3, 0.36, 0.4), bevel=0.03)
-    m.cyl("steel", (0.72, 0.0, 0.43), 0.08, 0.08, 0.06, seg=10)
-    m.tube("steel", (0.72, 0.1, 0.35), (0.55, 0.1, 2.35), 0.025, seg=6)
-    m.tube("steel", (0.72, -0.1, 0.35), (0.55, -0.1, 0.5), 0.025, seg=6)
-    cable(m, "dark", (0.86, 0, 0.15), (1.3, 0.3, 0.02), sag=0.05, r=0.02, segments=4)
+        m.box("dark", (0, 0, 2.73), (0.22, 0.02, 0.02), rot=(0, 0, i * 30))
+    # Bomba lateral, manômetro, mangueiras com abraçadeiras e cabo
+    m.box("dark", (0.74, 0.0, 0.22), (0.32, 0.38, 0.4), bevel=0.03)
+    m.cyl("steel", (0.74, 0.0, 0.46), 0.08, 0.08, 0.08, seg=16)
+    m.cyl("steel", (0.92, 0.0, 0.3), 0.07, 0.07, 0.04, seg=16, rot=(0, 90, 0))
+    m.cyl("dark", (0.935, 0.0, 0.3), 0.055, 0.055, 0.015, seg=16, rot=(0, 90, 0))
+    pipe_run(m, "steel", "dark", (0.74, 0.1, 0.42), (0.56, 0.1, 2.4), 0.028, clamps=4)
+    pipe_run(m, "steel", "dark", (0.74, -0.1, 0.42), (0.56, -0.1, 0.52), 0.028, clamps=1)
+    cable(m, "dark", (0.9, 0, 0.12), (1.35, 0.3, 0.02), sag=0.05, r=0.02, segments=4)
     indicator(m, (0, -0.72, 0.28))
-    return m
-
-
-def solar_panel():
-    """Painel solar (~2.6 x 1.6 m): pedestal com sapata e parafusos, motor de rastreamento, braço articulado,
-    moldura de alumínio com células em grade 6 x 4, caixa de junção e cabo."""
-    m = Model("solar_panel", "Machines")
-    m.greeble = False
-    m.material("metal", (0.65, 0.67, 0.7), 0.4, 0.7)
-    m.material("dark", (0.14, 0.15, 0.16), 0.6, 0.3)
-    m.material("cell", (0.06, 0.1, 0.3), 0.2, 0.4)
-    m.material("grid", (0.75, 0.77, 0.8), 0.35, 0.7)
-    m.material("concrete", (0.58, 0.57, 0.55), 0.9)
-    m.box("concrete", (0, 0, 0.1), (0.9, 0.9, 0.2), bevel=0.03)
-    bolt_ring(m, "metal", (0, 0, 0.21), 0.28, 8, size=0.025)
-    m.cyl("metal", (0, 0, 0.23), 0.22, 0.22, 0.06, seg=16)
-    m.cyl("metal", (0, 0, 0.85), 0.09, 0.11, 1.25, seg=14)
-    m.box("dark", (0, 0, 1.52), (0.36, 0.3, 0.26), bevel=0.03)
-    m.cyl("metal", (0, 0, 1.68), 0.07, 0.07, 0.12, seg=10, rot=(0, 90, 0))
-    tilt = T(0, 0, 1.78) @ R(-28, 0, 0)
-    m.box("metal", (0, 0, -0.06), (0.16, 1.1, 0.08), base=tilt)
-    for x in (-0.9, 0.9):
-        m.box("metal", (x, 0, -0.06), (0.06, 1.3, 0.06), base=tilt)
-    m.box("metal", (0, 0, -0.06), (2.0, 0.08, 0.06), base=tilt)
-    m.box("metal", (0, 0, 0), (2.56, 1.56, 0.06), bevel=0.015, base=tilt)
-    cols, rows = 6, 4
-    cw, ch = 2.44 / cols, 1.44 / rows
-    for i in range(cols):
-        for j in range(rows):
-            m.box("cell", (-1.22 + (i + 0.5) * cw, -0.72 + (j + 0.5) * ch, 0.04), (cw - 0.025, ch - 0.025, 0.02),
-                  base=tilt)
-    for i in range(cols):
-        m.box("grid", (-1.22 + (i + 0.5) * cw, 0, 0.052), (0.008, 1.44, 0.004), base=tilt)
-    m.box("dark", (0.6, 0.3, -0.07), (0.22, 0.16, 0.06), base=tilt)
-    cable(m, "dark", (0.08, 0.08, 1.45), (0.3, 0.6, 0.05), sag=0.15, r=0.015)
     return m
 
 
