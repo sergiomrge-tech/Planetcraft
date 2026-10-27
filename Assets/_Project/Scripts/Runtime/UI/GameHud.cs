@@ -45,7 +45,9 @@ namespace Planetcraft.UI
         Label help;
         bool helpGamepad;
         bool helpDirty = true;
-        VisualElement statusPanel, vitalsPanel;
+        VisualElement statusPanel, vitalsPanel, objectivePanel;
+        Label objectiveLabel;
+        float nextObjectiveRefresh;
         Meter progress, oxygen, water, food;
         InventoryComponent openChest;
         bool menuDirty;
@@ -242,7 +244,12 @@ namespace Planetcraft.UI
         {
             // Com menu, pausa ou registro abertos, o visor recolhe os mostradores para não sobrepor os painéis.
             var hudDisplay = UIState.MenuOpen ? DisplayStyle.None : DisplayStyle.Flex;
-            statusPanel.style.display = vitalsPanel.style.display = hudDisplay;
+            statusPanel.style.display = vitalsPanel.style.display = objectivePanel.style.display = hudDisplay;
+            if (Time.unscaledTime >= nextObjectiveRefresh)
+            {
+                nextObjectiveRefresh = Time.unscaledTime + 0.5f;
+                objectiveLabel.text = Objectives.Current();
+            }
             var tm = TerraformManager.Instance;
             if (tm != null)
             {
@@ -518,6 +525,19 @@ namespace Planetcraft.UI
             powerLabel = Cell(TableRow(table, "Energia"), 208, 14, Ink);
             status.Add(table);
             root.Add(status);
+
+            // Objetivo atual (canto superior direito).
+            objectivePanel = Panel();
+            objectivePanel.style.position = Position.Absolute;
+            objectivePanel.style.right = 22;
+            objectivePanel.style.top = 22;
+            objectivePanel.style.width = 380;
+            objectivePanel.Add(Tag("Objetivo", Signal));
+            objectiveLabel = MakeLabel("", 16, Ink);
+            objectiveLabel.style.whiteSpace = WhiteSpace.Normal;
+            objectiveLabel.style.marginTop = 3;
+            objectivePanel.Add(objectiveLabel);
+            root.Add(objectivePanel);
 
             // Suporte de vida (canto inferior esquerdo).
             var vitals = vitalsPanel = Panel();
