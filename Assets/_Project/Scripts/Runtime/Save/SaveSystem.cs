@@ -52,13 +52,29 @@ namespace Planetcraft.Save
             Apply(data);
         }
 
+        // Salvamento automático: protege contra queda do jogo sem o jogador lembrar de salvar.
+        const float AutosaveInterval = 300f;
+        float nextAutosave = AutosaveInterval;
+
         void Update()
         {
             if (GameInput.QuickSave.WasPressedThisFrame()) Save();
             if (GameInput.QuickLoad.WasPressedThisFrame() && !UIState.MenuOpen) Load();
+            // Conta só tempo jogado (pausa e menus param o relógio) e nunca durante a decolagem.
+            if (!UIState.MenuOpen && Time.timeScale > 0f && !ShipProgress.Launched)
+            {
+                nextAutosave -= Time.unscaledDeltaTime;
+                if (nextAutosave <= 0f)
+                {
+                    nextAutosave = AutosaveInterval;
+                    Save(Loc.T("Salvamento automático"));
+                }
+            }
         }
 
-        public void Save()
+        public void Save() => Save(Loc.T("Jogo salvo"));
+
+        void Save(string message)
         {
             var data = new SaveData
             {
@@ -93,17 +109,17 @@ namespace Planetcraft.Save
             data.blueprints.AddRange(Blueprints.All);
             data.logsRead.AddRange(StoryLogs.All);
             File.WriteAllText(FilePath, JsonUtility.ToJson(data, true));
-            Notify("Jogo salvo");
+            Notify(message);
         }
 
         public void Load()
         {
             if (!HasSaveFile)
             {
-                Notify("Nenhum save encontrado");
+                Notify(Loc.T("Nenhum save encontrado"));
                 return;
             }
-            if (!GameSession.ContinueGame()) Notify("Save incompatível");
+            if (!GameSession.ContinueGame()) Notify(Loc.T("Save incompatível"));
         }
 
         void Apply(SaveData data)

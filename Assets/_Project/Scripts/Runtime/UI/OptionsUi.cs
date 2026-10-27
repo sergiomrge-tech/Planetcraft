@@ -59,6 +59,23 @@ namespace Planetcraft.UI
             fullscreen.RegisterValueChangedCallback(e => Settings.Fullscreen = e.newValue);
             content.Add(Style(fullscreen));
 
+            // Resoluções distintas (maior taxa de atualização de cada uma), da maior para a menor.
+            var resolutions = Screen.resolutions.GroupBy(r => (r.width, r.height))
+                .Select(g => g.OrderByDescending(r => r.refreshRateRatio.value).First())
+                .OrderByDescending(r => r.width * r.height).ToList();
+            if (resolutions.Count > 0)
+            {
+                var labels = resolutions.Select(r => $"{r.width} x {r.height}").ToList();
+                int current = Mathf.Max(0, resolutions.FindIndex(r => r.width == Screen.width && r.height == Screen.height));
+                var resolution = new DropdownField(Loc.T("Resolução"), labels, current);
+                resolution.RegisterValueChangedCallback(_ => Settings.SetResolution(resolutions[resolution.index]));
+                content.Add(Style(resolution));
+            }
+
+            var vsync = new Toggle(Loc.T("Sincronização vertical")) { value = Settings.VSync };
+            vsync.RegisterValueChangedCallback(e => Settings.VSync = e.newValue);
+            content.Add(Style(vsync));
+
             var languages = new[] { "Português", "English" }.ToList();
             var language = new DropdownField(Loc.T("Idioma"), languages, Settings.Language == "en" ? 1 : 0);
             var languageNote = HudStyle.MakeLabel("O idioma muda ao voltar ao menu principal.", 13, HudStyle.Muted);

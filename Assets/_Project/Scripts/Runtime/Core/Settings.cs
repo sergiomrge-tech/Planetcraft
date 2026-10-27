@@ -7,13 +7,14 @@ namespace Planetcraft.Core
     public static class Settings
     {
         const string VolumeKey = "pc.volume", SensitivityKey = "pc.sensitivity", InvertKey = "pc.invertY",
-            FovKey = "pc.fov", QualityKey = "pc.quality", LanguageKey = "pc.language";
+            FovKey = "pc.fov", QualityKey = "pc.quality", LanguageKey = "pc.language", VSyncKey = "pc.vsync";
 
         static bool loaded;
         static float volume, sensitivity, fov;
         static bool invertY;
         static int quality;
         static string language;
+        static bool vsync;
 
         public static event Action Changed;
 
@@ -24,6 +25,10 @@ namespace Planetcraft.Core
         public static int QualityLevel { get { Load(); return quality; } set { quality = Mathf.Clamp(value, 0, QualitySettings.names.Length - 1); Save(); } }
         /// <summary>"pt" ou "en" (padrão: idioma do sistema).</summary>
         public static string Language { get { Load(); return language; } set { language = value == "en" ? "en" : "pt"; Save(); } }
+        public static bool VSync { get { Load(); return vsync; } set { vsync = value; Save(); } }
+
+        // Resolução é aplicada só quando o jogador escolhe (como a tela cheia), não na inicialização.
+        public static void SetResolution(Resolution r) => Screen.SetResolution(r.width, r.height, Screen.fullScreenMode, r.refreshRateRatio);
 
         // Tela cheia é aplicada só quando o jogador muda (não na inicialização, para respeitar -screen-fullscreen).
         public static bool Fullscreen
@@ -52,6 +57,7 @@ namespace Planetcraft.Core
             fov = PlayerPrefs.GetFloat(FovKey, 70f);
             quality = PlayerPrefs.GetInt(QualityKey, QualitySettings.GetQualityLevel());
             language = PlayerPrefs.GetString(LanguageKey, Loc.SystemDefault());
+            vsync = PlayerPrefs.GetInt(VSyncKey, 1) == 1;
         }
 
         static void Save()
@@ -62,6 +68,7 @@ namespace Planetcraft.Core
             PlayerPrefs.SetFloat(FovKey, fov);
             PlayerPrefs.SetInt(QualityKey, quality);
             PlayerPrefs.SetString(LanguageKey, language);
+            PlayerPrefs.SetInt(VSyncKey, vsync ? 1 : 0);
             PlayerPrefs.Save();
             Apply();
         }
@@ -70,6 +77,7 @@ namespace Planetcraft.Core
         {
             Load();
             AudioListener.volume = volume;
+            QualitySettings.vSyncCount = vsync ? 1 : 0;
             if (QualitySettings.GetQualityLevel() != quality) QualitySettings.SetQualityLevel(quality, true);
             Changed?.Invoke();
         }
