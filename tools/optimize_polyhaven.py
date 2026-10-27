@@ -34,6 +34,20 @@ ASSETS = {
     "fern_02": (0, 1.0, 1.0, True),
     "jacaranda_tree": (9000, 0.03, 4.5, False),
     "tree_small_02": (6000, 0.04, 4.0, False),
+    # Rochas-base dos minérios e props de máquinas/ruínas (fotoescaneados; só decimação das partes sólidas).
+    "moon_rock_01": (4500, None, 1.0, False),
+    "moon_rock_03": (4500, None, 1.0, False),
+    "moon_rock_05": (4500, None, 1.0, False),
+    "rock_07": (8000, None, 1.0, False),
+    "stone_01": (8000, None, 1.0, False),
+    "barrel_stove": (9500, None, 1.0, False),
+    "drill_press_01": (16000, None, 1.0, False),
+    "metal_tool_chest": (12000, None, 1.0, False),
+    "ammo_box": (4500, None, 1.0, False),
+    "vintage_spacecraft_instrument": (12000, None, 1.0, False),
+    "old_military_compressor": (22000, None, 1.0, False),
+    "industrial_pastic_container": (7500, None, 1.0, False),
+    "portable_generator": (14000, None, 1.0, False),
 }
 LEAF_WORDS = ("leaves", "leaf", "twig", "foliage", "branches")
 LOD1_FACTOR = 0.3
@@ -157,6 +171,47 @@ def find_texture(folder, material, kind):
     return None
 
 
+def _channel(path, size):
+    """Primeiro canal de uma imagem como lista float (dados lineares, sem conversão de cor), reduzida a `size`."""
+    img = bpy.data.images.load(path)
+    img.colorspace_settings.name = "Non-Color"
+    if tuple(img.size) != tuple(size):
+        img.scale(*size)
+    px = np.empty(size[0] * size[1] * 4, dtype=np.float32)
+    img.pixels.foreach_get(px)
+    return px[0::4], px[1::4], px[2::4]
+
+
+def build_mask(folder, material, out_path):
+    """Máscara do HDRP (R metal, G oclusão, B 0, A lisura) a partir de rough/metal/ao ou da textura ARM."""
+    arm = find_texture(folder, material, "arm")
+    rough = find_texture(folder, material, "rough")
+    if not arm and not rough:
+        return False
+    ref = find_texture(folder, material, "diff") or arm or rough
+    probe = bpy.data.images.load(ref)
+    size = (min(probe.size[0], 1024), min(probe.size[1], 1024))
+    if arm:
+        ao, r, metal = _channel(arm, size)
+    else:
+        r = _channel(rough, size)[0]
+        metal_path, ao_path = find_texture(folder, material, "metal"), find_texture(folder, material, "ao")
+        metal = _channel(metal_path, size)[0] if metal_path else np.zeros(size[0] * size[1], dtype=np.float32)
+        ao = _channel(ao_path, size)[0] if ao_path else np.ones(size[0] * size[1], dtype=np.float32)
+    out = np.empty(size[0] * size[1] * 4, dtype=np.float32)
+    out[0::4] = np.clip(metal, 0, 1)
+    out[1::4] = np.clip(ao, 0, 1)
+    out[2::4] = 0.0
+    out[3::4] = np.clip(1.0 - r, 0, 1)
+    img = bpy.data.images.new("mask", size[0], size[1], alpha=True)
+    img.colorspace_settings.name = "Non-Color"
+    img.pixels.foreach_set(out)
+    img.filepath_raw = out_path
+    img.file_format = "PNG"
+    img.save()
+    return True
+
+
 def copy_textures(asset_id, materials, out_dir):
     src_tex = os.path.join(SRC, asset_id, "textures")
     os.makedirs(out_dir, exist_ok=True)
@@ -170,7 +225,8 @@ def copy_textures(asset_id, materials, out_dir):
             shutil.copy(diff, os.path.join(out_dir, f"{mat}_diff{os.path.splitext(diff)[1]}"))
         if normal:
             shutil.copy(normal, os.path.join(out_dir, f"{mat}_nor_gl{os.path.splitext(normal)[1]}"))
-        print(f"    material {mat}: diff={'+alpha' if alpha else bool(diff)} normal={bool(normal)}")
+        mask = build_mask(src_tex, mat, os.path.join(out_dir, f"{mat}_mask.png"))
+        print(f"    material {mat}: diff={'+alpha' if alpha else bool(diff)} normal={bool(normal)} mask={mask}")
 
 
 def build_lod(objs, name, solid_budget, keep, scale, all_foliage):
@@ -237,6 +293,8 @@ def optimize(asset_id, solid_budget, keep, scale, all_foliage, variant=None):
         for o in lod0:
             o.location.x = o.location.y = 0.0
         asset_id = f"{asset_id}_{variant}"
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.make_single_user(object=True, obdata=True)  # peças duplicadas compartilham malha: separa antes de aplicar
     bpy.ops.object.select_all(action="DESELECT")
     for o in lod0:  # aplica transformações para o LOD1 copiar certo
         o.select_set(True)

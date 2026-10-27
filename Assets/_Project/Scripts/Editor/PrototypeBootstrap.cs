@@ -209,24 +209,24 @@ namespace Planetcraft.EditorTools
             Add("base_module", "Módulo de Base", "Abrigo pressurizado: recarrega oxigênio.", 0, 0, 0,
                 new[] { C(it["iron"], 2) }, none, false, "Machines/base_module", pressurized: true);
             Add("storage_chest", "Baú", "Guarda até 30 pilhas de itens. [E] para abrir.", 0, 0, 0,
-                new[] { C(it["iron"], 2) }, none, false, "Machines/storage_chest", storage: true);
+                new[] { C(it["iron"], 2) }, none, false, "ph:metal_tool_chest", storage: true);
             Add("wind_turbine", "Gerador Eólico", "+1.2 kW", 0, 1.2f, 0,
                 new[] { C(it["iron"], 1), C(it["silicon"], 1) }, none, true, "Machines/wind_turbine");
             Add("heater_t1", "Aquecedor", "Calor +1.2/s. Consome 1 kW.", 0, 0, 1f,
-                new[] { C(it["iron"], 1), C(it["titanium"], 1) }, Rates(TerraformParameter.Heat, 1.2), true, "Machines/heater");
+                new[] { C(it["iron"], 1), C(it["titanium"], 1) }, Rates(TerraformParameter.Heat, 1.2), true, "ph:barrel_stove");
             Add("drill_t1", "Perfuratriz", "Pressão +1/s. Consome 1 kW.", 0, 0, 1f,
-                new[] { C(it["iron"], 2) }, Rates(TerraformParameter.Pressure, 1), true, "Machines/drill");
+                new[] { C(it["iron"], 2) }, Rates(TerraformParameter.Pressure, 1), true, "ph:drill_press_01");
             Add("decon_t1", "Filtro de Radiação", "Descontaminação +1/s. Consome 1 kW.", 0, 0, 1f,
                 new[] { C(it["iron"], 2), C(it["silicon"], 1) }, Rates(TerraformParameter.Decontamination, 1), true,
-                "Machines/decontaminator");
+                "ph:old_military_compressor");
             Add("vegetube", "Vegetubo", "Oxigênio +0.8/s. Consome 0.5 kW.", 50, 0, 0.5f,
                 new[] { C(it["ice"], 1), C(it["silicon"], 1) }, Rates(TerraformParameter.Oxygen, 0.8), true, "Machines/vegetube");
             Add("solar_panel", "Painel Solar", "+6.5 kW", 300, 6.5f, 0,
                 new[] { C(it["silicon"], 2), C(it["iron"], 1) }, none, true, "Machines/solar_panel");
             Add("heater_t2", "Aquecedor II", "Calor +12/s. Consome 4 kW.", 1_000, 0, 4f,
-                new[] { C(it["titanium"], 2), C(it["alloy"], 1) }, Rates(TerraformParameter.Heat, 12), true, "Machines/heater", 1.5f);
+                new[] { C(it["titanium"], 2), C(it["alloy"], 1) }, Rates(TerraformParameter.Heat, 12), true, "ph:barrel_stove", 1.5f);
             Add("drill_t2", "Perfuratriz II", "Pressão +10/s. Consome 4 kW.", 2_500, 0, 4f,
-                new[] { C(it["iron"], 3), C(it["alloy"], 1) }, Rates(TerraformParameter.Pressure, 10), true, "Machines/drill", 1.5f);
+                new[] { C(it["iron"], 3), C(it["alloy"], 1) }, Rates(TerraformParameter.Pressure, 10), true, "ph:drill_press_01", 1.5f);
             Add("algae_farm", "Fazenda de Algas", "Biomassa +25/s, Oxigênio +5/s. Consome 2 kW.", 20_000, 0, 2f,
                 new[] { C(it["ice"], 2), C(it["magnesium"], 1) },
                 new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, "Machines/algae_farm");
@@ -234,9 +234,9 @@ namespace Planetcraft.EditorTools
                 new[] { C(it["alloy"], 6), C(it["titanium"], 4), C(it["iron"], 8) }, none, false, "Machines/shipyard", unique: true);
             Add("decon_t2", "Filtro de Radiação II", "Descontaminação +15/s. Consome 4 kW.", 5_000, 0, 4f,
                 new[] { C(it["titanium"], 2), C(it["alloy"], 1), C(it["magnesium"], 1) },
-                Rates(TerraformParameter.Decontamination, 15), true, "Machines/decontaminator", 1.4f);
+                Rates(TerraformParameter.Decontamination, 15), true, "ph:old_military_compressor", 1.4f);
             Add("heater_t3", "Aquecedor III", "Calor +400/s. Consome 15 kW.", 60_000, 0, 15f,
-                new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "Machines/heater", 2.2f);
+                new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "ph:barrel_stove", 2.2f);
 
             // Tier 4: exigem microchip de destroço (blueprint) além do Ti.
             Add("vegetube_t2", "Vegetubo II", "Oxigênio +60/s. Consome 6 kW.", 60_000, 0, 6f,
@@ -247,13 +247,13 @@ namespace Planetcraft.EditorTools
                 "Machines/nuclear_reactor", blueprint: "bp_nuclear");
             Add("heater_t4", "Aquecedor IV", "Calor +6000/s. Consome 40 kW.", 300_000, 0, 40f,
                 new[] { C(it["titanium"], 5), C(it["alloy"], 3), C(it["fuel_rod"], 1) }, Rates(TerraformParameter.Heat, 6000), true,
-                "Machines/heater", 3f, blueprint: "bp_heater4");
+                "ph:barrel_stove", 3f, blueprint: "bp_heater4");
             Add("drill_t3", "Perfuratriz III", "Pressão +3000/s. Consome 35 kW.", 300_000, 0, 35f,
                 new[] { C(it["iron"], 6), C(it["alloy"], 3), C(it["fuel_rod"], 1) }, Rates(TerraformParameter.Pressure, 3000), true,
-                "Machines/drill", 2.2f, blueprint: "bp_drill3");
+                "ph:drill_press_01", 2.2f, blueprint: "bp_drill3");
             Add("decon_t3", "Filtro de Radiação III", "Descontaminação +3500/s. Consome 30 kW.", 300_000, 0, 30f,
                 new[] { C(it["titanium"], 4), C(it["alloy"], 3), C(it["fuel_rod"], 1) },
-                Rates(TerraformParameter.Decontamination, 3500), true, "Machines/decontaminator", 2.2f, blueprint: "bp_decon3");
+                Rates(TerraformParameter.Decontamination, 3500), true, "ph:old_military_compressor", 2.2f, blueprint: "bp_decon3");
             return list;
         }
 
@@ -366,6 +366,112 @@ namespace Planetcraft.EditorTools
             return go;
         }
 
+        // Tamanho natural dos scans é pequeno (um fogão de 0,86 m): fator para o tamanho de jogo, antes do `scale` do tier.
+        static float PhBaseScale(string id) => id switch
+        {
+            "barrel_stove" => 1.9f,
+            "drill_press_01" => 2.6f,
+            "metal_tool_chest" => 2.0f,
+            "old_military_compressor" => 1.5f,
+            _ => 1f,
+        };
+
+        // Encaixa `visual` na base (y=0, centrado em x/z) dentro de `root` e põe um BoxCollider no root.
+        // `root` precisa estar na origem com escala 1 (como no SavePrefab). Devolve os limites locais.
+        static Bounds FitBox(GameObject visual, GameObject root, bool recenter)
+        {
+            var renderers = visual.GetComponentsInChildren<Renderer>();
+            var b = renderers[0].bounds;
+            foreach (var r in renderers) b.Encapsulate(r.bounds);
+            if (recenter)
+            {
+                var shift = new Vector3(-b.center.x, -b.min.y, -b.center.z);
+                visual.transform.position += shift;
+                b.center += shift;
+            }
+            var box = root.AddComponent<BoxCollider>();
+            box.center = root.transform.InverseTransformPoint(b.center);
+            box.size = b.size;
+            return new Bounds(box.center, box.size);
+        }
+
+        static Material IndicatorMaterial()
+        {
+            string path = MatDir + "/Indicator.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat != null) return mat;
+            mat = new Material(Shader.Find("HDRP/Lit"));
+            ModelPostprocessor.ConfigureLit(mat, new Color(0.3f, 1f, 0.4f), 0.4f);
+            ModelPostprocessor.MakeEmissive(mat, new Color(0.3f, 1f, 0.4f), ModelPostprocessor.GlowNits);
+            HDMaterial.ValidateMaterial(mat);
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
+        }
+
+        // Prop fotoescaneado com colisor, para a interação (terminal, caixa de microchip).
+        static GameObject PhProp(string id, Transform parent, float scale)
+        {
+            var go = PolyHaven(id, parent);
+            go.transform.localScale = Vector3.one * scale;
+            // Colisor no próprio objeto: calcula os limites no espaço dele.
+            var renderers = go.GetComponentsInChildren<Renderer>();
+            var b = renderers[0].bounds;
+            foreach (var r in renderers) b.Encapsulate(r.bounds);
+            var box = go.AddComponent<BoxCollider>();
+            box.center = go.transform.InverseTransformPoint(b.center);
+            var inv = new Vector3(1f / go.transform.lossyScale.x, 1f / go.transform.lossyScale.y, 1f / go.transform.lossyScale.z);
+            box.size = Vector3.Scale(b.size, inv);
+            return go;
+        }
+
+        // Rocha-base de cada minério (scan do Poly Haven, escala de jogo e tinta) para os minerais procedurais por cima.
+        static readonly Dictionary<string, (string rock, float scale, Color tint)> OreRocks = new()
+        {
+            ["iron"] = ("moon_rock_01", 4.6f, new Color(0.78f, 0.58f, 0.5f)),
+            ["silicon"] = ("rock_07", 3.4f, new Color(0.78f, 0.84f, 0.95f)),
+            ["ice"] = ("stone_01", 6.2f, new Color(0.9f, 1.0f, 1.12f)),
+            ["magnesium"] = ("moon_rock_03", 5.6f, new Color(1.25f, 1.22f, 1.12f)),
+            ["titanium"] = ("moon_rock_05", 6.4f, new Color(0.66f, 0.7f, 0.8f)),
+            ["uranium"] = ("moon_rock_01", 4.0f, new Color(0.55f, 0.72f, 0.58f)),
+        };
+
+        static void Ore(string kind, GameObject node, float scale, System.Random rng)
+        {
+            var (rockId, rockScale, tint) = OreRocks[kind];
+            var rock = PolyHaven(rockId, node.transform);
+            rock.transform.localScale = Vector3.one * (rockScale * scale);
+            rock.transform.localRotation = Quaternion.Euler(0f, rng.Next(0, 360), 0f);
+            foreach (var r in rock.GetComponentsInChildren<Renderer>())
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++) mats[i] = TintedRockMaterial(mats[i], kind, tint);
+                r.sharedMaterials = mats;
+            }
+            var minerals = Scaled(Model("Ore/ore_" + kind, node.transform), scale);
+            minerals.transform.localPosition = Vector3.up * (0.06f * scale);
+            var sphere = node.AddComponent<SphereCollider>();
+            sphere.center = new Vector3(0f, 0.3f * scale, 0f);
+            sphere.radius = 0.62f * scale;
+        }
+
+        static Material TintedRockMaterial(Material source, string kind, Color tint)
+        {
+            string path = $"{MatDir}/Ore_{kind}.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(source);
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            else if (mat.GetTexture("_BaseColorMap") != source.GetTexture("_BaseColorMap") || kind == "iron")
+            {
+                EditorUtility.CopySerialized(source, mat); // rocha trocou: recopia do material-fonte
+            }
+            mat.SetColor("_BaseColor", tint);
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
         // Instancia um modelo do Poly Haven otimizado (tools/optimize_polyhaven.py).
         static GameObject PolyHaven(string id, Transform parent)
         {
@@ -382,10 +488,27 @@ namespace Planetcraft.EditorTools
         {
             string path = $"{PrefabDir}/{def.id}.prefab";
             var root = new GameObject(def.displayName);
-            var visual = Model(model, root.transform);
-            visual.transform.localScale = Vector3.one * scale;
+            bool scanned = model.StartsWith("ph:");
+            var visual = scanned ? PolyHaven(model.Substring(3), root.transform) : Model(model, root.transform);
+            visual.transform.localScale = Vector3.one * (scale * (scanned ? PhBaseScale(model.Substring(3)) : 1f));
             var placed = root.AddComponent<PlacedObject>();
             placed.EditorSetDefinition(def);
+            GameObject scannedIndicator = null;
+            if (scanned)
+            {
+                // Pivô na base, centrado; colisor em caixa e luz de funcionamento no topo (os scans não têm).
+                var b = FitBox(visual, root, true);
+                if (isMachine)
+                {
+                    scannedIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    scannedIndicator.name = "Indicator";
+                    Object.DestroyImmediate(scannedIndicator.GetComponent<Collider>());
+                    scannedIndicator.transform.SetParent(root.transform, false);
+                    scannedIndicator.transform.localPosition = new Vector3(b.center.x, b.max.y + 0.06f, b.center.z);
+                    scannedIndicator.transform.localScale = Vector3.one * 0.14f;
+                    scannedIndicator.GetComponent<Renderer>().sharedMaterial = IndicatorMaterial();
+                }
+            }
 
             var rotor = visual.transform.Find("Rotor");
             if (rotor != null) rotor.gameObject.AddComponent<Spinner>();
@@ -393,7 +516,7 @@ namespace Planetcraft.EditorTools
             if (isMachine)
             {
                 var machine = root.AddComponent<Machine>();
-                var indicator = visual.transform.Find("Indicator");
+                var indicator = scannedIndicator != null ? scannedIndicator.transform : visual.transform.Find("Indicator");
                 if (indicator != null) SetRef(machine, "runningIndicator", indicator.gameObject);
             }
 
@@ -762,7 +885,7 @@ namespace Planetcraft.EditorTools
                 var node = new GameObject("Nó_" + kind.item);
                 node.transform.SetParent(resources.transform, false);
                 node.transform.SetPositionAndRotation(pos - Vector3.up * 0.05f, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
-                Scaled(Model("Ore/ore_" + kind.item, node.transform), 0.8f + (float)rng.NextDouble() * 0.4f);
+                Ore(kind.item, node, 0.8f + (float)rng.NextDouble() * 0.4f, rng);
                 node.AddComponent<ResourceNode>().EditorSetup($"node_{i}", items[kind.item], 1);
             }
 
@@ -805,7 +928,7 @@ namespace Planetcraft.EditorTools
                 beaconRenderer.sharedMaterial = beaconMat;
                 beaconRenderer.shadowCastingMode = ShadowCastingMode.Off;
 
-                var terminal = Model("Props/log_terminal", site.transform);
+                var terminal = PhProp("vintage_spacecraft_instrument", site.transform, 3.6f);
                 terminal.transform.localPosition = new Vector3(3.5f, 0f, -2.5f);
                 terminal.transform.localRotation = Quaternion.Euler(0f, 200f, 0f);
                 SnapToGround(terminal.transform, terrain);
@@ -817,7 +940,7 @@ namespace Planetcraft.EditorTools
                     chip.transform.SetParent(site.transform, false);
                     chip.transform.localPosition = new Vector3(-3f, 0f, 2f);
                     SnapToGround(chip.transform, terrain);
-                    Model("Props/chip_crate", chip.transform);
+                    PhProp("ammo_box", chip.transform, 3.4f);
                     chip.AddComponent<ChipPickup>().EditorSetup(sites[s].blueprint, sites[s].label, new[] { beacon });
                 }
 
@@ -829,7 +952,7 @@ namespace Planetcraft.EditorTools
                     var node = new GameObject("Nó_uranium");
                     node.transform.SetParent(site.transform, true);
                     node.transform.SetPositionAndRotation(np, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
-                    Scaled(Model("Ore/ore_uranium", node.transform), 0.9f);
+                    Ore("uranium", node, 0.9f, rng);
                     node.AddComponent<ResourceNode>().EditorSetup($"node_wreck_{s}_{i}", items["uranium"], 1);
                 }
             }
@@ -878,7 +1001,7 @@ namespace Planetcraft.EditorTools
                 var node = new GameObject("Nó_" + nearKinds[i]);
                 node.transform.SetParent(resources.transform, false);
                 node.transform.SetPositionAndRotation(p, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
-                Scaled(Model("Ore/ore_" + nearKinds[i], node.transform), 0.9f);
+                Ore(nearKinds[i], node, 0.9f, rng);
                 node.AddComponent<ResourceNode>().EditorSetup($"node_start_{i}", items[nearKinds[i]], 1);
             }
 

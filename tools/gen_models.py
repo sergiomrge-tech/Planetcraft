@@ -129,6 +129,7 @@ class Model:
             self._greeble_box(mat, pos, size, base, obj)
 
     def cyl(self, mat, pos, r1, r2, h, seg=12, rot=(0, 0, 0), smooth=True, M=None, base=I4, obj=None):
+        seg = min(48, max(seg * 2, 24))  # silhueta redonda: o dobro de lados
         tmp = bmesh.new()
         bmesh.ops.create_cone(tmp, cap_ends=True, cap_tris=False, segments=seg,
                               radius1=r1, radius2=r2, depth=h)
@@ -165,6 +166,7 @@ class Model:
         self._emit(mat, obj, tmp, base)
 
     def lathe(self, mat, pos, profile, seg=12, smooth=True, base=I4, obj=None, caps=True):
+        seg = min(96, max(seg * 2, 24))
         tmp = bmesh.new()
         rings = []
         for r, z in profile:
@@ -356,7 +358,6 @@ def ore_iron():
     m.material("rock", (0.30, 0.24, 0.22), 0.9)
     m.material("rust", (0.66, 0.32, 0.14), 0.7)
     m.material("ore_metal", (0.38, 0.36, 0.38), 0.4, 0.7)
-    _rock_cluster(m, "rock", seed=1, extent=0.5, count=6, height=0.36)
     rng = random.Random(5)
     for i in range(9):  # veios de óxido: placas finas coladas na superfície
         a = rng.uniform(0, 2 * math.pi)
@@ -370,7 +371,6 @@ def ore_iron():
         m.box("ore_metal", (math.cos(a) * r, math.sin(a) * r, 0.2 + rng.uniform(0, 0.14)),
               (rng.uniform(0.07, 0.13), rng.uniform(0.05, 0.09), rng.uniform(0.04, 0.07)),
               rot=(rng.uniform(0, 60), rng.uniform(0, 60), rng.uniform(0, 360)), bevel=0.012)
-    _pebbles(m, "rock", 9, 0.55, 60)
     return m
 
 
@@ -381,7 +381,6 @@ def crystals(name, base, tip, rough, metal, seeds, glow=False):
     m.material("base_rock", (0.24, 0.24, 0.27), 0.9)
     m.material(crystal, base, rough, metal)
     m.material(crystal_tip, tip, rough, metal)
-    _rock_cluster(m, "base_rock", seed=seeds, extent=0.5, count=5, height=0.2)
     rng = random.Random(seeds)
     for i in range(11):
         a = math.radians(i * 33 + rng.uniform(-14, 14))
@@ -401,7 +400,6 @@ def crystals(name, base, tip, rough, metal, seeds, glow=False):
         d = Vector((rng.uniform(-0.6, 0.6), rng.uniform(-0.6, 0.6), 1.0)).normalized()
         b = Vector((math.cos(a) * r, math.sin(a) * r, 0.04))
         m.tube(crystal_tip, b, b + d * rng.uniform(0.1, 0.22), 0.025, 0.004, seg=5)
-    _pebbles(m, "base_rock", 7, 0.58, seeds + 70)
     return m
 
 
@@ -412,16 +410,12 @@ def ore_magnesium():
     m.material("stone_b", (0.66, 0.64, 0.6), 0.55)
     m.material("salt", (0.96, 0.96, 0.94), 0.3)
     rng = random.Random(21)
-    for i, (x, y, r) in enumerate([(0, 0, 0.38), (0.45, 0.15, 0.27), (-0.3, 0.32, 0.23), (0.12, -0.4, 0.2), (-0.42, -0.2, 0.18)]):
-        m.blob("stone" if i % 2 == 0 else "stone_b", (x, y, r * 0.8), (r, r * 0.95, r * 0.85), sub=2, noise=0.12,
-               seed=i + 20, smooth=True)
     for i in range(14):  # crosta cristalina
         a = rng.uniform(0, 2 * math.pi)
         r = rng.uniform(0.1, 0.5)
         m.box("salt", (math.cos(a) * r, math.sin(a) * r, 0.24 + (0.5 - r) * 0.5),
               (rng.uniform(0.04, 0.09), rng.uniform(0.04, 0.09), rng.uniform(0.03, 0.07)),
               rot=(rng.uniform(0, 70), rng.uniform(0, 70), rng.uniform(0, 360)), bevel=0.01)
-    _pebbles(m, "stone_b", 8, 0.6, 90)
     return m
 
 
@@ -431,7 +425,6 @@ def ore_titanium():
     m.material("base_rock", (0.24, 0.24, 0.27), 0.9)
     m.material("ti", (0.82, 0.84, 0.88), 0.22, 0.9)
     m.material("ti_dark", (0.5, 0.52, 0.58), 0.3, 0.9)
-    _rock_cluster(m, "base_rock", seed=30, extent=0.52, count=6, height=0.28)
     rng = random.Random(33)
     for i in range(7):
         a = rng.uniform(0, 2 * math.pi)
@@ -445,7 +438,6 @@ def ore_titanium():
         r = rng.uniform(0.38, 0.62)
         m.box("ti", (math.cos(a) * r, math.sin(a) * r, 0.06), (0.07, 0.05, 0.04),
               rot=(rng.uniform(0, 60), rng.uniform(0, 60), rng.uniform(0, 360)), bevel=0.01)
-    _pebbles(m, "base_rock", 8, 0.6, 95)
     return m
 
 

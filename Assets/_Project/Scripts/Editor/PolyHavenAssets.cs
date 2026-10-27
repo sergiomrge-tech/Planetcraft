@@ -24,6 +24,7 @@ namespace Planetcraft.EditorTools
             if (!assetPath.StartsWith(Root)) return;
             var importer = (TextureImporter)assetImporter;
             if (assetPath.Contains("_nor_gl")) importer.textureType = TextureImporterType.NormalMap;
+            if (assetPath.EndsWith("_mask.png")) importer.sRGBTexture = false; // máscara do HDRP: dados lineares
             if (assetPath.Contains("_diff") && assetPath.EndsWith(".png")) importer.alphaIsTransparency = true;
             // Superfícies das máquinas (tools/fetch_surfaces.py): normal e máscara do HDRP são dados lineares.
             if (assetPath.EndsWith("/normal.png")) importer.textureType = TextureImporterType.NormalMap;
@@ -95,11 +96,22 @@ namespace Planetcraft.EditorTools
             string path = $"{dir}/Materials/{name}.mat";
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
             bool created = mat == null;
-            if (created) mat = new Material(Shader.Find("HDRP/Lit"));
+            if (created)
+            {
+                mat = new Material(Shader.Find("HDRP/Lit"));
+                // O perfil de difusão (folhas) grava referências no asset: ele precisa existir antes.
+                AssetDatabase.CreateAsset(mat, path);
+            }
 
             var diff = FindTexture(dir, name, "diff");
             var normal = FindTexture(dir, name, "nor_gl");
-            bool cutout = diff != null && AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(diff)) is TextureImporter ti &&
+            var maskPath = $"{dir}/textures/{name}_mask.png";
+            var mask = AssetDatabase.LoadAssetAtPath<Texture2D>(maskPath);
+            // Folhagem recortada: textura com alfa E nome de planta (peças de máquinas também trazem canal alfa cheio).
+            string lower = name.ToLowerInvariant();
+            bool foliage = lower.Contains("leaves") || lower.Contains("leaf") || lower.Contains("branches") ||
+                           lower.Contains("shrub") || lower.Contains("fern");
+            bool cutout = foliage && diff != null && AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(diff)) is TextureImporter ti &&
                           ti.DoesSourceTextureHaveAlpha();
 
             // Folhas levemente puxadas para o verde vivo: os scans ficam escuros e pardos sob o céu do HDRP.
@@ -108,6 +120,17 @@ namespace Planetcraft.EditorTools
             if (normal != null) mat.SetTexture("_NormalMap", normal);
             mat.SetFloat("_Smoothness", cutout ? 0.35f : 0.22f);
             mat.SetFloat("_Metallic", 0f);
+            // Metal, oclusão e lisura reais do scan (máscara empacotada por tools/optimize_polyhaven.py).
+            mat.SetTexture("_MaskMap", mask);
+            if (mask != null)
+            {
+                mat.SetFloat("_MetallicRemapMin", 0f);
+                mat.SetFloat("_MetallicRemapMax", 1f);
+                mat.SetFloat("_SmoothnessRemapMin", 0f);
+                mat.SetFloat("_SmoothnessRemapMax", 1f);
+                mat.SetFloat("_AORemapMin", 0f);
+                mat.SetFloat("_AORemapMax", 1f);
+            }
             if (cutout)
             {
                 // Folhas: recorte pela transparência e dupla face (cards vistos dos dois lados).
@@ -126,11 +149,19 @@ namespace Planetcraft.EditorTools
                 mat.SetFloat("_DoubleSidedEnable", 0f);
                 mat.SetMaterialType(MaterialId.LitStandard);
             }
+            if (name.EndsWith("_glass"))
+            {
+                // Vidro dos instrumentos: translúcido e liso.
+                mat.SetColor("_BaseColor", new Color(0.7f, 0.85f, 0.9f, 0.3f));
+                mat.SetTexture("_BaseColorMap", null);
+                mat.SetTexture("_MaskMap", null);
+                mat.SetFloat("_Smoothness", 0.95f);
+                HDMaterial.SetSurfaceType(mat, true);
+            }
             HDMaterial.ValidateMaterial(mat);
             Debug.Log($"[PolyHaven] {name}: diff={(diff != null ? diff.name : "-")} normal={(normal != null)} " +
                       $"recorte={cutout} tipo={mat.GetMaterialType()}");
-            if (created) AssetDatabase.CreateAsset(mat, path);
-            else EditorUtility.SetDirty(mat);
+            EditorUtility.SetDirty(mat);
             return mat;
         }
 

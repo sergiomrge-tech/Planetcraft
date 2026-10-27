@@ -23,6 +23,10 @@ MODELS = [
     "dead_tree_trunk", "dead_tree_trunk_02", "tree_stump_01",
     "jacaranda_tree", "tree_small_02",
     "shrub_02", "fern_02",
+    # Minérios (rochas fotoescaneadas como base) e props de máquinas/ruínas.
+    "moon_rock_01", "moon_rock_03", "moon_rock_05", "rock_07", "stone_01",
+    "barrel_stove", "drill_press_01", "metal_tool_chest", "ammo_box",
+    "vintage_spacecraft_instrument", "old_military_compressor", "industrial_pastic_container", "portable_generator",
 ]
 # Superfícies das máquinas (baixadas e preparadas por tools/fetch_surfaces.py; aqui só para os créditos).
 SURFACES = ["metal_plate_02", "cracked_concrete_wall", "rusty_metal_02", "dark_rock"]

@@ -17,6 +17,19 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 - Modelo: [Tree Small 02](https://polyhaven.com/a/tree_small_02) — Rico Cilliers
 - Modelo: [Shrub 02](https://polyhaven.com/a/shrub_02) — Rico Cilliers
 - Modelo: [Fern 02](https://polyhaven.com/a/fern_02) — Rob Tuytel, Rico Cilliers
+- Modelo: [Moon Rock 01](https://polyhaven.com/a/moon_rock_01) — Greg Zaal, Rico Cilliers, Jenelle van Heerden, Dario Barresi
+- Modelo: [Moon Rock 03](https://polyhaven.com/a/moon_rock_03) — Greg Zaal, Rico Cilliers, Jenelle van Heerden
+- Modelo: [Moon Rock 05](https://polyhaven.com/a/moon_rock_05) — Greg Zaal, Rico Cilliers, Jenelle van Heerden
+- Modelo: [Rock 07](https://polyhaven.com/a/rock_07) — Jenelle van Heerden
+- Modelo: [Stone 01](https://polyhaven.com/a/stone_01) — Dario Barresi, Rico Cilliers
+- Modelo: [Barrel Stove](https://polyhaven.com/a/barrel_stove) — MP
+- Modelo: [Drill Press 01](https://polyhaven.com/a/drill_press_01) — Viktor
+- Modelo: [Metal Tool Chest](https://polyhaven.com/a/metal_tool_chest) — Yann Kervran, John Hutcheson
+- Modelo: [Ammo Box](https://polyhaven.com/a/ammo_box) — DanKit
+- Modelo: [Vintage Spacecraft Instrument](https://polyhaven.com/a/vintage_spacecraft_instrument) — Michał Wiśniewski
+- Modelo: [Old Military Compressor](https://polyhaven.com/a/old_military_compressor) — Brian Speight
+- Modelo: [Industrial Plastic Container](https://polyhaven.com/a/industrial_pastic_container) — Galo Benivegna
+- Modelo: [Portable Generator](https://polyhaven.com/a/portable_generator) — James Ray Cock
 - Superfície: [Metal Plate 02](https://polyhaven.com/a/metal_plate_02) — Rob Tuytel
 - Superfície: [Cracked Concrete Wall](https://polyhaven.com/a/cracked_concrete_wall) — Dimitrios Savva, Rico Cilliers
 - Superfície: [Rusty Metal 02](https://polyhaven.com/a/rusty_metal_02) — Rob Tuytel
