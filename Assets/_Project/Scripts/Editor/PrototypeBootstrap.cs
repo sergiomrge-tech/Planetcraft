@@ -800,6 +800,32 @@ namespace Planetcraft.EditorTools
             return settings;
         }
 
+        // Aplaina o terreno num círculo de `inner` m em volta de `center` até a altura `height` (local do terreno) e faz a
+        // transição de volta ao relevo original até `outer` m (curva suave, sem degrau).
+        static void FlattenTerrain(Terrain terrain, Vector3 center, float height, float inner, float outer)
+        {
+            var td = terrain.terrainData;
+            int res = td.heightmapResolution;
+            var origin = terrain.transform.position;
+            float cellX = td.size.x / (res - 1), cellZ = td.size.z / (res - 1);
+            int x0 = Mathf.Clamp(Mathf.FloorToInt((center.x - outer - origin.x) / cellX), 0, res - 1);
+            int x1 = Mathf.Clamp(Mathf.CeilToInt((center.x + outer - origin.x) / cellX), 0, res - 1);
+            int z0 = Mathf.Clamp(Mathf.FloorToInt((center.z - outer - origin.z) / cellZ), 0, res - 1);
+            int z1 = Mathf.Clamp(Mathf.CeilToInt((center.z + outer - origin.z) / cellZ), 0, res - 1);
+            int w = x1 - x0 + 1, h = z1 - z0 + 1;
+            var heights = td.GetHeights(x0, z0, w, h);
+            float target = height / td.size.y;
+            for (int z = 0; z < h; z++)
+            for (int x = 0; x < w; x++)
+            {
+                var world = new Vector3(origin.x + (x0 + x) * cellX, 0f, origin.z + (z0 + z) * cellZ);
+                float d = Vector2.Distance(new Vector2(world.x, world.z), new Vector2(center.x, center.z));
+                float k = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(inner, outer, d));
+                heights[z, x] = Mathf.Lerp(heights[z, x], target, k);
+            }
+            td.SetHeights(x0, z0, heights);
+        }
+
         static void SnapToGround(Transform t, Terrain terrain)
         {
             var p = t.position;
@@ -989,14 +1015,11 @@ namespace Planetcraft.EditorTools
                 var site = new GameObject($"Ruína_{s + 1}");
                 site.transform.SetParent(wrecks.transform, false);
                 site.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
-                // O corpo do bunker fica atrás do centro da ruína (z de -4 a -13 m no Unity): apoia no ponto mais baixo do
-                // terreno sob ele para nunca flutuar; o lado alto da encosta fica enterrado junto com a fundação.
+                // O corpo do bunker fica atrás do centro da ruína (z de -4 a -13 m no Unity). Em encosta, aplaina um platô
+                // sob ele (com transição suave) na altura do centro da ruína, e assenta bunker e entulho nesse chão.
+                FlattenTerrain(terrain, site.transform.TransformPoint(new Vector3(0f, 0f, -6f)), pos.y, 10f, 17f);
                 var bunker = Model("Props/ruin_bunker", site.transform);
-                float lowest = float.MaxValue;
-                foreach (float bx in new[] { -6f, 0f, 6f })
-                foreach (float bz in new[] { -4f, -8.5f, -13f })
-                    lowest = Mathf.Min(lowest, terrain.SampleHeight(site.transform.TransformPoint(new Vector3(bx, 0f, bz))));
-                bunker.transform.position = new Vector3(bunker.transform.position.x, lowest + terrain.transform.position.y - 0.15f,
+                bunker.transform.position = new Vector3(bunker.transform.position.x, pos.y + terrain.transform.position.y - 0.2f,
                     bunker.transform.position.z);
 
                 // Entulho do velho mundo (scans): barreiras de concreto, pneus, aros e latões na frente do bunker.
@@ -1047,6 +1070,31 @@ namespace Planetcraft.EditorTools
                     node.transform.SetPositionAndRotation(np, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
                     Ore("uranium", node, 0.9f, rng);
                     node.AddComponent<ResourceNode>().EditorSetup($"node_wreck_{s}_{i}", items["uranium"], 1);
+                }
+            }
+            // O platô das ruínas mudou o chão: reassenta o que já estava posicionado perto delas.
+            var ruinCenters = new List<Vector3>();
+            foreach (Transform site in wrecks.transform) ruinCenters.Add(site.TransformPoint(new Vector3(0f, 0f, -6f)));
+            foreach (var group in new[] { "Vegetação", "Restos da Terra", "Recursos", "Fauna" })
+            {
+                var root = GameObject.Find(group);
+                if (root == null) continue;
+                bool natural = group == "Vegetação" || group == "Restos da Terra";
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t == null || t.parent == null || t.parent.parent != null && t.parent.parent.name != group && t.parent.name != group) continue;
+                    float nearest = float.MaxValue;
+                    foreach (var c in ruinCenters)
+                        nearest = Mathf.Min(nearest, Vector2.Distance(new Vector2(c.x, c.z), new Vector2(t.position.x, t.position.z)));
+                    if (nearest >= 17f || t.parent.name == "Vegetação") continue;
+                    if (natural && nearest < 12f)
+                    {
+                        Object.DestroyImmediate(t.gameObject); // nada cresce de dentro do bunker
+                        continue;
+                    }
+                    var p = t.position;
+                    p.y = terrain.SampleHeight(p) + terrain.transform.position.y - 0.05f;
+                    t.position = p;
                 }
             }
 
