@@ -90,7 +90,23 @@ namespace Planetcraft.Dev
             if (shot == null) yield break;
             if (player != null) player.LookEnabled = false;
             if (!TryNumber(args, "-pc-wait", out double wait)) wait = 12;
-            yield return new WaitForSecondsRealtime((float)wait);
+            // -pc-fps: mede a média de quadros nos últimos 5 s da espera (desempenho na cena capturada).
+            if (HasFlag(args, "-pc-fps") && wait > 6)
+            {
+                QualitySettings.vSyncCount = 0; // mede o custo real, sem o teto do monitor
+                yield return new WaitForSecondsRealtime((float)wait - 5f);
+                int frames = Time.frameCount;
+                float start = Time.realtimeSinceStartup;
+                float worst = 0f;
+                while (Time.realtimeSinceStartup - start < 5f)
+                {
+                    worst = Mathf.Max(worst, Time.unscaledDeltaTime);
+                    yield return null;
+                }
+                float avg = (Time.frameCount - frames) / (Time.realtimeSinceStartup - start);
+                Debug.Log($"[Dev] fps média={avg:0.0} pior quadro={worst * 1000f:0.0} ms resolução={Screen.width}x{Screen.height}");
+            }
+            else yield return new WaitForSecondsRealtime((float)wait);
             if (player != null)
             {
                 var cam = player.GetComponentInChildren<Camera>();
