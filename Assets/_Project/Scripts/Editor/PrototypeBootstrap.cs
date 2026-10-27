@@ -366,6 +366,59 @@ namespace Planetcraft.EditorTools
             return go;
         }
 
+        // Peças escaneadas (tamanho real) montadas nas construções modeladas por nós: dão escala e acabamento de foto.
+        // Coordenadas locais do Unity: +Z é a frente (porta) dos modelos do gen_models.py, -X o lado dos tanques de O2.
+        static readonly Dictionary<string, (string id, Vector3 pos, float yaw)[]> Decor = new()
+        {
+            ["base_module"] = new[]
+            {
+                ("exterior_aircon_unit", new Vector3(2.55f, 0.6f, -1.0f), 90f),
+                ("power_box_01", new Vector3(1.0f, 1.0f, -2.12f), 180f),
+                ("security_light", new Vector3(0.9f, 2.9f, 2.1f), 0f),
+                ("small_lpg_tank", new Vector3(-2.6f, 0f, 0.9f), 30f),
+                ("portable_generator", new Vector3(2.9f, 0f, 1.8f), -70f),
+                ("industrial_pastic_container", new Vector3(-1.4f, 0f, 2.9f), 10f),
+            },
+            ["nuclear_reactor"] = new[]
+            {
+                ("utility_box_02", new Vector3(1.7f, 0.4f, 1.55f), 180f),
+                ("power_box_01", new Vector3(-1.6f, 0.4f, -1.9f), 0f),
+                ("security_light", new Vector3(-1.6f, 1.5f, 1.15f), 0f),
+            },
+            ["wind_turbine"] = new[] { ("utility_box_01", new Vector3(0.95f, 0.3f, 0.2f), 90f) },
+            ["solar_panel"] = new[] { ("utility_box_01", new Vector3(0.75f, 0.2f, 0.1f), 90f) },
+            ["algae_farm"] = new[]
+            {
+                ("industrial_pastic_container", new Vector3(2.15f, 0f, -0.6f), 80f),
+                ("industrial_pastic_container", new Vector3(2.2f, 0f, 0.35f), 95f),
+                ("small_lpg_tank", new Vector3(-2.0f, 0f, 0.9f), 0f),
+            },
+            ["shipyard"] = new[]
+            {
+                ("portable_welding_cart", new Vector3(-14.6f, 0.25f, 19.5f), 160f),
+                ("tool_cart", new Vector3(-13.8f, 0.25f, 16.5f), 200f),
+                ("metal_tool_chest", new Vector3(-15.6f, 0.25f, 17.6f), 90f),
+                ("Barrel_01", new Vector3(14.6f, 0.25f, -21.5f), 0f),
+                ("Barrel_01", new Vector3(15.3f, 0.25f, -20.8f), 40f),
+                ("Barrel_01", new Vector3(14.5f, 0.25f, -20.4f), 75f),
+                ("small_lpg_tank", new Vector3(13.6f, 0.25f, -22.2f), 0f),
+                ("portable_generator", new Vector3(-12.5f, 0.25f, 21.8f), 100f),
+                ("industrial_pastic_container", new Vector3(12.8f, 0.25f, 22.4f), 15f),
+                ("industrial_pastic_container", new Vector3(13.5f, 0.25f, 21.6f), -20f),
+            },
+        };
+
+        static void Dress(GameObject root, string id)
+        {
+            if (!Decor.TryGetValue(id, out var parts)) return;
+            foreach (var (part, pos, yaw) in parts)
+            {
+                var go = PhProp(part, root.transform, 1f); // com colisor: o jogador não atravessa as peças
+                go.transform.localPosition = pos;
+                go.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            }
+        }
+
         // Tamanho natural dos scans é pequeno (um fogão de 0,86 m): fator para o tamanho de jogo, antes do `scale` do tier.
         static float PhBaseScale(string id) => id switch
         {
@@ -485,7 +538,7 @@ namespace Planetcraft.EditorTools
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (mat == null)
             {
-                mat = new Material(source);
+                mat = new Material(source) { name = $"Ore_{kind}" };
                 AssetDatabase.CreateAsset(mat, path);
             }
             else if (mat.GetTexture("_BaseColorMap") != source.GetTexture("_BaseColorMap") || kind == "iron")
@@ -538,6 +591,8 @@ namespace Planetcraft.EditorTools
 
             var rotor = visual.transform.Find("Rotor");
             if (rotor != null) rotor.gameObject.AddComponent<Spinner>();
+
+            Dress(root, def.id);
 
             if (isMachine)
             {
@@ -934,15 +989,27 @@ namespace Planetcraft.EditorTools
                 var site = new GameObject($"Ruína_{s + 1}");
                 site.transform.SetParent(wrecks.transform, false);
                 site.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
-                // O corpo do bunker fica atrás do centro da ruína (z de 4 a 13 m): apoia no ponto mais baixo do terreno sob
-                // ele para nunca flutuar; o lado alto da encosta fica enterrado junto com a fundação.
+                // O corpo do bunker fica atrás do centro da ruína (z de -4 a -13 m no Unity): apoia no ponto mais baixo do
+                // terreno sob ele para nunca flutuar; o lado alto da encosta fica enterrado junto com a fundação.
                 var bunker = Model("Props/ruin_bunker", site.transform);
                 float lowest = float.MaxValue;
                 foreach (float bx in new[] { -6f, 0f, 6f })
-                foreach (float bz in new[] { 4f, 8.5f, 13f })
+                foreach (float bz in new[] { -4f, -8.5f, -13f })
                     lowest = Mathf.Min(lowest, terrain.SampleHeight(site.transform.TransformPoint(new Vector3(bx, 0f, bz))));
                 bunker.transform.position = new Vector3(bunker.transform.position.x, lowest + terrain.transform.position.y - 0.15f,
                     bunker.transform.position.z);
+
+                // Entulho do velho mundo (scans): barreiras de concreto, pneus, aros e latões na frente do bunker.
+                foreach (var (id, x, z, yaw) in new[] { ("concrete_road_barrier_02", -5.5f, -2.5f, 20f),
+                             ("concrete_road_barrier_02", 6f, -1.8f, -35f), ("old_tyre", -3.8f, 1.2f, 0f),
+                             ("rusted_wheel_rim_01", 4.6f, 2.2f, 60f), ("metal_trash_can", 1.8f, -3.2f, 0f),
+                             ("Barrel_01", -6.4f, 0.8f, 0f) })
+                {
+                    var debris = PolyHaven(id, site.transform);
+                    debris.transform.localPosition = new Vector3(x, 0f, z);
+                    debris.transform.localRotation = Quaternion.Euler(0f, yaw + rng.Next(-20, 20), 0f);
+                    SnapToGround(debris.transform, terrain);
+                }
 
                 var beacon = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 beacon.name = "Farol";

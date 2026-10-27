@@ -48,6 +48,19 @@ ASSETS = {
     "old_military_compressor": (22000, None, 1.0, False),
     "industrial_pastic_container": (7500, None, 1.0, False),
     "portable_generator": (14000, None, 1.0, False),
+    "exterior_aircon_unit": (8000, None, 1.0, False),
+    "power_box_01": (6000, None, 1.0, False),
+    "security_light": (3000, None, 1.0, False),
+    "small_lpg_tank": (5000, None, 1.0, False),
+    "utility_box_01": (3500, None, 1.0, False),
+    "utility_box_02": (5000, None, 1.0, False),
+    "portable_welding_cart": (10000, None, 1.0, False),
+    "tool_cart": (10000, None, 1.0, False),
+    "concrete_road_barrier_02": (6000, None, 1.0, False),
+    "old_tyre": (2500, None, 1.0, False),
+    "rusted_wheel_rim_01": (5000, None, 1.0, False),
+    "metal_trash_can": (6000, None, 1.0, False),
+    "Barrel_01": (2500, None, 1.0, False),
 }
 LEAF_WORDS = ("leaves", "leaf", "twig", "foliage", "branches")
 LOD1_FACTOR = 0.3
@@ -295,6 +308,9 @@ def optimize(asset_id, solid_budget, keep, scale, all_foliage, variant=None):
         asset_id = f"{asset_id}_{variant}"
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.make_single_user(object=True, obdata=True)  # peças duplicadas compartilham malha: separa antes de aplicar
+    for o in lod0:  # shape keys impedem aplicar modificadores (decimação); o jogo não usa
+        if o.data.shape_keys:
+            o.shape_key_clear()
     bpy.ops.object.select_all(action="DESELECT")
     for o in lod0:  # aplica transformações para o LOD1 copiar certo
         o.select_set(True)

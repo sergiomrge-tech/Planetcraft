@@ -27,6 +27,10 @@ MODELS = [
     "moon_rock_01", "moon_rock_03", "moon_rock_05", "rock_07", "stone_01",
     "barrel_stove", "drill_press_01", "metal_tool_chest", "ammo_box",
     "vintage_spacecraft_instrument", "old_military_compressor", "industrial_pastic_container", "portable_generator",
+    # Peças escaneadas montadas nos modelos próprios (base, reator, turbina, estaleiro, ruínas).
+    "exterior_aircon_unit", "power_box_01", "security_light", "small_lpg_tank", "utility_box_01", "utility_box_02",
+    "portable_welding_cart", "tool_cart", "concrete_road_barrier_02", "old_tyre", "rusted_wheel_rim_01",
+    "metal_trash_can", "Barrel_01",
 ]
 # Superfícies das máquinas (baixadas e preparadas por tools/fetch_surfaces.py; aqui só para os créditos).
 SURFACES = ["metal_plate_02", "cracked_concrete_wall", "rusty_metal_02", "dark_rock"]

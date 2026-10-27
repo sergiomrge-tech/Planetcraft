@@ -30,6 +30,19 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 - Modelo: [Old Military Compressor](https://polyhaven.com/a/old_military_compressor) — Brian Speight
 - Modelo: [Industrial Plastic Container](https://polyhaven.com/a/industrial_pastic_container) — Galo Benivegna
 - Modelo: [Portable Generator](https://polyhaven.com/a/portable_generator) — James Ray Cock
+- Modelo: [Exterior Aircon Unit](https://polyhaven.com/a/exterior_aircon_unit) — Monsta3D
+- Modelo: [Power Box 01](https://polyhaven.com/a/power_box_01) — Rico Cilliers, Yann Kervran
+- Modelo: [Security Light](https://polyhaven.com/a/security_light) — Maximilian Schuster
+- Modelo: [Small Lpg Tank](https://polyhaven.com/a/small_lpg_tank) — Ulan Cabanilla
+- Modelo: [Utility Box 01](https://polyhaven.com/a/utility_box_01) — James Ray Cock
+- Modelo: [Utility Box 02](https://polyhaven.com/a/utility_box_02) — James Ray Cock
+- Modelo: [Portable Welding Cart](https://polyhaven.com/a/portable_welding_cart) — Georgii Gorbunov
+- Modelo: [Tool Cart](https://polyhaven.com/a/tool_cart) — Savva Zakharov
+- Modelo: [Concrete Road Barrier 02](https://polyhaven.com/a/concrete_road_barrier_02) — Amal Kumar
+- Modelo: [Old Tyre](https://polyhaven.com/a/old_tyre) — MP
+- Modelo: [Rusted Wheel Rim 01](https://polyhaven.com/a/rusted_wheel_rim_01) — John Hutcheson
+- Modelo: [Metal Trash Can](https://polyhaven.com/a/metal_trash_can) — GurJas Studios
+- Modelo: [Barrel_01](https://polyhaven.com/a/Barrel_01) — Jorge Camacho
 - Superfície: [Metal Plate 02](https://polyhaven.com/a/metal_plate_02) — Rob Tuytel
 - Superfície: [Cracked Concrete Wall](https://polyhaven.com/a/cracked_concrete_wall) — Dimitrios Savva, Rico Cilliers
 - Superfície: [Rusty Metal 02](https://polyhaven.com/a/rusty_metal_02) — Rob Tuytel
