@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
   id: shipyard
   displayName: Estaleiro
-  description: "Plataforma para montar a nave-m\xE3e e deixar o planeta. S\xF3 um por planeta."
+  description: "Plataforma para montar a nave-m\xE3e que leva a not\xEDcia de volta \xE0 Esta\xE7\xE3o Horizonte. S\xF3 um por mundo."
   prefab: {fileID: 5961192286999733973, guid: e9ab0994be3bc564bbe55645dedb00c7, type: 3}
   cost:
   - item: {fileID: 11400000, guid: 8e25e72587b3dff47b009ab5290f80cf, type: 2}

@@ -190,7 +190,10 @@ namespace Planetcraft.EditorTools
                     a.cost = cost;
                     a.terraformRates = rates;
                 });
-                def.blueprintId = blueprint; // projeto exigido faz parte do design: sempre sincroniza
+                // Textos e projeto exigido fazem parte do design (e da tradução em LocData): sempre sincronizam.
+                def.displayName = name;
+                def.description = desc;
+                def.blueprintId = blueprint;
                 def.unique = unique;
                 // Prefab é derivado do modelo: sempre regenera para pegar mudanças do gen_models.py.
                 def.prefab = SavePrefab(def, isMachine, pressurized, model, scale, storage);

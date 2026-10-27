@@ -19,11 +19,15 @@ namespace Planetcraft.Core
             return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
         }
 
-        public static string T(string pt)
+        public static string T(string pt) => Translate(pt, English);
+
+        public static string Translate(string pt, bool english)
         {
-            if (string.IsNullOrEmpty(pt) || !English) return pt;
+            if (string.IsNullOrEmpty(pt) || !english) return pt;
             return En.TryGetValue(pt, out var en) ? en : pt;
         }
+
+        public static bool HasEnglish(string pt) => !string.IsNullOrEmpty(pt) && En.ContainsKey(pt);
 
         public static string SystemDefault() =>
             Application.systemLanguage == SystemLanguage.Portuguese ? "pt" : "en";

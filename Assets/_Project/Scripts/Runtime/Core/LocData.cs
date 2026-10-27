@@ -42,6 +42,8 @@ namespace Planetcraft.Core
             en["Fazenda de Algas"] = "Algae Farm";
             en["Estaleiro"] = "Shipyard";
             en["Reator Nuclear"] = "Nuclear Reactor";
+            en["+1.2 kW"] = "+1.2 kW";
+            en["+6.5 kW"] = "+6.5 kW";
             en["Calor +1.2/s. Consome 1 kW."] = "Heat +1.2/s. Uses 1 kW.";
             en["Pressão +1/s. Consome 1 kW."] = "Pressure +1/s. Uses 1 kW.";
             en["Descontaminação +1/s. Consome 1 kW."] = "Decontamination +1/s. Uses 1 kW.";
