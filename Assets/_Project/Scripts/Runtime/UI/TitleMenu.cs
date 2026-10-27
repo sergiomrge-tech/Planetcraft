@@ -26,7 +26,7 @@ namespace Planetcraft.UI
                 UnityEngine.SceneManagement.SceneManager.LoadScene(Scenes.Epilogue);
                 yield break;
             }
-            if (Array.Exists(args, a => a.StartsWith("-pc-") && a != "-pc-screenshot" && a != "-pc-wait" && a != "-pc-title-options" && a != "-pc-lang"))
+            if (Array.Exists(args, a => a.StartsWith("-pc-") && a != "-pc-screenshot" && a != "-pc-wait" && a != "-pc-title-options" && a != "-pc-title-credits" && a != "-pc-lang"))
             {
                 GameSession.NewGame();
                 yield break;
@@ -36,6 +36,7 @@ namespace Planetcraft.UI
             // Foco inicial no primeiro botão: com controle, o direcional navega e A confirma.
             buttons.Q<Button>()?.Focus();
             if (Array.IndexOf(args, "-pc-title-options") >= 0) ShowOptions(true);
+            if (Array.IndexOf(args, "-pc-title-credits") >= 0) ShowCredits();
 
             // Captura automática da própria tela de título.
             int shotIndex = Array.IndexOf(args, "-pc-screenshot");
@@ -81,6 +82,7 @@ namespace Planetcraft.UI
             cont.SetEnabled(SaveSystem.HasSaveFile);
             buttons.Add(cont);
             buttons.Add(MenuButton("Opções", () => ShowOptions(true)));
+            buttons.Add(MenuButton("Créditos", ShowCredits));
             buttons.Add(MenuButton("Sair", Application.Quit));
 
             options = new VisualElement();
@@ -95,6 +97,56 @@ namespace Planetcraft.UI
             hint.style.left = 120;
             hint.style.bottom = 36;
             root.Add(hint);
+        }
+
+        // Créditos dos assets de terceiros (CREDITS.md copiado para Resources pelo gerador): exigido pelas licenças CC BY.
+        void ShowCredits()
+        {
+            buttons.style.display = DisplayStyle.None;
+            options.Clear();
+            var panel = HudStyle.Panel();
+            panel.style.width = 760;
+            panel.style.maxHeight = 520;
+            HudStyle.Pad(panel, 18, 22);
+            panel.Add(HudStyle.Tag("Sistema"));
+            var title = HudStyle.MakeLabel("CRÉDITOS", 30, HudStyle.Ink, bold: true);
+            title.style.marginBottom = 10;
+            panel.Add(title);
+            var scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.style.flexShrink = 1;
+            var text = Resources.Load<TextAsset>("credits");
+            var body = HudStyle.MakeLabel(text != null ? CreditsToRichText(text.text) : "-", 14, new Color(0.82f, 0.82f, 0.78f));
+            body.style.whiteSpace = WhiteSpace.Normal;
+            scroll.Add(body);
+            panel.Add(scroll);
+            var back = HudStyle.BigButton("Voltar", () =>
+            {
+                options.Clear();
+                options.style.display = DisplayStyle.None;
+                buttons.style.display = DisplayStyle.Flex;
+                buttons.Q<Button>()?.Focus();
+            });
+            back.style.marginTop = 12;
+            back.style.marginLeft = 0;
+            panel.Add(back);
+            options.Add(panel);
+            options.style.display = DisplayStyle.Flex;
+            back.Focus();
+        }
+
+        // Markdown simples do CREDITS.md -> texto rico: títulos em destaque, links viram só o nome.
+        static string CreditsToRichText(string md)
+        {
+            var lines = md.Replace("\r", "").Split('\n');
+            var sb = new System.Text.StringBuilder();
+            foreach (var raw in lines)
+            {
+                string line = System.Text.RegularExpressions.Regex.Replace(raw, @"\[([^\]]+)\]\([^)]+\)", "$1").Replace("`", "");
+                if (line.StartsWith("# ")) continue;
+                if (line.StartsWith("## ")) sb.Append("\n<b><color=#FFB848>").Append(line.Substring(3)).Append("</color></b>\n");
+                else sb.Append(line.StartsWith("- ") ? "  ·  " + line.Substring(2) : line).Append('\n');
+            }
+            return sb.ToString().Trim();
         }
 
         void ShowOptions(bool show)

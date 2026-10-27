@@ -117,6 +117,8 @@ namespace Planetcraft.Core
             ["Um milhão de anos depois, a humanidade volta para casa."] = "A million years later, humanity comes home.",
             ["Novo jogo"] = "New game",
             ["Sair"] = "Quit",
+            ["Créditos"] = "Credits",
+            ["CRÉDITOS"] = "CREDITS",
             ["MISSÃO CUMPRIDA"] = "MISSION ACCOMPLISHED",
             ["Dever cumprido"] = "Duty fulfilled",
             ["A nave-mãe acopla na Estação Horizonte levando a notícia\nque a humanidade esperou por um milhão de anos: a Terra respira de novo."] =

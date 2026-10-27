@@ -65,6 +65,10 @@ namespace Planetcraft.EditorTools
             EditorUtility.SetDirty(db);
 
             BuildScene(stageDb, stages, db, items, mats);
+            CopyCredits();
+            // Ícone do executável (provisório: quadro do epílogo, tools/ -> Assets/_Project/UI/icon.png).
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/UI/icon.png");
+            if (icon != null) PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
             BuildTitleScene();
             BuildEpilogueScene();
             EditorBuildSettings.scenes = new[]
@@ -558,6 +562,15 @@ namespace Planetcraft.EditorTools
             hdCam.backgroundColorHDR = Color.black;
             camGo.AddComponent<AudioListener>();
             return cam;
+        }
+
+        // CREDITS.md vai para Resources para a tela de créditos do título (exigência das licenças CC BY).
+        static void CopyCredits()
+        {
+            string dir = Root + "/Resources";
+            Directory.CreateDirectory(dir);
+            File.Copy("CREDITS.md", dir + "/credits.txt", overwrite: true);
+            AssetDatabase.ImportAsset(dir + "/credits.txt", ImportAssetOptions.ForceSynchronousImport);
         }
 
         // PanelSettings + tema padrão de runtime para o HUD em UI Toolkit.

@@ -26,3 +26,8 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 - Imagens da Terra: [Blue Marble — Land Surface, Shallow Water, and Shaded Topography](https://visibleearth.nasa.gov/images/57752)
   e [Blue Marble — Clouds](https://visibleearth.nasa.gov/images/57747), NASA Goddard Space Flight Center.
   Baixadas e convertidas por `tools/fetch_nasa.py`. O uso não implica endosso da NASA.
+
+## Fontes (SIL Open Font License 1.1)
+
+- Rajdhani — Indian Type Foundry
+- Share Tech Mono — Carrois Type Design
