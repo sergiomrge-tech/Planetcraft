@@ -135,8 +135,8 @@ namespace Planetcraft.UI
         {
             if (log == null) return;
             if (UIState.MenuOpen) ToggleMenu(false);
-            logTitle.text = log.title;
-            logBody.text = log.body;
+            logTitle.text = Loc.T(log.title);
+            logBody.text = Loc.T(log.body);
             logPanel.style.display = DisplayStyle.Flex;
             UIState.MenuOpen = true;
             logOpenedFrame = Time.frameCount;
@@ -246,11 +246,11 @@ namespace Planetcraft.UI
             if (tm != null)
             {
                 tiLabel.text = TiFormat.Format(tm.Ti);
-                stageLabel.text = (tm.CurrentStage != null ? tm.CurrentStage.displayName : "-").ToUpperInvariant();
+                stageLabel.text = (tm.CurrentStage != null ? Loc.T(tm.CurrentStage.displayName) : "-").ToUpperInvariant();
                 var next = tm.NextStage;
                 if (next != null)
                 {
-                    nextLabel.text = $"{Loc.T("Próximo").ToUpperInvariant()}  ·  {next.displayName.ToUpperInvariant()}  ·  {TiFormat.Format(next.requiredTi)}";
+                    nextLabel.text = $"{Loc.T("Próximo").ToUpperInvariant()}  ·  {Loc.T(next.displayName).ToUpperInvariant()}  ·  {TiFormat.Format(next.requiredTi)}";
                     double from = tm.CurrentStage != null ? tm.CurrentStage.requiredTi : 0d;
                     SetMeter(progress, (float)((tm.Ti - from) / (next.requiredTi - from)), Accent);
                 }
@@ -287,7 +287,7 @@ namespace Planetcraft.UI
             string text = null;
             if (placer != null && placer.Selected != null)
             {
-                text = $"{placer.Selected.displayName}: {placer.Status}";
+                text = $"{Loc.T(placer.Selected.displayName)}: {placer.Status}";
             }
             else if (!UIState.MenuOpen)
             {
@@ -340,10 +340,10 @@ namespace Planetcraft.UI
                 if (r == null || r.output == null) continue;
                 if (!r.IsUnlocked(ti))
                 {
-                    craftList.Add(MakeLabel($"{r.output.displayName}  ({LockReason(r.requiredTi, r.blueprintId, ti)})", 13, Muted));
+                    craftList.Add(MakeLabel($"{Loc.T(r.output.displayName)}  ({LockReason(r.requiredTi, r.blueprintId, ti)})", 13, Muted));
                     continue;
                 }
-                var card = Card(r.output.displayName, CostText(r.ingredients));
+                var card = Card(Loc.T(r.output.displayName), CostText(r.ingredients));
                 var recipe = r;
                 var button = MakeButton("Fabricar", () => { if (CraftingService.TryCraft(recipe, inv)) Sfx.Craft(); });
                 button.SetEnabled(inv.Has(r.ingredients));
@@ -357,10 +357,10 @@ namespace Planetcraft.UI
                 if (b == null) continue;
                 if (!b.IsUnlocked(ti))
                 {
-                    buildList.Add(MakeLabel($"{b.displayName}  ({LockReason(b.requiredTi, b.blueprintId, ti)})", 13, Muted));
+                    buildList.Add(MakeLabel($"{Loc.T(b.displayName)}  ({LockReason(b.requiredTi, b.blueprintId, ti)})", 13, Muted));
                     continue;
                 }
-                var card = Card(b.displayName, $"{CostText(b.cost)}\n<color=#9aa4ad>{b.description}</color>");
+                var card = Card(Loc.T(b.displayName), $"{CostText(b.cost)}\n<color=#9aa4ad>{WithHints(Loc.T(b.description))}</color>");
                 var def = b;
                 var button = MakeButton("Construir", () =>
                 {
@@ -389,7 +389,12 @@ namespace Planetcraft.UI
                 row.Add(MakeButton("Ler", () => ShowLog(entry)));
                 logsList.Add(row);
             }
-            if (!anyLog) logsList.Add(MakeLabel("Nenhum registro encontrado.\nProcure ruínas: os faróis marcam onde estão.", 13, Muted));
+            if (!anyLog)
+            {
+                var none = MakeLabel("Nenhum registro encontrado.\nProcure ruínas: os faróis marcam onde estão.", 13, Muted);
+                none.style.whiteSpace = WhiteSpace.Normal;
+                logsList.Add(none);
+            }
         }
 
         void RebuildShipyard(Inventory inv)
@@ -405,8 +410,8 @@ namespace Planetcraft.UI
             {
                 if (m == null) continue;
                 bool done = ShipProgress.IsInstalled(m.id);
-                var card = Card(done ? $"{m.displayName}  <color=#8fd18f>({Loc.T("instalado")})</color>" : m.displayName,
-                    $"{m.description}\n<color=#c9d1d9>{CostText(m.cost)}</color>");
+                var card = Card(done ? $"{Loc.T(m.displayName)}  <color=#8fd18f>({Loc.T("instalado")})</color>" : Loc.T(m.displayName),
+                    $"{Loc.T(m.description)}\n<color=#c9d1d9>{CostText(m.cost)}</color>");
                 string reason = openShipyard.BlockReason(m, inv, ti);
                 if (!done)
                 {
@@ -447,7 +452,7 @@ namespace Planetcraft.UI
                 var row = Row();
                 row.style.justifyContent = Justify.SpaceBetween;
                 row.style.marginBottom = 4;
-                var name = MakeLabel($"{slot.item.displayName}  <b>x{slot.amount}</b>", 15);
+                var name = MakeLabel($"{Loc.T(slot.item.displayName)}  <b>x{slot.amount}</b>", 15);
                 name.style.flexGrow = 1;
                 row.Add(name);
                 var button = action(slot);
@@ -460,7 +465,7 @@ namespace Planetcraft.UI
         static string CostText(ItemAmount[] costs) =>
             costs == null || costs.Length == 0
                 ? Loc.T("grátis")
-                : string.Join(", ", costs.Where(c => c.item != null).Select(c => $"{c.amount}x {c.item.displayName}"));
+                : string.Join(", ", costs.Where(c => c.item != null).Select(c => $"{c.amount}x {Loc.T(c.item.displayName)}"));
 
         // ------------------------------------------------------------------ Montagem da UI
 

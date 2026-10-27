@@ -1,3 +1,4 @@
+using Planetcraft.Core;
 using Planetcraft.Items;
 using Planetcraft.Player;
 using Planetcraft.UI;
@@ -9,7 +10,7 @@ namespace Planetcraft.Building
     [RequireComponent(typeof(InventoryComponent))]
     public class StorageChest : MonoBehaviour, IInteractable
     {
-        public string Prompt => "[E] Abrir baú";
+        public string Prompt => $"[E] {Loc.T("Abrir baú")}";
 
         public void Interact(GameObject interactor)
         {

@@ -18,7 +18,7 @@ namespace Planetcraft.World
 
         public static IEnumerable<string> CollectedIds => collectedIds;
 
-        public string Prompt => item != null ? $"[E] Coletar {item.displayName}" : "";
+        public string Prompt => item != null ? $"[E] {Loc.T("Coletar")} {Loc.T(item.displayName)}" : "";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()

@@ -27,8 +27,8 @@ namespace Planetcraft.Building
         public TerraformStage LaunchStage => launchStage;
         public bool AllInstalled => modules.All(m => m != null && ShipProgress.IsInstalled(m.id));
 
-        public string Prompt => ShipProgress.Launched ? "Estaleiro vazio — a nave-mãe voltou à estação" :
-            launching ? "" : "[E] Estaleiro: montar a nave-mãe";
+        public string Prompt => ShipProgress.Launched ? Loc.T("Estaleiro vazio — a nave-mãe voltou à estação") :
+            launching ? "" : $"[E] {Loc.T("Estaleiro: montar a nave-mãe")}";
 
         void Start()
         {
@@ -58,11 +58,11 @@ namespace Planetcraft.Building
 
         public string BlockReason(ShipModule m, Inventory inv, double ti)
         {
-            if (ShipProgress.IsInstalled(m.id)) return "instalado";
+            if (ShipProgress.IsInstalled(m.id)) return Loc.T("instalado");
             int index = System.Array.IndexOf(modules, m);
-            if (index > 0 && !ShipProgress.IsInstalled(modules[index - 1].id)) return $"instale antes: {modules[index - 1].displayName}";
-            if (ti < m.requiredTi) return $"requer {TiFormat.Format(m.requiredTi)}";
-            if (!inv.Has(m.cost)) return "recursos insuficientes";
+            if (index > 0 && !ShipProgress.IsInstalled(modules[index - 1].id)) return $"{Loc.T("instale antes")}: {Loc.T(modules[index - 1].displayName)}";
+            if (ti < m.requiredTi) return $"{Loc.T("requer")} {TiFormat.Format(m.requiredTi)}";
+            if (!inv.Has(m.cost)) return Loc.T("recursos insuficientes");
             return null;
         }
 
@@ -76,10 +76,10 @@ namespace Planetcraft.Building
 
         public string LaunchBlockReason(double ti)
         {
-            if (ShipProgress.Launched) return "a nave já partiu";
-            if (!AllInstalled) return "monte todos os módulos";
+            if (ShipProgress.Launched) return Loc.T("a nave já partiu");
+            if (!AllInstalled) return Loc.T("monte todos os módulos");
             if (launchStage != null && ti < launchStage.requiredTi)
-                return $"atmosfera instável: requer o estágio {launchStage.displayName} ({TiFormat.Format(launchStage.requiredTi)})";
+                return $"{Loc.T("atmosfera instável: requer o estágio")} {Loc.T(launchStage.displayName)} ({TiFormat.Format(launchStage.requiredTi)})";
             return null;
         }
 

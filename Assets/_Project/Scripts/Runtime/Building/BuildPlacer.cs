@@ -65,7 +65,7 @@ namespace Planetcraft.Building
             ghost.SetActive(hit);
             if (!hit)
             {
-                Status = "Mire no chão";
+                Status = Loc.T("Mire no chão");
                 return;
             }
 
@@ -82,30 +82,31 @@ namespace Planetcraft.Building
             var tm = TerraformManager.Instance;
             if (tm != null && tm.Ti < selected.requiredTi)
             {
-                reason = $"Requer {TiFormat.Format(selected.requiredTi)}";
+                reason = $"{Loc.T("Requer")} {TiFormat.Format(selected.requiredTi)}";
                 return false;
             }
             if (selected.unique && System.Linq.Enumerable.Any(PlacedObject.All, p => p.Definition == selected))
             {
-                reason = "Só é possível ter um";
+                reason = Loc.T("Só é possível ter um");
                 return false;
             }
             if (!Blueprints.Has(selected.blueprintId))
             {
-                reason = "Requer microchip das ruínas";
+                reason = Loc.T("Requer microchip das ruínas");
                 return false;
             }
             if (hit.normal.y < minGroundNormalY)
             {
-                reason = "Terreno muito inclinado";
+                reason = Loc.T("Terreno muito inclinado");
                 return false;
             }
             if (!freeBuild && !inventory.Inventory.Has(selected.cost))
             {
-                reason = "Recursos insuficientes";
+                reason = Loc.T("Recursos insuficientes");
                 return false;
             }
-            reason = "[LMB] construir   [R/scroll] girar   [RMB] cancelar";
+            reason = $"{GameInput.Hint(GameInput.Place)} {Loc.T("construir")}   {GameInput.Hint(GameInput.Rotate)} {Loc.T("girar")}   " +
+                     $"{GameInput.Hint(GameInput.Cancel)} {Loc.T("cancelar")}";
             return true;
         }
 

@@ -26,23 +26,23 @@ namespace Planetcraft.Building
             if (placed == null || placed.Definition == null) return;
 
             string blocked = BlockReason(placed);
-            Prompt = blocked ?? $"[X] Desmontar {placed.Definition.displayName}";
+            Prompt = blocked ?? $"[X] {Loc.T("Desmontar")} {Loc.T(placed.Definition.displayName)}";
             if (blocked == null && GameInput.Deconstruct.WasPressedThisFrame()) Deconstruct(placed);
         }
 
         string BlockReason(PlacedObject placed)
         {
             if (placed.TryGetComponent<Shipyard>(out _) && ShipProgress.Count > 0)
-                return "A nave-mãe está em montagem neste estaleiro";
+                return Loc.T("A nave-mãe está em montagem neste estaleiro");
             if (placed.TryGetComponent<InventoryComponent>(out var storage) && !storage.Inventory.IsEmpty)
-                return "Esvazie o baú antes de desmontar";
+                return Loc.T("Esvazie o baú antes de desmontar");
             if (placed.TryGetComponent<PressurizedZone>(out _) && placed.TryGetComponent<Collider>(out var zone)
                 && zone.bounds.Contains(transform.position + Vector3.up))
-                return "Saia da base para desmontar";
+                return Loc.T("Saia da base para desmontar");
             var cost = placed.Definition.cost;
             if (cost != null)
                 foreach (var c in cost)
-                    if (c.item != null && inventory.Inventory.SpaceFor(c.item) < c.amount) return "Inventário cheio";
+                    if (c.item != null && inventory.Inventory.SpaceFor(c.item) < c.amount) return Loc.T("Inventário cheio");
             return null;
         }
 

@@ -28,7 +28,7 @@ namespace Planetcraft.Core
         public static string SystemDefault() =>
             Application.systemLanguage == SystemLanguage.Portuguese ? "pt" : "en";
 
-        static readonly Dictionary<string, string> En = new()
+        static readonly Dictionary<string, string> En = WithData(new()
         {
             // HUD
             ["Índice de terraformação"] = "Terraformation index",
@@ -118,6 +118,12 @@ namespace Planetcraft.Core
             ["A nave-mãe acopla na Estação Horizonte levando a notícia\nque a humanidade esperou por um milhão de anos: a Terra respira de novo."] =
                 "The mothership docks at Horizon Station carrying the news\nhumanity waited a million years for: Earth breathes again.",
             ["Continuar explorando"] = "Keep exploring",
-        };
+        });
+
+        static Dictionary<string, string> WithData(Dictionary<string, string> en)
+        {
+            LocData.Fill(en);
+            return en;
+        }
     }
 }

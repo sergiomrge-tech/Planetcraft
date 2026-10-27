@@ -59,15 +59,15 @@ namespace Planetcraft.UI
             var names = new List<string>();
             double needTi = 0;
             foreach (var b in database.buildables)
-                if (b != null && b.blueprintId == id) { names.Add(b.displayName); needTi = System.Math.Max(needTi, b.requiredTi); }
+                if (b != null && b.blueprintId == id) { names.Add(Loc.T(b.displayName)); needTi = System.Math.Max(needTi, b.requiredTi); }
             foreach (var r in database.recipes)
-                if (r != null && r.output != null && r.blueprintId == id) { names.Add(r.output.displayName); needTi = System.Math.Max(needTi, r.requiredTi); }
+                if (r != null && r.output != null && r.blueprintId == id) { names.Add(Loc.T(r.output.displayName)); needTi = System.Math.Max(needTi, r.requiredTi); }
             if (names.Count == 0) return;
             queue.Add(new Banner
             {
-                title = "PROJETO OBTIDO",
+                title = Loc.T("PROJETO OBTIDO"),
                 subtitle = string.Join(", ", names),
-                body = ti >= needTi ? "Disponível no menu [Tab]." : $"Disponível a partir de {TiFormat.Format(needTi)}.",
+                body = ti >= needTi ? Loc.T("Disponível no menu [Tab].") : $"{Loc.T("Disponível a partir de")} {TiFormat.Format(needTi)}.",
                 frame = Time.frameCount,
             });
         }
@@ -77,9 +77,9 @@ namespace Planetcraft.UI
             queue.Add(new Banner
             {
                 isStage = true,
-                title = "NOVO ESTÁGIO",
-                subtitle = stage.displayName,
-                body = stage.description,
+                title = Loc.T("NOVO ESTÁGIO"),
+                subtitle = Loc.T(stage.displayName),
+                body = Loc.T(stage.description),
                 frame = Time.frameCount,
             });
         }
@@ -92,10 +92,10 @@ namespace Planetcraft.UI
             if (database != null && ti > lastTi)
             {
                 foreach (var b in database.buildables)
-                    if (b != null && b.requiredTi > lastTi && b.requiredTi <= ti && Blueprints.Has(b.blueprintId)) unlocked.Add(b.displayName);
+                    if (b != null && b.requiredTi > lastTi && b.requiredTi <= ti && Blueprints.Has(b.blueprintId)) unlocked.Add(Loc.T(b.displayName));
                 foreach (var r in database.recipes)
                     if (r != null && r.output != null && r.requiredTi > lastTi && r.requiredTi <= ti && Blueprints.Has(r.blueprintId))
-                        unlocked.Add(r.output.displayName);
+                        unlocked.Add(Loc.T(r.output.displayName));
             }
             lastTi = ti;
             if (unlocked.Count == 0) return;
@@ -104,10 +104,10 @@ namespace Planetcraft.UI
             var last = queue.Count > 0 ? queue[queue.Count - 1] : null;
             if (last != null && last.isStage && last.frame == Time.frameCount)
             {
-                last.body += $"\n<color=#ffd27f>Desbloqueado: {list}</color>";
+                last.body += $"\n<color=#ffd27f>{Loc.T("Desbloqueado")}: {list}</color>";
                 return;
             }
-            queue.Add(new Banner { title = "NOVO PROJETO", subtitle = list, frame = Time.frameCount });
+            queue.Add(new Banner { title = Loc.T("NOVO PROJETO"), subtitle = list, frame = Time.frameCount });
         }
 
         void Update()

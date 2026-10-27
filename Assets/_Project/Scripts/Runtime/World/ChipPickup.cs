@@ -12,7 +12,7 @@ namespace Planetcraft.World
         [Tooltip("Objetos escondidos depois de pegar o chip (ex.: farol).")]
         [SerializeField] GameObject[] hideWhenTaken;
 
-        public string Prompt => $"[E] Pegar microchip ({label})";
+        public string Prompt => $"[E] {Loc.T("Pegar microchip")} ({Loc.T(label)})";
 
         // Depois do SaveSystem restaurar os projetos (ordem -50).
         void Start()

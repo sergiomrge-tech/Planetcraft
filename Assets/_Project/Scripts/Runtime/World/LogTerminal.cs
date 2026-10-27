@@ -11,7 +11,7 @@ namespace Planetcraft.World
         [SerializeField] StoryLog log;
 
         public string Prompt => log == null ? "" :
-            StoryLogs.IsRead(log.id) ? $"[E] Reler: {log.title}" : $"[E] Ler registro: {log.title}";
+            StoryLogs.IsRead(log.id) ? $"[E] {Loc.T("Reler")}: {Loc.T(log.title)}" : $"[E] {Loc.T("Ler registro")}: {Loc.T(log.title)}";
 
         public void Interact(GameObject interactor)
         {
