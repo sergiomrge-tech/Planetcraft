@@ -41,3 +41,7 @@ Thumbs.db
 
 # Fontes brutas de assets (pesadas); o projeto usa as versões otimizadas
 /ThirdPartySource/
+
+# Capturas do MCP for Unity (manage_camera screenshot)
+/Assets/Screenshots/
+/Assets/Screenshots.meta

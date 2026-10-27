@@ -424,34 +424,59 @@ namespace Planetcraft.EditorTools
             return go;
         }
 
-        // Rocha-base de cada minério (scan do Poly Haven, escala de jogo e tinta) para os minerais procedurais por cima.
-        static readonly Dictionary<string, (string rock, float scale, Color tint)> OreRocks = new()
+        // Rocha-base de cada minério (scan do Poly Haven, escala de jogo e tinta) e o mineral cravado nela.
+        static readonly Dictionary<string, (string rock, float scale, Color tint, string mineral)> OreRocks = new()
         {
-            ["iron"] = ("moon_rock_01", 4.6f, new Color(0.78f, 0.58f, 0.5f)),
-            ["silicon"] = ("rock_07", 3.4f, new Color(0.78f, 0.84f, 0.95f)),
-            ["ice"] = ("stone_01", 6.2f, new Color(0.9f, 1.0f, 1.12f)),
-            ["magnesium"] = ("moon_rock_03", 5.6f, new Color(1.25f, 1.22f, 1.12f)),
-            ["titanium"] = ("moon_rock_05", 6.4f, new Color(0.66f, 0.7f, 0.8f)),
-            ["uranium"] = ("moon_rock_01", 4.0f, new Color(0.55f, 0.72f, 0.58f)),
+            ["iron"] = ("moon_rock_01", 6.0f, new Color(0.72f, 0.5f, 0.42f), "nuggets_iron"),
+            ["silicon"] = ("rock_07", 4.6f, new Color(0.78f, 0.82f, 0.9f), "druse_silicon"),
+            ["ice"] = ("stone_01", 8.4f, new Color(0.88f, 0.96f, 1.08f), "druse_ice"),
+            ["magnesium"] = ("moon_rock_03", 7.6f, new Color(1.2f, 1.18f, 1.1f), "druse_magnesium"),
+            ["titanium"] = ("moon_rock_05", 8.6f, new Color(0.62f, 0.66f, 0.75f), "nuggets_titanium"),
+            ["uranium"] = ("moon_rock_01", 5.4f, new Color(0.5f, 0.6f, 0.52f), "druse_uranium"),
         };
 
+        // Minério = rocha escaneada + 3 a 6 aglomerados do mineral cravados na superfície dela: raio de cima para baixo
+        // contra um colisor temporário da rocha, aglomerado alinhado à normal e meio afundado.
         static void Ore(string kind, GameObject node, float scale, System.Random rng)
         {
-            var (rockId, rockScale, tint) = OreRocks[kind];
+            var (rockId, rockScale, tint, mineral) = OreRocks[kind];
             var rock = PolyHaven(rockId, node.transform);
             rock.transform.localScale = Vector3.one * (rockScale * scale);
             rock.transform.localRotation = Quaternion.Euler(0f, rng.Next(0, 360), 0f);
+            var temp = new List<Collider>();
             foreach (var r in rock.GetComponentsInChildren<Renderer>())
             {
                 var mats = r.sharedMaterials;
                 for (int i = 0; i < mats.Length; i++) mats[i] = TintedRockMaterial(mats[i], kind, tint);
                 r.sharedMaterials = mats;
+                if (r.name.EndsWith("_LOD0") && r.TryGetComponent<MeshFilter>(out var mf))
+                {
+                    var mc = r.gameObject.AddComponent<MeshCollider>();
+                    mc.sharedMesh = mf.sharedMesh;
+                    temp.Add(mc);
+                }
             }
-            var minerals = Scaled(Model("Ore/ore_" + kind, node.transform), scale);
-            minerals.transform.localPosition = Vector3.up * (0.06f * scale);
+            Physics.SyncTransforms();
+
+            var bounds = rock.GetComponentInChildren<Renderer>().bounds;
+            int clusters = 3 + rng.Next(4);
+            for (int c = 0, tries = 0; c < clusters && tries < 30; tries++)
+            {
+                var from = new Vector3(Mathf.Lerp(bounds.min.x, bounds.max.x, 0.2f + 0.6f * (float)rng.NextDouble()),
+                    bounds.max.y + 1f, Mathf.Lerp(bounds.min.z, bounds.max.z, 0.2f + 0.6f * (float)rng.NextDouble()));
+                if (!Physics.Raycast(from, Vector3.down, out var hit, bounds.size.y + 2f) || !temp.Contains(hit.collider)) continue;
+                var cluster = Model("Ore/" + mineral, node.transform);
+                cluster.transform.position = hit.point - hit.normal * 0.03f;
+                cluster.transform.rotation = Quaternion.FromToRotation(Vector3.up, hit.normal) *
+                                             Quaternion.Euler(0f, rng.Next(0, 360), 0f);
+                cluster.transform.localScale = Vector3.one * (scale * (0.7f + 0.7f * (float)rng.NextDouble()));
+                c++;
+            }
+            foreach (var col in temp) Object.DestroyImmediate(col);
+
             var sphere = node.AddComponent<SphereCollider>();
-            sphere.center = new Vector3(0f, 0.3f * scale, 0f);
-            sphere.radius = 0.62f * scale;
+            sphere.center = new Vector3(0f, 0.35f * scale, 0f);
+            sphere.radius = 0.7f * scale;
         }
 
         static Material TintedRockMaterial(Material source, string kind, Color tint)
@@ -466,6 +491,7 @@ namespace Planetcraft.EditorTools
             else if (mat.GetTexture("_BaseColorMap") != source.GetTexture("_BaseColorMap") || kind == "iron")
             {
                 EditorUtility.CopySerialized(source, mat); // rocha trocou: recopia do material-fonte
+                mat.name = $"Ore_{kind}";
             }
             mat.SetColor("_BaseColor", tint);
             EditorUtility.SetDirty(mat);

@@ -441,6 +441,71 @@ def ore_titanium():
     return m
 
 
+def _hex_crystal(m, mat, tip_mat, base, direction, radius, length, rng, flat=1.0):
+    """Cristal hexagonal de verdade: prisma de 6 faces, ponta piramidal com 6 facetas, seção levemente achatada
+    e torcida (cristais naturais não são regulares). Base afundada para nascer de dentro da rocha."""
+    d = Vector(direction).normalized()
+    up = Vector((0, 0, 1))
+    rot = up.rotation_difference(d).to_matrix().to_4x4()
+    twist = rng.uniform(0, math.pi / 3)
+    tip_h = radius * rng.uniform(1.4, 2.2)
+    body = max(length - tip_h, radius)
+    ring = []
+    for k in range(6):
+        a = twist + k * math.pi / 3
+        r = radius * rng.uniform(0.85, 1.12)
+        ring.append((math.cos(a) * r, math.sin(a) * r * flat))
+    verts = [(x, y, -radius * 0.8) for x, y in ring] + [(x * 0.97, y * 0.97, body) for x, y in ring]
+    verts.append((rng.uniform(-0.15, 0.15) * radius, rng.uniform(-0.15, 0.15) * radius, body + tip_h))
+    faces = [(k, (k + 1) % 6, 6 + (k + 1) % 6, 6 + k) for k in range(6)]
+    faces.append(tuple(reversed(range(6))))
+    M = T(*base) @ rot
+    m.poly(mat, verts[:12], faces, base=M)
+    tip_faces = [(k, (k + 1) % 6, 6) for k in range(6)]
+    m.poly(tip_mat, [verts[6 + k] for k in range(6)] + [verts[12]], tip_faces, base=M)
+
+
+def druse(name, color, tip, glow=False, count=34, seed=1, max_len=0.34, max_r=0.045):
+    """Drusa (~0.3 m): dezenas de cristais finos de tamanhos variados saindo de um ponto, o maior no centro.
+    Instanciada várias vezes sobre a rocha escaneada do minério, alinhada à normal da superfície."""
+    m = Model(name, "Ore")
+    body, point = ("glow_crystal", "glow_crystal_tip") if glow else ("glass_crystal", "glass_crystal_tip")
+    m.material(body, color, 0.08, 0.0)
+    m.material(point, tip, 0.05, 0.0)
+    rng = random.Random(seed)
+    for i in range(count):
+        main = i < 3
+        spread = rng.uniform(0.0, 0.25) if main else rng.uniform(0.25, 0.95)
+        a = rng.uniform(0, 2 * math.pi)
+        direction = (math.cos(a) * spread, math.sin(a) * spread, 1.0)
+        r0 = rng.uniform(0.0, 0.03) if main else rng.uniform(0.02, 0.13)
+        base = (math.cos(a) * r0, math.sin(a) * r0, 0.0)
+        length = max_len * (rng.uniform(0.75, 1.0) if main else rng.uniform(0.18, 0.7))
+        radius = max_r * (rng.uniform(0.8, 1.0) if main else rng.uniform(0.3, 0.75))
+        _hex_crystal(m, body, point, base, direction, radius, length, rng, flat=rng.uniform(0.75, 1.0))
+    return m
+
+
+def nuggets(name, color, metal, rough, seed, count=9, size=0.06, flat=False):
+    """Minério para cravar na rocha: nódulos arredondados (ferro) ou placas chanfradas (titânio)."""
+    m = Model(name, "Ore")
+    m.material("ore_metal", color, rough, metal)
+    rng = random.Random(seed)
+    for i in range(count):
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.0, 0.12)
+        s = size * rng.uniform(0.5, 1.3)
+        dims = (s * rng.uniform(1.2, 2.2), s * rng.uniform(0.9, 1.6), s * 0.25) if flat else \
+               (s * rng.uniform(0.7, 1.3), s * rng.uniform(0.7, 1.3), s * rng.uniform(0.5, 1.0))
+        pos = (math.cos(a) * r, math.sin(a) * r, dims[2] * 0.3)
+        rot = (rng.uniform(-35, 35), rng.uniform(-35, 35), rng.uniform(0, 360))
+        if flat:
+            m.box("ore_metal", pos, dims, rot=rot, bevel=min(dims) * 0.18)
+        else:  # nódulos arredondados e irregulares, como hematita
+            m.blob("ore_metal", pos, tuple(x / 2 for x in dims), sub=2, noise=0.22, seed=seed + i, rot=rot, smooth=True)
+    return m
+
+
 # =============================================================================
 # Fauna (frente em +Y)
 # =============================================================================
@@ -1600,6 +1665,15 @@ BUILDERS = {
     "storage_chest": storage_chest,
     "nuclear_reactor": nuclear_reactor,
     "ore_uranium": lambda: crystals("ore_uranium", (0.25, 0.9, 0.35), (0.6, 1.0, 0.6), 0.3, 0.2, 43, glow=True),
+    # Minerais cravados nas rochas escaneadas dos minérios (ver PrototypeBootstrap.Ore).
+    "druse_silicon": lambda: druse("druse_silicon", (0.62, 0.72, 0.9), (0.8, 0.88, 1.0), seed=11),
+    "druse_ice": lambda: druse("druse_ice", (0.82, 0.93, 1.0), (0.95, 0.98, 1.0), seed=12, max_r=0.06),
+    "druse_uranium": lambda: druse("druse_uranium", (0.25, 0.85, 0.35), (0.55, 1.0, 0.6), glow=True, seed=13,
+                                   count=26, max_len=0.22),
+    "druse_magnesium": lambda: druse("druse_magnesium", (0.95, 0.95, 0.92), (1.0, 1.0, 1.0), seed=14, count=40,
+                                     max_len=0.12, max_r=0.025),
+    "nuggets_iron": lambda: nuggets("nuggets_iron", (0.42, 0.3, 0.26), 0.6, 0.45, seed=21),
+    "nuggets_titanium": lambda: nuggets("nuggets_titanium", (0.8, 0.82, 0.86), 0.95, 0.2, seed=22, flat=True),
     "wreck_pod": wreck_pod, "chip_crate": chip_crate, "log_terminal": log_terminal,
     "ruin_bunker": ruin_bunker, "decontaminator": decontaminator,
     "mothership": mothership, "shipyard": shipyard, "station": station,
