@@ -10,7 +10,7 @@ namespace Planetcraft.EditorTools
         [MenuItem("Planetcraft/Diagnóstico de materiais")]
         public static void Run()
         {
-            foreach (var path in new[] { "Assets/_Project/Models/Machines/heater.fbx", "Assets/_Project/Models/Machines/base_module.fbx" })
+            foreach (var path in new[] { "Assets/_Project/Models/Props/ruin_bunker.fbx", "Assets/_Project/Models/Ore/ore_iron.fbx", "Assets/_Project/Models/Props/log_terminal.fbx" })
             {
                 foreach (var m in AssetDatabase.LoadAllAssetsAtPath(path).OfType<Material>())
                 {

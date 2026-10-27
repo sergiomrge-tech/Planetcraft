@@ -785,7 +785,15 @@ namespace Planetcraft.EditorTools
                 var site = new GameObject($"Ruína_{s + 1}");
                 site.transform.SetParent(wrecks.transform, false);
                 site.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, rng.Next(0, 360), 0f));
-                Model("Props/ruin_bunker", site.transform);
+                // O corpo do bunker fica atrás do centro da ruína (z de 4 a 13 m): apoia no ponto mais baixo do terreno sob
+                // ele para nunca flutuar; o lado alto da encosta fica enterrado junto com a fundação.
+                var bunker = Model("Props/ruin_bunker", site.transform);
+                float lowest = float.MaxValue;
+                foreach (float bx in new[] { -6f, 0f, 6f })
+                foreach (float bz in new[] { 4f, 8.5f, 13f })
+                    lowest = Mathf.Min(lowest, terrain.SampleHeight(site.transform.TransformPoint(new Vector3(bx, 0f, bz))));
+                bunker.transform.position = new Vector3(bunker.transform.position.x, lowest + terrain.transform.position.y - 0.15f,
+                    bunker.transform.position.z);
 
                 var beacon = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 beacon.name = "Farol";

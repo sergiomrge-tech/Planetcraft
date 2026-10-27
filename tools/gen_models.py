@@ -327,52 +327,125 @@ def moss():
 # =============================================================================
 # Minérios
 # =============================================================================
+def _pebbles(m, mat, count, radius, seed, size=(0.04, 0.1), obj=None):
+    """Pedregulhos espalhados em volta da base do minério (assentam o objeto no chão)."""
+    rng = random.Random(seed)
+    for i in range(count):
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(radius * 0.7, radius * 1.25)
+        s = rng.uniform(*size)
+        m.blob(mat, (math.cos(a) * r, math.sin(a) * r, s * 0.4), (s, s * rng.uniform(0.7, 1.1), s * 0.7), sub=2,
+               noise=0.3, seed=seed + i, obj=obj, smooth=True)
+
+
+def _rock_cluster(m, mat, seed, extent=0.5, count=5, height=0.3):
+    """Aglomerado de rochas irregulares: uma grande ao centro e outras menores meio enterradas em volta."""
+    rng = random.Random(seed)
+    m.blob(mat, (0, 0, height * 0.55), (extent, extent * 0.85, height), sub=3, noise=0.26, seed=seed, smooth=True)
+    for i in range(count - 1):
+        a = rng.uniform(0, 2 * math.pi)
+        d = extent * rng.uniform(0.55, 0.95)
+        r = extent * rng.uniform(0.28, 0.5)
+        m.blob(mat, (math.cos(a) * d, math.sin(a) * d, r * 0.45), (r, r * rng.uniform(0.7, 1.0), r * 0.75), sub=3,
+               noise=0.26, seed=seed + 10 + i, rot=(0, 0, rng.uniform(0, 360)), smooth=True)
+
+
 def ore_iron():
+    """Jazida de ferro: rocha escura escavada, veios de óxido laranja e lascas de minério nas fendas."""
     m = Model("ore_iron", "Ore")
-    m.material("rock", (0.30, 0.22, 0.20), 0.9)
-    m.material("rust", (0.62, 0.3, 0.14), 0.7)
-    m.blob("rock", (0, 0, 0.25), (0.5, 0.42, 0.34), sub=1, noise=0.28, seed=1)
-    m.blob("rock", (0.38, 0.1, 0.17), (0.3, 0.28, 0.22), sub=1, noise=0.25, seed=2)
-    m.blob("rust", (-0.3, 0.2, 0.18), (0.28, 0.22, 0.2), sub=1, noise=0.28, seed=3)
-    m.blob("rust", (0.05, 0.05, 0.52), (0.2, 0.18, 0.12), sub=1, noise=0.3, seed=4)
+    m.material("rock", (0.30, 0.24, 0.22), 0.9)
+    m.material("rust", (0.66, 0.32, 0.14), 0.7)
+    m.material("ore_metal", (0.38, 0.36, 0.38), 0.4, 0.7)
+    _rock_cluster(m, "rock", seed=1, extent=0.5, count=6, height=0.36)
+    rng = random.Random(5)
+    for i in range(9):  # veios de óxido: placas finas coladas na superfície
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.12, 0.42)
+        z = 0.12 + (0.5 - r) * 0.7
+        m.blob("rust", (math.cos(a) * r, math.sin(a) * r, z), (rng.uniform(0.1, 0.2), rng.uniform(0.04, 0.09), 0.035),
+               sub=2, smooth=True, noise=0.25, seed=40 + i, rot=(rng.uniform(-25, 25), rng.uniform(-25, 25), math.degrees(a)))
+    for i in range(5):  # lascas metálicas
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.2, 0.46)
+        m.box("ore_metal", (math.cos(a) * r, math.sin(a) * r, 0.2 + rng.uniform(0, 0.14)),
+              (rng.uniform(0.07, 0.13), rng.uniform(0.05, 0.09), rng.uniform(0.04, 0.07)),
+              rot=(rng.uniform(0, 60), rng.uniform(0, 60), rng.uniform(0, 360)), bevel=0.012)
+    _pebbles(m, "rock", 9, 0.55, 60)
     return m
 
 
 def crystals(name, base, tip, rough, metal, seeds, glow=False):
+    """Aglomerado de cristais hexagonais: prismas com facetas e pontas, tamanhos variados, rocha-mãe e cacos."""
     m = Model(name, "Ore")
     crystal, crystal_tip = ("glow_crystal", "glow_crystal_tip") if glow else ("crystal", "crystal_tip")
-    m.material("base_rock", (0.27, 0.27, 0.3), 0.9)
+    m.material("base_rock", (0.24, 0.24, 0.27), 0.9)
     m.material(crystal, base, rough, metal)
     m.material(crystal_tip, tip, rough, metal)
-    m.blob("base_rock", (0, 0, 0.1), (0.5, 0.48, 0.18), sub=1, noise=0.25, seed=seeds)
+    _rock_cluster(m, "base_rock", seed=seeds, extent=0.5, count=5, height=0.2)
     rng = random.Random(seeds)
-    for i in range(6):
-        a = math.radians(i * 60 + rng.uniform(-15, 15))
-        d = Vector((math.cos(a) * 0.35, math.sin(a) * 0.35, 1.0)).normalized() if i else Vector((0, 0, 1))
-        length = rng.uniform(0.5, 0.95) if i else 1.15
-        b = Vector((math.cos(a) * 0.12, math.sin(a) * 0.12, 0.12)) if i else Vector((0, 0, 0.12))
+    for i in range(11):
+        a = math.radians(i * 33 + rng.uniform(-14, 14))
+        tilt = 0.0 if i == 0 else rng.uniform(0.15, 0.55)
+        d = Vector((math.cos(a) * tilt, math.sin(a) * tilt, 1.0)).normalized()
+        length = 1.2 if i == 0 else rng.uniform(0.28, 0.95)
+        radius = 0.12 if i == 0 else rng.uniform(0.045, 0.1)
+        r0 = 0 if i == 0 else rng.uniform(0.06, 0.34)
+        b = Vector((math.cos(a) * r0, math.sin(a) * r0, 0.1))
         tip_pos = b + d * length
-        m.tube(crystal, b, tip_pos - d * 0.12, 0.1, 0.085, seg=6)
-        m.tube(crystal_tip, tip_pos - d * 0.12, tip_pos, 0.085, 0.01, seg=6)
+        cap = radius * 2.2
+        m.tube(crystal, b, tip_pos - d * cap, radius, radius * 0.92, seg=6)
+        m.tube(crystal_tip, tip_pos - d * cap, tip_pos, radius * 0.92, radius * 0.1, seg=6)
+    for i in range(8):  # cacos soltos
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.42, 0.66)
+        d = Vector((rng.uniform(-0.6, 0.6), rng.uniform(-0.6, 0.6), 1.0)).normalized()
+        b = Vector((math.cos(a) * r, math.sin(a) * r, 0.04))
+        m.tube(crystal_tip, b, b + d * rng.uniform(0.1, 0.22), 0.025, 0.004, seg=5)
+    _pebbles(m, "base_rock", 7, 0.58, seeds + 70)
     return m
 
 
 def ore_magnesium():
+    """Magnésio: seixos claros e lisos com crosta cristalina branca nas fendas."""
     m = Model("ore_magnesium", "Ore")
-    m.material("stone", (0.82, 0.8, 0.74), 0.5)
-    m.material("stone_b", (0.68, 0.66, 0.62), 0.55)
-    for i, (x, y, r) in enumerate([(0, 0, 0.38), (0.45, 0.15, 0.27), (-0.3, 0.32, 0.23)]):
-        m.blob("stone" if i != 1 else "stone_b", (x, y, r * 0.8), (r, r, r * 0.85), sub=2, noise=0.07, seed=i + 20, smooth=True)
+    m.material("stone", (0.84, 0.82, 0.76), 0.5)
+    m.material("stone_b", (0.66, 0.64, 0.6), 0.55)
+    m.material("salt", (0.96, 0.96, 0.94), 0.3)
+    rng = random.Random(21)
+    for i, (x, y, r) in enumerate([(0, 0, 0.38), (0.45, 0.15, 0.27), (-0.3, 0.32, 0.23), (0.12, -0.4, 0.2), (-0.42, -0.2, 0.18)]):
+        m.blob("stone" if i % 2 == 0 else "stone_b", (x, y, r * 0.8), (r, r * 0.95, r * 0.85), sub=2, noise=0.12,
+               seed=i + 20, smooth=True)
+    for i in range(14):  # crosta cristalina
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.1, 0.5)
+        m.box("salt", (math.cos(a) * r, math.sin(a) * r, 0.24 + (0.5 - r) * 0.5),
+              (rng.uniform(0.04, 0.09), rng.uniform(0.04, 0.09), rng.uniform(0.03, 0.07)),
+              rot=(rng.uniform(0, 70), rng.uniform(0, 70), rng.uniform(0, 360)), bevel=0.01)
+    _pebbles(m, "stone_b", 8, 0.6, 90)
     return m
 
 
 def ore_titanium():
+    """Titânio: rocha escura com placas e lingotes angulares de metal claro brilhante."""
     m = Model("ore_titanium", "Ore")
-    m.material("base_rock", (0.26, 0.26, 0.28), 0.9)
-    m.material("ti", (0.82, 0.84, 0.88), 0.25, 0.9)
-    m.blob("base_rock", (0, 0, 0.18), (0.52, 0.45, 0.26), sub=1, noise=0.25, seed=30)
-    for i, (x, y, z, s) in enumerate([(0.05, 0, 0.45, 0.3), (0.3, 0.15, 0.3, 0.2), (-0.28, -0.12, 0.34, 0.22)]):
-        m.box("ti", (x, y, z), (s, s * 0.8, s * 1.1), rot=(i * 25, i * 40, i * 70), bevel=0.03)
+    m.material("base_rock", (0.24, 0.24, 0.27), 0.9)
+    m.material("ti", (0.82, 0.84, 0.88), 0.22, 0.9)
+    m.material("ti_dark", (0.5, 0.52, 0.58), 0.3, 0.9)
+    _rock_cluster(m, "base_rock", seed=30, extent=0.52, count=6, height=0.28)
+    rng = random.Random(33)
+    for i in range(7):
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.0, 0.4)
+        s = rng.uniform(0.14, 0.3)
+        m.box("ti" if i % 2 == 0 else "ti_dark", (math.cos(a) * r, math.sin(a) * r, 0.34 + rng.uniform(0, 0.12)),
+              (s, s * rng.uniform(0.5, 0.9), s * rng.uniform(0.7, 1.2)),
+              rot=(rng.uniform(0, 70), rng.uniform(0, 70), rng.uniform(0, 360)), bevel=0.035)
+    for i in range(9):  # lascas nas bordas
+        a = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(0.38, 0.62)
+        m.box("ti", (math.cos(a) * r, math.sin(a) * r, 0.06), (0.07, 0.05, 0.04),
+              rot=(rng.uniform(0, 60), rng.uniform(0, 60), rng.uniform(0, 360)), bevel=0.01)
+    _pebbles(m, "base_rock", 8, 0.6, 95)
     return m
 
 
@@ -1072,6 +1145,8 @@ def ruin_bunker():
     m.material("scorch", (0.1, 0.09, 0.08), 0.95)
     m.material("glow_lamp", (1.0, 0.45, 0.2), 0.4)
     cy = 8.5
+    # Fundação enterrada: em terreno inclinado o bunker é apoiado no ponto mais baixo e o resto entra no chão.
+    m.box("concrete_dark", (0, cy, -1.3), (12.3, 9.5, 2.6))
     # Paredes grossas, a de trás mais alta; a frente tem o vão da porta.
     m.box("concrete", (0, cy + 4.2, 1.6), (12, 0.9, 4.2), bevel=0.06)
     for sx in (-1, 1):
@@ -1141,27 +1216,75 @@ def decontaminator():
 
 
 def chip_crate():
+    """Caixa de microchip (~0.8 m): maleta reforçada com cantoneiras, fechos, alça, fileira de ranhuras e etiqueta."""
     m = Model("chip_crate", "Props")
+    m.greeble = False
     m.material("case", (0.25, 0.27, 0.3), 0.5, 0.5)
+    m.material("steel", (0.62, 0.64, 0.67), 0.35, 0.8)
+    m.material("dark", (0.08, 0.085, 0.09), 0.7, 0.3)
     m.material("accent", (0.9, 0.5, 0.12), 0.6)
+    m.material("label", (0.85, 0.85, 0.8), 0.7)
     m.material("glow_chip", (0.3, 0.9, 1.0), 0.4)
-    m.box("case", (0, 0, 0.25), (0.8, 0.55, 0.5), bevel=0.04)
-    m.box("accent", (0, 0, 0.42), (0.82, 0.57, 0.06))
-    m.box("glow_chip", (0, 0, 0.52), (0.34, 0.24, 0.04))
-    m.box("case", (0, 0, 0.55), (0.22, 0.14, 0.03))
+    m.box("case", (0, 0, 0.22), (0.8, 0.55, 0.44), bevel=0.04)
+    m.box("case", (0, 0, 0.47), (0.82, 0.57, 0.1), bevel=0.03)
+    m.box("dark", (0, 0, 0.405), (0.81, 0.56, 0.015))
+    m.box("accent", (0, 0, 0.3), (0.82, 0.57, 0.05))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            m.box("steel", (sx * 0.38, sy * 0.26, 0.24), (0.06, 0.06, 0.46), bevel=0.01)
+            m.box("steel", (sx * 0.385, sy * 0.265, 0.5), (0.07, 0.07, 0.07), bevel=0.012)
+    for sx in (-0.2, 0.2):  # fechos
+        m.box("dark", (sx, 0.285, 0.4), (0.1, 0.03, 0.12), bevel=0.01)
+        m.box("steel", (sx, 0.3, 0.4), (0.07, 0.015, 0.05))
+    m.tube("steel", (-0.12, 0, 0.52), (-0.12, 0, 0.58), 0.015, seg=6)
+    m.tube("steel", (0.12, 0, 0.52), (0.12, 0, 0.58), 0.015, seg=6)
+    m.tube("steel", (-0.12, 0, 0.58), (0.12, 0, 0.58), 0.015, seg=6)
+    for i in range(6):  # ranhuras com chips
+        m.box("dark", (-0.25 + i * 0.1, -0.1, 0.535), (0.07, 0.2, 0.012))
+        m.box("glow_chip" if i % 2 == 0 else "steel", (-0.25 + i * 0.1, -0.12, 0.543), (0.04, 0.08, 0.008))
+    m.box("label", (0.22, -0.285, 0.26), (0.26, 0.01, 0.1))
+    for i in range(4):
+        m.box("dark", (0.14 + i * 0.05, -0.292, 0.26), (0.02, 0.006, 0.07))
     return m
 
 
 def log_terminal():
+    """Terminal de registros (~1.3 m): base parafusada, coluna com tampa de acesso, console inclinado com moldura,
+    tela, teclado de teclas, botões, cabo e antena."""
     m = Model("log_terminal", "Props")
+    m.greeble = False
     m.material("metal", (0.4, 0.42, 0.46), 0.5, 0.5)
-    m.material("dark", (0.12, 0.13, 0.15), 0.6, 0.3)
+    m.material("steel", (0.62, 0.64, 0.67), 0.35, 0.8)
+    m.material("dark", (0.1, 0.11, 0.13), 0.6, 0.3)
+    m.material("accent", (0.9, 0.5, 0.12), 0.6)
     m.material("glow_screen", (0.45, 0.95, 0.75), 0.4)
-    m.box("dark", (0, 0, 0.08), (0.9, 0.7, 0.16), bevel=0.03)
-    m.box("metal", (0, 0, 0.6), (0.3, 0.3, 1.0), bevel=0.04)
-    tilt = T(0, 0.05, 1.2) @ R(-30, 0, 0)
-    m.box("dark", (0, 0, 0), (0.85, 0.12, 0.6), bevel=0.03, base=tilt)
-    m.box("glow_screen", (0, 0, 0), (0.72, 0.02, 0.48), base=tilt @ T(0, 0.065, 0))
+    m.material("glow_btn", (1.0, 0.45, 0.2), 0.4)
+    m.box("dark", (0, 0, 0.06), (0.95, 0.75, 0.12), bevel=0.03)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            m.cyl("steel", (sx * 0.4, sy * 0.3, 0.13), 0.04, 0.04, 0.03, seg=6)
+    m.box("metal", (0, 0, 0.62), (0.32, 0.3, 1.0), bevel=0.04)
+    m.box("dark", (0, -0.155, 0.42), (0.22, 0.01, 0.34))
+    m.box("steel", (0.07, -0.165, 0.42), (0.03, 0.015, 0.06))
+    for z in (0.18, 0.95):
+        m.box("steel", (0, 0, z), (0.35, 0.33, 0.05), bevel=0.01)
+    tilt = T(0, 0.05, 1.25) @ R(-30, 0, 0)
+    m.box("dark", (0, 0, 0), (0.9, 0.14, 0.64), bevel=0.03, base=tilt)
+    m.box("steel", (0, 0.0, 0.004), (0.86, 0.13, 0.6), bevel=0.012, base=tilt)
+    m.box("dark", (0, 0, 0.006), (0.82, 0.12, 0.56), base=tilt @ T(0, -0.005, 0))
+    m.box("glow_screen", (0, 0, 0), (0.7, 0.02, 0.44), base=tilt @ T(0, 0.068, 0.04))
+    for i in range(5):  # linhas de texto na tela
+        m.box("dark", (0, 0, 0), (0.5 - i * 0.04, 0.005, 0.02), base=tilt @ T(-0.04, 0.08, 0.14 - i * 0.07))
+    kb = tilt @ T(0, 0.09, -0.24)
+    m.box("metal", (0, 0, 0), (0.74, 0.07, 0.12), bevel=0.01, base=kb)
+    for r in range(2):
+        for c in range(9):
+            m.box("dark", (-0.32 + c * 0.08, 0.04, 0.025 - r * 0.045), (0.06, 0.012, 0.032), base=kb)
+    for i in range(3):
+        m.blob("glow_btn" if i == 0 else "accent", (0.28 + i * 0.05, 0.25, 1.0), (0.015, 0.015, 0.012), sub=1, noise=0, seed=i)
+    m.tube("dark", (0.16, 0.12, 0.08), (0.45, 0.45, 0.04), 0.02, seg=6)
+    m.tube("steel", (-0.1, 0.0, 0.98), (-0.1, 0.0, 1.55), 0.01, seg=5)
+    m.blob("glow_btn", (-0.1, 0.0, 1.56), (0.025, 0.025, 0.025), sub=1, noise=0, seed=9)
     return m
 
 

@@ -25,7 +25,7 @@ MODELS = [
     "shrub_02", "fern_02",
 ]
 # Superfícies das máquinas (baixadas e preparadas por tools/fetch_surfaces.py; aqui só para os créditos).
-SURFACES = ["metal_plate_02", "concrete_floor_worn_001", "rusty_metal_02"]
+SURFACES = ["metal_plate_02", "cracked_concrete_wall", "rusty_metal_02", "dark_rock"]
 MODEL_RES = "1k"
 
 

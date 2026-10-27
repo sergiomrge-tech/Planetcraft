@@ -19,7 +19,7 @@ namespace Planetcraft.EditorTools
         public override int GetPostprocessOrder() => 100;
 
         // Incrementar quando mudar a conversão: força o Unity a reimportar os modelos.
-        public override uint GetVersion() => 5;
+        public override uint GetVersion() => 6;
 
         void OnPreprocessModel()
         {
@@ -58,11 +58,20 @@ namespace Planetcraft.EditorTools
         {
             string n = name.ToLowerInvariant();
             if (n.Contains("solar") || n.Contains("water")) return;
-            string family = n.Contains("concrete") ? "concrete" : n.Contains("rust") || n.Contains("scorch") ? "rust" : "panel";
+            // Cristais: sem textura, polidos e translúcidos no brilho (luz do sol atravessa as facetas).
+            if (n.StartsWith("crystal"))
+            {
+                material.SetFloat("_Smoothness", 0.93f);
+                material.SetFloat("_Metallic", 0.15f);
+                return;
+            }
+            string family = n.Contains("concrete") ? "concrete"
+                : n.Contains("rock") || n.Contains("stone") ? "rock"
+                : n.Contains("rust") || n.Contains("scorch") ? "rust" : "panel";
             var albedo = Surface<Texture2D>(family, "albedo.png");
             if (albedo == null) return;
             bool metal = n.Contains("steel") || n.Contains("pipe") || n.Contains("metal") || n.Contains("gold") ||
-                         n.Contains("chrome");
+                         n.Contains("chrome") || n.StartsWith("ti");
 
             // O albedo cinza claro (~0.78) escurece a cor; compensa para manter o tom escolhido no Blender.
             material.SetColor("_BaseColor", family == "rust" ? Color.Lerp(Color.white, color, 0.35f) : new Color(color.r * 1.25f, color.g * 1.25f, color.b * 1.25f, 1f));

@@ -23,8 +23,9 @@ RES = "2k"
 # família: (id do Poly Haven, mantém a cor do albedo?)
 FAMILIES = {
     "panel": ("metal_plate_02", False),
-    "concrete": ("concrete_floor_worn_001", False),
+    "concrete": ("cracked_concrete_wall", False),
     "rust": ("rusty_metal_02", True),
+    "rock": ("dark_rock", False),
 }
 MAPS = {"Diffuse": "diff", "nor_gl": "nor_gl", "Rough": "rough", "AO": "ao", "Metal": "metal"}
 
