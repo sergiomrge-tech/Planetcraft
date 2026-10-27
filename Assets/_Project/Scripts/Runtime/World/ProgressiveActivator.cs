@@ -51,7 +51,9 @@ namespace Planetcraft.World
             if (tm == null) return;
             tm.TiChanged += OnTiChanged;
             OnTiChanged(tm.Ti);
-            // Ao carregar o jogo, já mostra tudo que deveria existir, sem animação.
+            // Ao carregar o jogo, já mostra tudo que deveria existir, sem animação. As construções do save acabaram
+            // de ser criadas: sincroniza a física para a checagem de sobreposição enxergá-las.
+            Physics.SyncTransforms();
             while (activeCount < targetCount) Activate(animate: false);
         }
 
@@ -104,11 +106,24 @@ namespace Planetcraft.World
             }
         }
 
+        static readonly Collider[] Overlaps = new Collider[16];
+
+        static bool InsideBuilding(Vector3 position)
+        {
+            int n = Physics.OverlapSphereNonAlloc(position + Vector3.up, 1.5f, Overlaps, Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Collide);
+            for (int i = 0; i < n; i++)
+                if (Overlaps[i].GetComponentInParent<Building.PlacedObject>() != null) return true;
+            return false;
+        }
+
         void Activate(bool animate)
         {
             var go = items[activeCount];
             var full = fullScales[activeCount];
             activeCount++;
+            // Não nasce dentro de construções do jogador (base, estaleiro...): a vaga conta, mas fica vazia.
+            if (InsideBuilding(go.transform.position)) return;
             go.SetActive(true);
             if (!animate)
             {
