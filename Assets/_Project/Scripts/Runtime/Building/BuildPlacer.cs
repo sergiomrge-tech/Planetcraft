@@ -44,24 +44,20 @@ namespace Planetcraft.Building
         void Update()
         {
             if (selected == null || ghost == null) return;
-            var kb = Keyboard.current;
-            var mouse = Mouse.current;
-            if (kb == null || mouse == null) return;
-
             if (UIState.MenuOpen)
             {
                 ghost.SetActive(false);
                 return;
             }
-            if (kb.escapeKey.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame)
+            if (GameInput.Cancel.WasPressedThisFrame() || GameInput.Pause.WasPressedThisFrame())
             {
                 Select(null);
                 LastCancelFrame = Time.frameCount;
                 return;
             }
 
-            if (kb.rKey.wasPressedThisFrame) yaw += rotateStep;
-            float scroll = mouse.scroll.ReadValue().y;
+            if (GameInput.Rotate.WasPressedThisFrame()) yaw += rotateStep;
+            float scroll = Mouse.current != null ? Mouse.current.scroll.ReadValue().y : 0f;
             if (Mathf.Abs(scroll) > 0.01f) yaw += Mathf.Sign(scroll) * rotateStep;
 
             var ray = new Ray(cam.transform.position, cam.transform.forward);
@@ -78,7 +74,7 @@ namespace Planetcraft.Building
             Status = reason;
             ShowValidity(valid);
 
-            if (valid && mouse.leftButton.wasPressedThisFrame) Place();
+            if (valid && GameInput.Place.WasPressedThisFrame()) Place();
         }
 
         bool Evaluate(RaycastHit hit, out string reason)

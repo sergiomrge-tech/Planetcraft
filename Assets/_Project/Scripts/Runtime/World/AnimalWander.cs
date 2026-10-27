@@ -31,7 +31,7 @@ namespace Planetcraft.World
         void Start()
         {
             terrain = Terrain.activeTerrain;
-            if (water == null) water = FindFirstObjectByType<WaterReactor>();
+            if (water == null) water = FindAnyObjectByType<WaterReactor>();
             home = transform.position;
             if (body != null) bodyRest = body.localPosition;
             PickTarget();

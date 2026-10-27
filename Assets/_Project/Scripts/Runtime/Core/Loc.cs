@@ -1,0 +1,123 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Planetcraft.Core
+{
+    // Textos da interface em português (o texto-fonte é a chave) e inglês. Textos sem tradução aparecem como estão.
+    // Os dados do jogo (itens, estágios, registros) ainda são só em português.
+    public static class Loc
+    {
+        // -pc-lang <pt|en>: força o idioma só nesta execução (capturas de teste), sem gravar nas opções.
+        static readonly string Forced = ReadForced();
+
+        public static bool English => (Forced ?? Settings.Language) == "en";
+
+        static string ReadForced()
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            int i = System.Array.IndexOf(args, "-pc-lang");
+            return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+        }
+
+        public static string T(string pt)
+        {
+            if (string.IsNullOrEmpty(pt) || !English) return pt;
+            return En.TryGetValue(pt, out var en) ? en : pt;
+        }
+
+        public static string SystemDefault() =>
+            Application.systemLanguage == SystemLanguage.Portuguese ? "pt" : "en";
+
+        static readonly Dictionary<string, string> En = new()
+        {
+            // HUD
+            ["Índice de terraformação"] = "Terraformation index",
+            ["Estágio"] = "Stage",
+            ["Próximo"] = "Next",
+            ["Todos os estágios alcançados"] = "All stages reached",
+            ["SEM ENERGIA"] = "NO POWER",
+            ["Energia"] = "Power",
+            ["Suporte de vida"] = "Life support",
+            ["Oxigênio"] = "Oxygen",
+            ["Calor"] = "Heat",
+            ["Pressão"] = "Pressure",
+            ["Biomassa"] = "Biomass",
+            ["Descontaminação"] = "Decontamination",
+            ["menu"] = "menu",
+            ["interagir"] = "interact",
+            ["desmontar"] = "dismantle",
+            ["salvar"] = "save",
+            ["carregar"] = "load",
+            ["acelerar"] = "speed up",
+            ["mover"] = "move",
+            ["pausa"] = "pause",
+            ["Você desmaiou e acordou no ponto inicial."] = "You passed out and woke up at the start point.",
+            // Menu
+            ["Inventário"] = "Inventory",
+            ["Fabricar"] = "Craft",
+            ["Construir"] = "Build",
+            ["Baú"] = "Storage",
+            ["Registros"] = "Logs",
+            ["Nave-mãe · Estaleiro"] = "Mothership · Shipyard",
+            ["Guardar →"] = "Store →",
+            ["Usar"] = "Use",
+            ["← Pegar"] = "← Take",
+            ["Ler"] = "Read",
+            ["vazio"] = "empty",
+            ["grátis"] = "free",
+            ["Instalar"] = "Install",
+            ["DECOLAR"] = "LAUNCH",
+            ["instalado"] = "installed",
+            ["Módulos instalados"] = "Modules installed",
+            ["de"] = "of",
+            ["requer"] = "requires",
+            ["requer microchip das ruínas"] = "requires a microchip from the ruins",
+            ["Nenhum registro encontrado.\nProcure ruínas: os faróis marcam onde estão."] =
+                "No logs found.\nSearch the ruins: the beacons mark where they are.",
+            ["Registro recuperado"] = "Recovered log",
+            ["Fechar  [E / Esc]"] = "Close  [E / Esc]",
+            // Pausa e opções
+            ["Sistema"] = "System",
+            ["PAUSADO"] = "PAUSED",
+            ["Continuar"] = "Continue",
+            ["Salvar jogo"] = "Save game",
+            ["Opções"] = "Options",
+            ["OPÇÕES"] = "OPTIONS",
+            ["Menu principal"] = "Main menu",
+            ["Volume"] = "Volume",
+            ["Sensibilidade do mouse"] = "Mouse sensitivity",
+            ["Campo de visão"] = "Field of view",
+            ["Inverter eixo Y"] = "Invert Y axis",
+            ["Qualidade gráfica"] = "Graphics quality",
+            ["Tela cheia"] = "Fullscreen",
+            ["Idioma"] = "Language",
+            ["Voltar"] = "Back",
+            ["Controles"] = "Controls",
+            ["CONTROLES"] = "CONTROLS",
+            ["Pressione uma tecla (Esc cancela)"] = "Press a key (Esc cancels)",
+            ["Restaurar padrão"] = "Reset to default",
+            ["Pular"] = "Jump",
+            ["Correr"] = "Sprint",
+            ["Interagir"] = "Interact",
+            ["Desmontar"] = "Dismantle",
+            ["Menu"] = "Menu",
+            ["Pausa"] = "Pause",
+            ["Construir / confirmar"] = "Build / confirm",
+            ["Cancelar"] = "Cancel",
+            ["Girar construção"] = "Rotate building",
+            ["Salvar"] = "Save",
+            ["Carregar"] = "Load",
+            ["O idioma muda ao voltar ao menu principal."] = "The language changes when you return to the main menu.",
+            // Título e epílogo
+            ["Estação Horizonte  ·  Missão de retorno"] = "Horizon Station  ·  Return mission",
+            ["Um milhão de anos depois, a humanidade volta para casa."] = "A million years later, humanity comes home.",
+            ["Novo jogo"] = "New game",
+            ["Sair"] = "Quit",
+            ["MISSÃO CUMPRIDA"] = "MISSION ACCOMPLISHED",
+            ["Dever cumprido"] = "Duty fulfilled",
+            ["A nave-mãe acopla na Estação Horizonte levando a notícia\nque a humanidade esperou por um milhão de anos: a Terra respira de novo."] =
+                "The mothership docks at Horizon Station carrying the news\nhumanity waited a million years for: Earth breathes again.",
+            ["Continuar explorando"] = "Keep exploring",
+        };
+    }
+}

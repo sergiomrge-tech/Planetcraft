@@ -138,7 +138,7 @@ namespace Planetcraft.Building
                 $"Índice de terraformação: {TiFormat.Format(TerraformManager.Instance.Ti)}\n" +
                 $"Construções na Terra: {PlacedObject.All.Count}\n" +
                 $"Registros encontrados: {StoryLogs.All.Count()} de 5";
-            var save = FindFirstObjectByType<SaveSystem>();
+            var save = FindAnyObjectByType<SaveSystem>();
             if (save != null) save.Save();
             SceneManager.LoadScene(Scenes.Epilogue);
         }

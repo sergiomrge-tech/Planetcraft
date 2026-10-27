@@ -1,6 +1,5 @@
 using Planetcraft.Core;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace Planetcraft.Player
 {
@@ -20,8 +19,7 @@ namespace Planetcraft.Player
             if (Physics.Raycast(t.position, t.forward, out var hit, range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
                 Current = hit.collider.GetComponentInParent<IInteractable>();
 
-            var kb = Keyboard.current;
-            if (Current != null && kb != null && kb.eKey.wasPressedThisFrame) Current.Interact(gameObject);
+            if (Current != null && GameInput.Interact.WasPressedThisFrame()) Current.Interact(gameObject);
         }
     }
 }

@@ -26,7 +26,7 @@ namespace Planetcraft.UI
                 UnityEngine.SceneManagement.SceneManager.LoadScene(Scenes.Epilogue);
                 yield break;
             }
-            if (Array.Exists(args, a => a.StartsWith("-pc-") && a != "-pc-screenshot" && a != "-pc-wait" && a != "-pc-title-options"))
+            if (Array.Exists(args, a => a.StartsWith("-pc-") && a != "-pc-screenshot" && a != "-pc-wait" && a != "-pc-title-options" && a != "-pc-lang"))
             {
                 GameSession.NewGame();
                 yield break;
@@ -85,7 +85,9 @@ namespace Planetcraft.UI
             options.style.display = DisplayStyle.None;
             layout.Add(options);
 
-            var hint = HudStyle.MakeLabel(HudStyle.KeyCaps("[WASD] mover   ·   [E] interagir   ·   [TAB] menu   ·   [X] desmontar   ·   [ESC] pausa"),
+            var hint = HudStyle.MakeLabel(HudStyle.KeyCaps(string.Join("   ·   ", $"[WASD] {Loc.T("mover")}",
+                    $"{GameInput.Hint(GameInput.Interact)} {Loc.T("interagir")}", $"{GameInput.Hint(GameInput.Menu)} {Loc.T("menu")}",
+                    $"{GameInput.Hint(GameInput.Deconstruct)} {Loc.T("desmontar")}", $"{GameInput.Hint(GameInput.Pause)} {Loc.T("pausa")}")),
                 14, HudStyle.Muted);
             hint.style.position = Position.Absolute;
             hint.style.left = 120;

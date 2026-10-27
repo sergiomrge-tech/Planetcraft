@@ -2,7 +2,6 @@ using Planetcraft.Core;
 using Planetcraft.Items;
 using Planetcraft.Player;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace Planetcraft.Building
 {
@@ -28,8 +27,7 @@ namespace Planetcraft.Building
 
             string blocked = BlockReason(placed);
             Prompt = blocked ?? $"[X] Desmontar {placed.Definition.displayName}";
-            var kb = Keyboard.current;
-            if (blocked == null && kb != null && kb.xKey.wasPressedThisFrame) Deconstruct(placed);
+            if (blocked == null && GameInput.Deconstruct.WasPressedThisFrame()) Deconstruct(placed);
         }
 
         string BlockReason(PlacedObject placed)

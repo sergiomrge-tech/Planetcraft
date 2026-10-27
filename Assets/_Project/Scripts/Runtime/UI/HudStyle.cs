@@ -51,7 +51,7 @@ namespace Planetcraft.UI
         // Rótulo pequeno em caixa alta e espaçado ("ÍNDICE DE TERRAFORMAÇÃO").
         public static Label Tag(string text, Color? color = null)
         {
-            var l = MakeLabel(text.ToUpperInvariant(), 11, color ?? Muted);
+            var l = MakeLabel(Loc.T(text).ToUpperInvariant(), 11, color ?? Muted);
             l.AddToClassList("rte-tag");
             if (color != null) l.style.color = color.Value;
             return l;
@@ -59,7 +59,7 @@ namespace Planetcraft.UI
 
         public static Label MakeLabel(string text, int size, Color? color = null, bool bold = false, bool mono = false)
         {
-            var l = new Label(text) { pickingMode = PickingMode.Ignore, enableRichText = true };
+            var l = new Label(Loc.T(text)) { pickingMode = PickingMode.Ignore, enableRichText = true };
             l.style.fontSize = size;
             l.style.color = color ?? Ink;
             if (bold) l.AddToClassList("rte-strong");
@@ -71,7 +71,7 @@ namespace Planetcraft.UI
 
         public static Button MakeButton(string text, System.Action onClick)
         {
-            var b = new Button(() => { Sfx.Click(); onClick(); }) { text = text.ToUpperInvariant() };
+            var b = new Button(() => { Sfx.Click(); onClick(); }) { text = Loc.T(text).ToUpperInvariant() };
             b.AddToClassList("rte-button");
             b.style.fontSize = 13;
             b.style.minWidth = 86;

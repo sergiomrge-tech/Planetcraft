@@ -1,6 +1,5 @@
 using Planetcraft.Core;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace Planetcraft.Player
 {
@@ -42,36 +41,33 @@ namespace Planetcraft.Player
             if (cam != null) cam.fieldOfView = Settings.FieldOfView;
         }
 
+        // Velocidade de giro da câmera com o analógico totalmente inclinado.
+        const float StickDegreesPerSecond = 160f;
+
         void Update()
         {
-            var kb = Keyboard.current;
-            var mouse = Mouse.current;
-            if (kb == null || mouse == null) return;
-
             bool canAct = !UIState.MenuOpen;
             Vector2 move = Vector2.zero;
             // Ao travar o cursor o primeiro delta do mouse pode vir enorme; ignora os primeiros frames.
             if (canAct && LookEnabled && Time.frameCount > ignoreLookUntilFrame)
             {
-                Vector2 look = mouse.delta.ReadValue() * Settings.MouseSensitivity;
+                Vector2 look = GameInput.Look.ReadValue<Vector2>() * Settings.MouseSensitivity +
+                               GameInput.LookStick.ReadValue<Vector2>() * (StickDegreesPerSecond * Time.deltaTime);
                 if (Settings.InvertY) look.y = -look.y;
                 transform.Rotate(0f, look.x, 0f);
                 pitch = Mathf.Clamp(pitch - look.y, -85f, 85f);
                 cameraPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-
-                if (kb.wKey.isPressed) move.y += 1f;
-                if (kb.sKey.isPressed) move.y -= 1f;
-                if (kb.dKey.isPressed) move.x += 1f;
-                if (kb.aKey.isPressed) move.x -= 1f;
+                move = Vector2.ClampMagnitude(GameInput.Move.ReadValue<Vector2>(), 1f);
             }
 
             bool grounded = controller.isGrounded;
             if (grounded && verticalVelocity < 0f) verticalVelocity = -2f;
-            if (grounded && canAct && kb.spaceKey.wasPressedThisFrame) verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            if (grounded && canAct && GameInput.Jump.WasPressedThisFrame()) verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
             verticalVelocity += gravity * Time.deltaTime;
 
-            float speed = kb.leftShiftKey.isPressed ? sprintSpeed : walkSpeed;
-            Vector3 velocity = (transform.right * move.x + transform.forward * move.y).normalized * speed;
+            float speed = GameInput.Sprint.IsPressed() ? sprintSpeed : walkSpeed;
+            // Analógico parcialmente inclinado anda mais devagar; o teclado sempre dá magnitude 1.
+            Vector3 velocity = (transform.right * move.x + transform.forward * move.y) * speed;
             velocity.y = verticalVelocity;
             controller.Move(velocity * Time.deltaTime);
         }

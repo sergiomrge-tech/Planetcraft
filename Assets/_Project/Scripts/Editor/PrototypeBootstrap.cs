@@ -457,7 +457,7 @@ namespace Planetcraft.EditorTools
 
             Stars(30000f, 40f, 110f);
             var cam = SpaceCamera(60000f);
-            cam.transform.position = new Vector3(330f, 70f, 120f);
+            cam.transform.position = new Vector3(560f, 130f, 330f);
             cam.transform.LookAt(new Vector3(0f, 0f, 200f));
 
             var ui = new GameObject("Epílogo");

@@ -42,6 +42,9 @@ namespace Planetcraft.UI
         int logOpenedFrame = -1;
         Label tiLabel, stageLabel, nextLabel, powerLabel, prompt, toast, bannerTitle, bannerSubtitle, bannerBody;
         Label[] paramValues, paramRates;
+        Label help;
+        bool helpGamepad;
+        bool helpDirty = true;
         VisualElement statusPanel, vitalsPanel;
         Meter progress, oxygen, water, food;
         InventoryComponent openChest;
@@ -55,6 +58,7 @@ namespace Planetcraft.UI
         {
             if (Instance == this) Instance = null;
             Blueprints.Unlocked -= OnBlueprintUnlocked;
+            GameInput.BindingsChanged -= MarkHelpDirty;
             if (survival != null) survival.Died -= OnDied;
             if (TerraformManager.Instance != null) TerraformManager.Instance.TiChanged -= OnTiChanged;
         }
@@ -66,11 +70,30 @@ namespace Planetcraft.UI
             if (survival != null) survival.Died += OnDied;
             if (TerraformManager.Instance != null) TerraformManager.Instance.TiChanged += OnTiChanged;
             Blueprints.Unlocked += OnBlueprintUnlocked;
+            GameInput.BindingsChanged += MarkHelpDirty;
         }
+
+        void MarkHelpDirty() => helpDirty = true;
+
+        // Rodapé com as teclas atuais; troca para os botões do controle quando ele é o último dispositivo usado.
+        void UpdateHelp()
+        {
+            if (!helpDirty && helpGamepad == GameInput.UsingGamepad) return;
+            helpDirty = false;
+            helpGamepad = GameInput.UsingGamepad;
+            string Item(InputAction a, string verb) => $"{GameInput.Hint(a)} {Loc.T(verb)}";
+            help.text = KeyCaps(string.Join("   ·   ", Item(GameInput.Menu, "menu"), Item(GameInput.Interact, "interagir"),
+                Item(GameInput.Deconstruct, "desmontar"), Item(GameInput.QuickSave, "salvar"),
+                Item(GameInput.QuickLoad, "carregar"), Item(GameInput.SimulationSpeed, "acelerar")));
+        }
+
+        // Os prompts dos objetos são escritos com as teclas padrão ("[E] ..."); troca pelas teclas atuais.
+        static string WithHints(string text) =>
+            text.Replace("[E]", GameInput.Hint(GameInput.Interact)).Replace("[X]", GameInput.Hint(GameInput.Deconstruct));
 
         void OnBlueprintUnlocked(string _) => MarkMenuDirty();
 
-        void OnDied() => ShowToast("Você desmaiou e acordou no ponto inicial.", 5f);
+        void OnDied() => ShowToast(Loc.T("Você desmaiou e acordou no ponto inicial."), 5f);
         void OnTiChanged(double _) => MarkMenuDirty();
         void MarkMenuDirty() => menuDirty = true;
 
@@ -173,26 +196,27 @@ namespace Planetcraft.UI
         void Update()
         {
             if (menu == null) return;
-            var kb = Keyboard.current;
-            if (kb != null && PauseOpen)
+            bool pause = GameInput.Pause.WasPressedThisFrame();
+            if (PauseOpen)
             {
-                if (kb.escapeKey.wasPressedThisFrame && pauseButtons.style.display == DisplayStyle.Flex) SetPaused(false);
+                if ((pause || GameInput.Cancel.WasPressedThisFrame()) && pauseButtons.style.display == DisplayStyle.Flex)
+                    SetPaused(false);
             }
-            else if (kb != null && LogOpen)
+            else if (LogOpen)
             {
-                // O mesmo E que abriu o registro não pode fechá-lo no mesmo frame.
-                if (Time.frameCount > logOpenedFrame &&
-                    (kb.eKey.wasPressedThisFrame || kb.escapeKey.wasPressedThisFrame || kb.tabKey.wasPressedThisFrame))
+                // O mesmo botão que abriu o registro não pode fechá-lo no mesmo frame.
+                if (Time.frameCount > logOpenedFrame && (GameInput.Interact.WasPressedThisFrame() || pause ||
+                                                         GameInput.Menu.WasPressedThisFrame() || GameInput.Cancel.WasPressedThisFrame()))
                     CloseLog();
             }
-            else if (kb != null)
+            else
             {
-                if (kb.tabKey.wasPressedThisFrame) ToggleMenu(!UIState.MenuOpen);
-                else if (UIState.MenuOpen && kb.escapeKey.wasPressedThisFrame) ToggleMenu(false);
-                else if (!UIState.MenuOpen && kb.escapeKey.wasPressedThisFrame &&
+                if (GameInput.Menu.WasPressedThisFrame()) ToggleMenu(!UIState.MenuOpen);
+                else if (UIState.MenuOpen && (pause || GameInput.Cancel.WasPressedThisFrame())) ToggleMenu(false);
+                else if (!UIState.MenuOpen && pause &&
                          (placer == null || (placer.Selected == null && placer.LastCancelFrame != Time.frameCount)))
                     SetPaused(true);
-                if (kb.f2Key.wasPressedThisFrame && TerraformManager.Instance != null)
+                if (GameInput.SimulationSpeed.WasPressedThisFrame() && TerraformManager.Instance != null)
                 {
                     var tm = TerraformManager.Instance;
                     tm.SimulationSpeed = tm.SimulationSpeed >= 100f ? 1f : tm.SimulationSpeed * 10f;
@@ -201,6 +225,7 @@ namespace Planetcraft.UI
 
             UpdateStatus();
             UpdatePrompt();
+            UpdateHelp();
 
             if (saveSystem != null && saveSystem.LastMessage != null && saveSystem.LastMessageTime != lastSaveMessageTime)
             {
@@ -225,13 +250,13 @@ namespace Planetcraft.UI
                 var next = tm.NextStage;
                 if (next != null)
                 {
-                    nextLabel.text = $"PRÓXIMO  ·  {next.displayName.ToUpperInvariant()}  ·  {TiFormat.Format(next.requiredTi)}";
+                    nextLabel.text = $"{Loc.T("Próximo").ToUpperInvariant()}  ·  {next.displayName.ToUpperInvariant()}  ·  {TiFormat.Format(next.requiredTi)}";
                     double from = tm.CurrentStage != null ? tm.CurrentStage.requiredTi : 0d;
                     SetMeter(progress, (float)((tm.Ti - from) / (next.requiredTi - from)), Accent);
                 }
                 else
                 {
-                    nextLabel.text = "TODOS OS ESTÁGIOS ALCANÇADOS";
+                    nextLabel.text = Loc.T("Todos os estágios alcançados").ToUpperInvariant();
                     SetMeter(progress, 1f, Accent);
                 }
                 for (int i = 0; i < TerraformParameters.Count; i++)
@@ -242,7 +267,7 @@ namespace Planetcraft.UI
                     paramRates[i].text = $"+{TiFormat.Format(tm.GetRate(p), unit)}/s";
                 }
                 string power = $"{PowerGrid.Generation:0.#} / {PowerGrid.Demand:0.#} kW";
-                if (!PowerGrid.IsPowered) power = "<color=#FF5C3D>SEM ENERGIA</color>  " + power;
+                if (!PowerGrid.IsPowered) power = $"<color=#FF5C3D>{Loc.T("SEM ENERGIA")}</color>  " + power;
                 if (tm.SimulationSpeed != 1f) power = $"<color=#FFB848>SIM x{tm.SimulationSpeed:0}</color>  " + power;
                 powerLabel.text = power;
             }
@@ -270,7 +295,7 @@ namespace Planetcraft.UI
                 string b = deconstructor != null ? deconstructor.Prompt : null;
                 text = string.Join("     ", new[] { a, b }.Where(s => !string.IsNullOrEmpty(s)));
             }
-            prompt.text = KeyCaps(text ?? "");
+            prompt.text = KeyCaps(WithHints(text ?? ""));
             prompt.style.display = string.IsNullOrEmpty(text) ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
@@ -372,7 +397,7 @@ namespace Planetcraft.UI
             shipList.Clear();
             double ti = TerraformManager.Instance != null ? TerraformManager.Instance.Ti : 0;
             int total = openShipyard.Modules.Length;
-            var progressLabel = MakeLabel($"Módulos instalados: <b>{ShipProgress.Count} de {total}</b>", 15, Accent);
+            var progressLabel = MakeLabel($"{Loc.T("Módulos instalados")}: <b>{ShipProgress.Count} {Loc.T("de")} {total}</b>", 15, Accent);
             progressLabel.style.marginBottom = 8;
             shipList.Add(progressLabel);
 
@@ -380,7 +405,7 @@ namespace Planetcraft.UI
             {
                 if (m == null) continue;
                 bool done = ShipProgress.IsInstalled(m.id);
-                var card = Card(done ? $"{m.displayName}  <color=#8fd18f>(instalado)</color>" : m.displayName,
+                var card = Card(done ? $"{m.displayName}  <color=#8fd18f>({Loc.T("instalado")})</color>" : m.displayName,
                     $"{m.description}\n<color=#c9d1d9>{CostText(m.cost)}</color>");
                 string reason = openShipyard.BlockReason(m, inv, ti);
                 if (!done)
@@ -409,7 +434,7 @@ namespace Planetcraft.UI
         }
 
         static string LockReason(double requiredTi, string blueprintId, double ti) =>
-            !Blueprints.Has(blueprintId) ? "requer microchip das ruínas" : $"requer {TiFormat.Format(requiredTi)}";
+            !Blueprints.Has(blueprintId) ? Loc.T("requer microchip das ruínas") : $"{Loc.T("requer")} {TiFormat.Format(requiredTi)}";
 
         void FillInventory(VisualElement list, Inventory inv, System.Func<Inventory.Slot, Button> action)
         {
@@ -434,7 +459,7 @@ namespace Planetcraft.UI
 
         static string CostText(ItemAmount[] costs) =>
             costs == null || costs.Length == 0
-                ? "grátis"
+                ? Loc.T("grátis")
                 : string.Join(", ", costs.Where(c => c.item != null).Select(c => $"{c.amount}x {c.item.displayName}"));
 
         // ------------------------------------------------------------------ Montagem da UI
@@ -546,8 +571,7 @@ namespace Planetcraft.UI
             root.Add(top);
 
             // Ajuda (rodapé), com as teclas desenhadas como teclas.
-            var help = MakeLabel(KeyCaps("[TAB] menu   ·   [E] interagir   ·   [X] desmontar   ·   [F5] salvar   ·   [F9] carregar   ·   [F2] acelerar"),
-                14, Muted);
+            help = MakeLabel("", 14, Muted);
             help.style.position = Position.Absolute;
             help.style.left = 22;
             help.style.bottom = 16;
@@ -687,7 +711,7 @@ namespace Planetcraft.UI
             col.style.width = 340;
             col.style.height = 580;
             col.style.marginLeft = col.style.marginRight = 7;
-            titleLabel = MakeLabel(title.ToUpperInvariant(), 20, Accent, bold: true);
+            titleLabel = MakeLabel(Loc.T(title).ToUpperInvariant(), 20, Accent, bold: true);
             titleLabel.style.letterSpacing = 3;
             titleLabel.style.paddingBottom = 6;
             titleLabel.style.marginBottom = 8;

@@ -33,7 +33,7 @@ namespace Planetcraft.Dev
 
             // -pc-quiet: sem banner/flash de estágio (o salto de Ti dispara vários e clareia as capturas).
             if (HasFlag(args, "-pc-quiet"))
-                foreach (var feedback in FindObjectsByType<StageFeedback>(FindObjectsSortMode.None)) feedback.enabled = false;
+                foreach (var feedback in FindObjectsByType<StageFeedback>()) feedback.enabled = false;
             if (tm != null && TryNumber(args, "-pc-ti", out double ti))
                 for (int i = 0; i < TerraformParameters.Count; i++) tm.Add((TerraformParameter)i, ti / TerraformParameters.Count);
             if (weather != null && HasFlag(args, "-pc-rain")) weather.ForceRain();
@@ -68,7 +68,7 @@ namespace Planetcraft.Dev
             if (TryNumber(args, "-pc-launch", out double skip))
             {
                 yield return null;
-                var yard = FindFirstObjectByType<Shipyard>();
+                var yard = FindAnyObjectByType<Shipyard>();
                 if (yard != null)
                 {
                     yard.Launch();
@@ -141,7 +141,7 @@ namespace Planetcraft.Dev
         // Coloca o jogador a ~14 m do destroço n (ordem dos terminais de registro), olhando para ele.
         void GoToWreck(int index)
         {
-            var terminals = FindObjectsByType<LogTerminal>(FindObjectsSortMode.None)
+            var terminals = FindObjectsByType<LogTerminal>()
                 .OrderBy(t => t.transform.parent != null ? t.transform.parent.name : t.name).ToArray();
             var terrain = Terrain.activeTerrain;
             if (terminals.Length == 0 || terrain == null) return;

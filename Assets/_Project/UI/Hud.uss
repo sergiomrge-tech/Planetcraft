@@ -84,3 +84,22 @@
     border-radius: 0;
     width: 4px;
 }
+
+/* Campos das opções (listas, números, caixas de seleção) no tom do visor, sem o branco do tema padrão. */
+.rte-root .unity-base-popup-field__input,
+.rte-root .unity-base-text-field__input,
+.rte-root .unity-toggle__checkmark {
+    background-color: rgba(0, 0, 0, 0.45);
+    border-color: rgba(255, 184, 72, 0.45);
+    border-radius: 0;
+    color: rgb(238, 232, 218);
+}
+
+.rte-root .unity-base-popup-field__text,
+.rte-root .unity-text-element {
+    color: rgb(238, 232, 218);
+}
+
+.rte-root .unity-base-popup-field__arrow {
+    -unity-background-image-tint-color: rgb(255, 184, 72);
+}

@@ -7,7 +7,6 @@ using Planetcraft.Items;
 using Planetcraft.Player;
 using Planetcraft.World;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace Planetcraft.Save
@@ -55,10 +54,8 @@ namespace Planetcraft.Save
 
         void Update()
         {
-            var kb = Keyboard.current;
-            if (kb == null) return;
-            if (kb.f5Key.wasPressedThisFrame) Save();
-            if (kb.f9Key.wasPressedThisFrame && !UIState.MenuOpen) Load();
+            if (GameInput.QuickSave.WasPressedThisFrame()) Save();
+            if (GameInput.QuickLoad.WasPressedThisFrame() && !UIState.MenuOpen) Load();
         }
 
         public void Save()

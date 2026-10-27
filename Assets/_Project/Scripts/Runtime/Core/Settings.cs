@@ -7,12 +7,13 @@ namespace Planetcraft.Core
     public static class Settings
     {
         const string VolumeKey = "pc.volume", SensitivityKey = "pc.sensitivity", InvertKey = "pc.invertY",
-            FovKey = "pc.fov", QualityKey = "pc.quality";
+            FovKey = "pc.fov", QualityKey = "pc.quality", LanguageKey = "pc.language";
 
         static bool loaded;
         static float volume, sensitivity, fov;
         static bool invertY;
         static int quality;
+        static string language;
 
         public static event Action Changed;
 
@@ -21,6 +22,8 @@ namespace Planetcraft.Core
         public static bool InvertY { get { Load(); return invertY; } set { invertY = value; Save(); } }
         public static float FieldOfView { get { Load(); return fov; } set { fov = Mathf.Clamp(value, 55f, 100f); Save(); } }
         public static int QualityLevel { get { Load(); return quality; } set { quality = Mathf.Clamp(value, 0, QualitySettings.names.Length - 1); Save(); } }
+        /// <summary>"pt" ou "en" (padrão: idioma do sistema).</summary>
+        public static string Language { get { Load(); return language; } set { language = value == "en" ? "en" : "pt"; Save(); } }
 
         // Tela cheia é aplicada só quando o jogador muda (não na inicialização, para respeitar -screen-fullscreen).
         public static bool Fullscreen
@@ -48,6 +51,7 @@ namespace Planetcraft.Core
             invertY = PlayerPrefs.GetInt(InvertKey, 0) == 1;
             fov = PlayerPrefs.GetFloat(FovKey, 70f);
             quality = PlayerPrefs.GetInt(QualityKey, QualitySettings.GetQualityLevel());
+            language = PlayerPrefs.GetString(LanguageKey, Loc.SystemDefault());
         }
 
         static void Save()
@@ -57,6 +61,7 @@ namespace Planetcraft.Core
             PlayerPrefs.SetInt(InvertKey, invertY ? 1 : 0);
             PlayerPrefs.SetFloat(FovKey, fov);
             PlayerPrefs.SetInt(QualityKey, quality);
+            PlayerPrefs.SetString(LanguageKey, language);
             PlayerPrefs.Save();
             Apply();
         }
