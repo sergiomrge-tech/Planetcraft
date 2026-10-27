@@ -45,3 +45,6 @@ Thumbs.db
 # Capturas do MCP for Unity (manage_camera screenshot)
 /Assets/Screenshots/
 /Assets/Screenshots.meta
+
+# Gerados pelo Test Framework (Performance Testing)
+/Assets/Resources/PerformanceTestRun*.json*
