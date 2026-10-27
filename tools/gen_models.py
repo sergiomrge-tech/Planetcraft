@@ -1161,6 +1161,28 @@ def algae_farm():
         m.tube("steel", (-0.5, -1.18 + k * 0.035, 0.22 + k * 0.22), (-0.1, -1.18 + k * 0.035, 0.22 + k * 0.22), 0.018, seg=5)
     hazard_strip(m, (0.6, -1.16, 0.2), 1.0, "x", height=0.08)
     indicator(m, (-1.3, -1.12, 0.65))
+    # Banco de fotobiorreatores: tubos de vidro verticais com cultura verde, abraçadeiras e cabeçotes ligados à torre.
+    m.material("glass_tube", (0.75, 0.92, 0.85), 0.05)
+    m.material("culture", (0.1, 0.55, 0.2), 0.2)
+    for k in range(6):
+        x = 0.42 + k * 0.26
+        m.cyl("glass_tube", (x, -1.05, 1.1), 0.095, 0.095, 1.3, seg=16)
+        m.cyl("culture", (x, -1.05, 0.95), 0.078, 0.078, 0.95, seg=16)
+        m.cyl("steel", (x, -1.05, 1.78), 0.1, 0.1, 0.05, seg=16)
+        m.cyl("steel", (x, -1.05, 0.46), 0.1, 0.1, 0.05, seg=16)
+        for z in (0.8, 1.45):
+            m.lathe("dark", (x, -1.05, z), [(0.1, -0.015), (0.1, 0.015)], seg=16, caps=False)
+        for z in (0.6, 1.0, 1.35):  # bolhas de aeração
+            m.blob("glass_tube", (x + 0.02 * (k % 2), -1.05, z), (0.014, 0.014, 0.014), sub=1, noise=0, seed=k, smooth=True)
+    m.box("steel", (1.05, -1.05, 1.85), (1.7, 0.08, 0.05))
+    m.box("steel", (1.05, -1.05, 0.42), (1.7, 0.1, 0.06))
+    pipe_run(m, "pipe", "dark", (0.35, -1.05, 1.85), (-0.5, 0.75, 2.2), 0.045, clamps=2)
+    # Bomba de recirculação com motor aletado.
+    m.cyl("dark", (-1.0, -1.1, 0.35), 0.16, 0.16, 0.4, seg=20, rot=(0, 90, 0))
+    for i in range(7):
+        m.lathe("steel", (-1.0 + (i - 3) * 0.05, -1.1, 0.35), [(0.17, -0.01), (0.17, 0.01)], seg=20, caps=False,
+                base=R(0, 90, 0))
+    m.box("dark", (-1.35, -1.1, 0.35), (0.2, 0.26, 0.26), bevel=0.02)
     return m
 
 
@@ -1255,6 +1277,29 @@ def nuclear_reactor():
     m.box("glow_core", (1.6, -1.71, 1.12), (0.4, 0.02, 0.2))
     for i in range(4):
         m.box("glow_warn" if i == 0 else "metal", (1.4 + i * 0.13, -1.71, 0.85), (0.06, 0.02, 0.06))
+    # Nervuras meridianas no vaso de contenção (32 costelas de concreto armado) e para-raios.
+    prof = [(1.45, 0), (1.4, 1.6), (1.18, 2.4), (0.72, 2.9), (0.0, 3.05)]
+    for i in range(24):
+        a = 2 * math.pi * i / 24
+        pts = [(r * math.cos(a), r * math.sin(a), 0.4 + z) for r, z in prof[:-1]]
+        for (x0, y0, z0), (x1, y1, z1) in zip(pts, pts[1:]):
+            m.tube("concrete", (x0 * 1.012, y0 * 1.012, z0), (x1 * 1.012, y1 * 1.012, z1), 0.028, seg=6)
+    for k in range(3):
+        a = 2 * math.pi * k / 3
+        m.tube("metal", (math.cos(a) * 0.5, math.sin(a) * 0.5, 3.35), (math.cos(a) * 0.5, math.sin(a) * 0.5, 4.1), 0.014, seg=5)
+    # Casa das turbinas: nave com telhado em arco, nervuras e janelas altas, ligada ao vaso por tubulação grossa.
+    hall = T(-0.5, -1.55, 0.4)
+    m.box("concrete", (0, 0, 0.55), (2.6, 1.3, 1.1), bevel=0.04, base=hall)
+    m.lathe("metal", (0, 0, 1.1), [(0.65, 0), (0.62, 0.25), (0.45, 0.42), (0.2, 0.5), (0, 0.52)], seg=24,
+            base=hall @ R(0, 90, 0) @ S(1.0, 1.0, 1.0))
+    for i in range(9):
+        m.box("dark", (-1.2 + i * 0.3, 0.652, 0.7), (0.07, 0.03, 0.42), base=hall)
+        m.box("glow_core", (-1.2 + i * 0.3, 0.655, 0.7), (0.05, 0.01, 0.36), base=hall)
+    pipe_run(m, "metal", "dark", (0.2, -0.95, 1.3), (0.9, -0.4, 1.3), 0.16, clamps=1)
+    # Chaminé de exaustão e escada de acesso ao topo do vaso.
+    m.cyl("metal", (-1.3, 1.5, 3.2), 0.1, 0.07, 3.0, seg=14)
+    for k in range(20):
+        m.box("metal", (1.05, 0.0, 0.7 + k * 0.1), (0.04, 0.3, 0.02), rot=(0, 0, 0))
     return m
 
 
