@@ -27,6 +27,7 @@ namespace Planetcraft.UI
         VisualElement hurt;
         Label pressureLabel;
         float hurtAlpha;
+        float introFlash;
         [SerializeField] Interactor interactor;
         [SerializeField] BuildPlacer placer;
         [SerializeField] Deconstructor deconstructor;
@@ -213,6 +214,14 @@ namespace Planetcraft.UI
 
         // ------------------------------------------------------------------ Atualização
 
+        void UpdateIntroFlash()
+        {
+            if (introFlash <= 0f) return;
+            introFlash = Mathf.MoveTowards(introFlash, 0f, Time.unscaledDeltaTime / 2.8f);
+            flash.style.opacity = introFlash;
+            if (introFlash <= 0f) ShowToast(Loc.T("Pouso confirmado. Boa sorte, Colono 7."), 4f);
+        }
+
         void OnHurt(float fraction) => hurtAlpha = Mathf.Clamp01(hurtAlpha + 0.3f + fraction * 2f);
 
         void Update()
@@ -245,6 +254,7 @@ namespace Planetcraft.UI
                 }
             }
 
+            UpdateIntroFlash();
             UpdateStatus();
             UpdatePrompt();
             UpdateHelp();
@@ -523,6 +533,12 @@ namespace Planetcraft.UI
             flash.style.backgroundColor = new Color(1f, 0.97f, 0.9f);
             flash.style.opacity = 0f;
             root.Add(flash);
+            // Chegou da abertura: a tela abre do branco da reentrada para a paisagem.
+            if (GameSession.ConsumeIntroFlag())
+            {
+                introFlash = 1f;
+                flash.style.opacity = 1f;
+            }
 
             hurt = FullScreen();
             hurt.style.backgroundColor = new Color(0.75f, 0.05f, 0.03f);

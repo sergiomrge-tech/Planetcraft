@@ -2679,6 +2679,335 @@ def sentinel():
 
 
 # =============================================================================
+# Estação Horizonte por dentro (cabine -> corredor -> hangar), nave de descida e braço com comunicador de pulso.
+# Interior: o jogador anda de +Y para -Y do Blender (= +Z no Unity). Cabine y 0..-7, corredor -7..-27, hangar -27..-51.
+# =============================================================================
+def _st_mats(m):
+    _kit_mats(m)
+    m.material("hull_metal", (0.62, 0.65, 0.7), 0.35, 0.9)
+    m.material("hull_dark_metal", (0.26, 0.29, 0.34), 0.4, 0.9)
+    m.material("floor_deck_metal", (0.36, 0.39, 0.44), 0.4, 0.9)
+    m.material("suit", (0.82, 0.84, 0.86), 0.7, 0.0)
+    m.material("suit_dark", (0.12, 0.13, 0.15), 0.8, 0.0)
+    m.material("orange", (0.9, 0.38, 0.1), 0.6)
+    m.material("glass_shield", (0.35, 0.7, 1.0), 0.0, 0.0)
+    m.material("glow_blue", (0.35, 0.7, 1.0), 0.4)
+    m.material("glow_light_dim", (1.0, 0.95, 0.8), 0.4)
+
+
+def _shell_box(m, x0, x1, y0, y1, z0, z1, t=0.3, openings=(), mat="hull_metal"):
+    """Sala vazia: piso, teto e quatro paredes. `openings` = ('x+'|'x-'|'y+'|'y-', centro, largura, base_z, topo_z)."""
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    w, d, h = x1 - x0, y1 - y0, z1 - z0
+    m.box("floor_deck_metal", (cx, cy, z0 - t / 2), (w + 2 * t, d + 2 * t, t))
+    m.box("hull_dark_metal", (cx, cy, z1 + t / 2), (w + 2 * t, d + 2 * t, t))
+
+    def wall(side):
+        ops = [o for o in openings if o[0] == side]
+        horizontal = side in ("y+", "y-")
+        length = w if horizontal else d
+        lo = (x0 if horizontal else y0)
+        pos = {"x-": x0 - t / 2, "x+": x1 + t / 2, "y-": y0 - t / 2, "y+": y1 + t / 2}[side]
+        wall_len = length + 2 * t
+        cuts = sorted(((o[1] - o[2] / 2, o[1] + o[2] / 2, o[3], o[4]) for o in ops))
+        cur = lo - t
+        segs = []
+        for (a, b, zb, zt) in cuts:
+            segs.append((cur, a, z0, z1))
+            segs.append((a, b, z0, zb)) if zb > z0 else None
+            segs.append((a, b, zt, z1)) if zt < z1 else None
+            cur = b
+        segs.append((cur, lo + length + t, z0, z1))
+        for (a, b, zb, zt) in segs:
+            if b - a < 0.01 or zt - zb < 0.01:
+                continue
+            c, hh = (a + b) / 2, zt - zb
+            if horizontal:
+                m.box(mat, (c, pos, zb + hh / 2), (b - a, t, hh))
+            else:
+                m.box(mat, (pos, c, zb + hh / 2), (t, b - a, hh))
+    for s in ("x-", "x+", "y-", "y+"):
+        wall(s)
+    _plating(m, x0, x1, y0, y1, z0, z1, openings)
+
+
+def _plating(m, x0, x1, y0, y1, z0, z1, openings=()):
+    """Chapas de metal: costuras verticais a cada 1,2 m, faixas horizontais e rebites nas quatro paredes por dentro."""
+    m.material("plate_seam", (0.08, 0.09, 0.1), 0.5, 0.8)
+    m.material("plate_rivet_metal", (0.75, 0.77, 0.8), 0.3, 1.0)
+    h = z1 - z0
+    for side in ("x-", "x+", "y-", "y+"):
+        horizontal = side in ("y+", "y-")
+        length = (x1 - x0) if horizontal else (y1 - y0)
+        lo = x0 if horizontal else y0
+        face = {"x-": x0 + 0.015, "x+": x1 - 0.015, "y-": y0 + 0.015, "y+": y1 - 0.015}[side]
+        gaps = [(o[1] - o[2] / 2 - 0.1, o[1] + o[2] / 2 + 0.1) for o in openings if o[0] == side]
+        n = max(1, int(length / 1.2))
+        for k in range(n + 1):
+            t = lo + k * length / n
+            if any(a <= t <= b for a, b in gaps):
+                continue
+            if horizontal:
+                m.box("plate_seam", (t, face, z0 + h / 2), (0.035, 0.03, h - 0.2))
+            else:
+                m.box("plate_seam", (face, t, z0 + h / 2), (0.03, 0.035, h - 0.2))
+            for zz in (0.25, h / 2, h - 0.25):
+                if horizontal:
+                    m.cyl("plate_rivet_metal", (t + 0.1, face, z0 + zz), 0.022, 0.022, 0.02, rot=(90, 0, 0), seg=6)
+                else:
+                    m.cyl("plate_rivet_metal", (face, t + 0.1, z0 + zz), 0.022, 0.022, 0.02, rot=(0, 90, 0), seg=6)
+        for zz in (h * 0.33, h * 0.66):
+            if horizontal:
+                m.box("plate_seam", ((x0 + x1) / 2, face, z0 + zz), (length, 0.03, 0.03))
+            else:
+                m.box("plate_seam", (face, (y0 + y1) / 2, z0 + zz), (0.03, length, 0.03))
+
+
+
+def _door_frame(m, x, y, along, width, height, glow="glow_screen"):
+    """Moldura de porta com faixa de alerta e luz de estado (along='x' = porta numa parede perpendicular a Y)."""
+    if along == "x":
+        m.box("steel", (x - width / 2 - 0.06, y, height / 2), (0.12, 0.5, height + 0.1))
+        m.box("steel", (x + width / 2 + 0.06, y, height / 2), (0.12, 0.5, height + 0.1))
+        m.box("steel", (x, y, height + 0.06), (width + 0.24, 0.5, 0.12))
+        hazard_strip(m, (x, y + 0.26, height + 0.2), width + 0.24, "x", height=0.1)
+        m.box(glow, (x, y + 0.26, height - 0.1), (0.5, 0.02, 0.07))
+
+
+def _rack_panel(m, x, y, side, depth=1.4, facing="x"):
+    """Rack de equipamento: gabinete com porta de acesso, grade de ventilação, tela de status e puxador amarelo."""
+    if facing == "x":
+        sgn = -side
+        m.box("hull_dark_metal", (x, y, 1.15), (0.3, depth, 1.7), bevel=0.01)
+        fx = x + sgn * 0.16
+        m.box("hull_metal", (fx, y, 1.3), (0.02, depth - 0.16, 1.3))
+        for k in range(6):
+            m.box("plate_seam" if "plate_seam" in m.mats else "dark", (fx + sgn * 0.012, y, 0.5 + k * 0.045), (0.012, depth - 0.4, 0.015))
+        m.box("dark", (fx + sgn * 0.012, y - depth * 0.15, 1.65), (0.012, 0.5, 0.26)); m.box("glow_screen", (fx + sgn * 0.02, y - depth * 0.15, 1.65), (0.008, 0.42, 0.2))
+        m.box("yellow", (fx + sgn * 0.02, y + depth * 0.3, 1.2), (0.03, 0.04, 0.16))
+        m.box("glow_screen", (fx + sgn * 0.02, y + depth * 0.3, 1.9), (0.008, 0.1, 0.03))
+    else:
+        m.box("hull_dark_metal", (x, y, 1.2), (depth, 0.3, 2.3), bevel=0.01)
+        fy = y + 0.16
+        m.box("hull_metal", (x, fy, 1.3), (depth - 0.16, 0.02, 2.0))
+        for k in range(6):
+            m.box("dark", (x, fy + 0.012, 0.45 + k * 0.045), (depth - 0.4, 0.012, 0.015))
+        m.box("dark", (x, fy + 0.012, 1.75), (0.5, 0.012, 0.26)); m.box("glow_screen", (x, fy + 0.02, 1.75), (0.42, 0.008, 0.2))
+        m.box("yellow", (x + depth * 0.3, fy + 0.02, 1.15), (0.04, 0.03, 0.16))
+
+
+def station_interior():
+    m = Model("station_interior", "Station")
+    m.greeble = False
+    _st_mats(m)
+    # --- Cabine (7 x 6 x 3,2) com porta no fundo (y = -7)
+    _shell_box(m, -3, 3, -7, 0, 0, 3.2, openings=[("y-", 0, 1.8, 0, 2.5), ("x+", -3.8, 3.2, 0.9, 2.6)])
+    _door_frame(m, 0, -7, "x", 1.8, 2.5)
+    # Janela da cabine (parede +X) com vidro e moldura
+    m.box("glass_win", (3.12, -3.8, 1.75), (0.06, 3.2, 1.7))
+    for yy in (-2.2, -5.4):
+        m.box("steel", (3.14, yy, 1.75), (0.14, 0.12, 1.8))
+    for zz in (0.9, 2.6):
+        m.box("steel", (3.14, -3.8, zz), (0.14, 3.3, 0.12))
+    # Cápsula de sono (aberta) encostada na parede -X
+    m.box("hull_dark_metal", (-1.6, -1.8, 0.2), (2.4, 1.2, 0.4), bevel=0.04)
+    m.box("hull_metal", (-1.6, -1.8, 0.55), (2.2, 1.0, 0.3), bevel=0.06)
+    m.box("cloth", (-1.55, -1.8, 0.78), (2.0, 0.86, 0.16), bevel=0.05)
+    m.box("body_light", (-2.35, -1.8, 0.92), (0.45, 0.5, 0.1), bevel=0.04)
+    m.box("hull_metal", (-1.6, -2.6, 1.2), (2.3, 0.1, 1.2), rot=(-35, 0, 0), bevel=0.03)          # tampa aberta
+    m.box("glow_blue", (-1.6, -2.55, 1.15), (1.8, 0.02, 0.5), rot=(-35, 0, 0))
+    m.box("glow_screen", (-0.45, -1.8, 0.62), (0.03, 0.5, 0.12))
+    # Mesa com tela e armário da cabine
+    m.box("panel", (2.3, -0.6, 0.45), (1.1, 1.6, 0.9), bevel=0.02)
+    m.box("steel", (2.3, -0.6, 0.93), (1.14, 1.64, 0.05))
+    m.box("dark", (2.7, -0.6, 1.5), (0.06, 0.9, 0.6)); m.box("glow_screen", (2.66, -0.6, 1.5), (0.01, 0.8, 0.5))
+    for k in range(2):
+        m.box("panel", (-2.6, -5.8 + k * 0.7, 1.0), (0.6, 0.62, 2.0), bevel=0.02)
+        m.box("panel_dark", (-2.3, -5.8 + k * 0.7, 1.4), (0.01, 0.5, 0.6))
+    for z in (0.3, 1.6, 2.9):
+        m.box("glow_light", (0, -3.5, 3.18), (2.0, 0.3, 0.02)) if z == 2.9 else None
+    for sx in (-1, 1):                                   # racks de armazenamento ao lado da porta
+        _rack_panel(m, sx * 2.3, -6.55, 0, depth=1.6, facing="y")
+    m.tube("steel", (-2.8, -0.6, 1.15), (-2.8, -4.4, 1.15), 0.025, seg=8)   # corrimão junto da cápsula
+    m.box("dark", (-2.84, -5.0, 1.8), (0.03, 0.34, 0.26)); m.box("glow_screen", (-2.82, -5.0, 1.8), (0.01, 0.28, 0.2))   # foto da família
+    m.tube("pipe", (-2.6, -0.3, 3.0), (-2.6, -6.7, 3.0), 0.06, seg=10)
+    m.tube("pipe", (2.6, -0.3, 3.0), (2.6, -6.7, 3.0), 0.06, seg=10)
+    m.box("glow_light_dim", (0, -1.5, 3.17), (1.6, 0.3, 0.03))
+    m.box("glow_light_dim", (0, -5.5, 3.17), (1.6, 0.3, 0.03))
+    # --- Corredor (3,6 x 20 x 3): costelas, luzes, janelas laterais
+    _shell_box(m, -1.8, 1.8, -27, -7, 0, 3.0, openings=[("x+", -12.5, 2.4, 0.9, 2.5), ("x+", -21.0, 2.4, 0.9, 2.5), ("y-", 0, 2.0, 0, 2.6), ("y+", 0, 1.8, 0, 2.5)])
+    for yy in (-12.5, -21.0):
+        m.box("glass_win", (1.92, yy, 1.7), (0.06, 2.4, 1.6))
+        for dy in (-1.25, 0.0, 1.25):
+            m.box("steel", (1.94, yy + dy, 1.7), (0.14, 0.1, 1.7))
+        for zz in (0.9, 2.5):
+            m.box("steel", (1.94, yy, zz), (0.14, 2.5, 0.1))
+    for k in range(10):
+        yy = -8.0 - k * 2.0
+        m.box("hull_dark_metal", (0, yy, 2.9), (3.72, 0.16, 0.2))   # costela: viga do teto (as colunas vêm abaixo)
+        m.box("floor_deck_metal", (0, yy, 0.05), (2.4, 0.18, 0.04))
+        m.box("glow_light_dim", (0, yy - 1.0, 2.97), (1.4, 0.3, 0.03))
+        for s in (-1, 1):
+            m.box("steel", (s * 1.72, yy, 1.5), (0.1, 0.22, 2.9))
+        for s in (-1, 1):
+            m.box("glow_blue", (s * 1.2, yy - 1.0, 0.03), (0.04, 1.4, 0.02))
+    for s in (-1, 1):
+        m.tube("pipe", (s * 1.5, -7.5, 2.7), (s * 1.5, -26.5, 2.7), 0.07, seg=10)
+        m.tube("steel", (s * 1.5, -7.5, 2.45), (s * 1.5, -26.5, 2.45), 0.04, seg=8)
+
+    # --- Referências (ISS, nós com "quatro racks" e corredores de ficção): racks com painéis de acesso, grades de ventilação e
+    # telas ao longo das paredes, corrimãos com suportes, feixes de cabos, cantos chanfrados no teto e vigas em arco.
+    for side, ys in ((-1, (-9.0, -11.0, -13.0, -18.5, -20.5, -23.0, -25.0)), (1, (-9.0, -16.5, -18.5, -24.5))):
+        for yy in ys:
+            _rack_panel(m, side * 1.64, yy, side)
+    for side in (-1, 1):
+        m.tube("steel", (side * 1.5, -7.6, 1.15), (side * 1.5, -26.4, 1.15), 0.025, seg=8)
+        for k in range(10):
+            m.tube("steel", (side * 1.62, -8.2 - k * 2.0, 1.15), (side * 1.5, -8.2 - k * 2.0, 1.15), 0.02, seg=6)
+        for dz in (0.22, 0.34):
+            m.tube("dark", (side * 1.7, -7.6, dz), (side * 1.7, -26.4, dz), 0.035, seg=8)
+        m.box("hull_metal", (side * 1.5, -17.0, 2.78), (0.55, 19.2, 0.06), rot=(0, side * 45, 0))
+    for k in range(10):
+        for side in (-1, 1):
+            m.box("steel", (side * 1.4, -8.0 - k * 2.0, 2.82), (0.5, 0.14, 0.05), rot=(0, side * 45, 0))
+    hazard_strip(m, (0, -7.2, 2.7), 3.4, "x", height=0.08)
+    _door_frame(m, 0, -27, "x", 2.0, 2.6)
+    # --- Hangar (20 x 24 x 10)
+    _shell_box(m, -10, 10, -51, -27, 0, 10, t=0.35, openings=[("y-", 0, 14, 1.2, 8.2), ("y+", 0, 2.0, 0, 2.6)])
+    m.box("glass_shield", (0, -51.1, 4.7), (14, 0.05, 7.0))
+    for s in (-1, 1):
+        m.box("steel", (s * 7.2, -51.0, 4.7), (0.4, 0.5, 7.2)); m.box("glow_red", (s * 7.2, -50.7, 4.7), (0.12, 0.05, 6.8))
+    m.box("steel", (0, -51.0, 8.3), (14.8, 0.5, 0.4)); m.box("steel", (0, -51.0, 1.1), (14.8, 0.5, 0.4))
+    # Pad de pouso: anel e faixas de alerta no piso
+    m.material("pad_mark", (0.95, 0.72, 0.08), 0.6)
+    m.lathe("pad_mark", (0, -39, 0.012), [(5.7, 0), (6.1, 0.0)], seg=48, caps=False)
+    for a in range(0, 360, 45):
+        r = math.radians(a)
+        m.box("pad_mark", (math.cos(r) * 4.2, -39 + math.sin(r) * 4.2, 0.012), (0.18, 1.4, 0.01), rot=(0, 0, a))
+    for yy in (-30, -34, -44, -48):
+        for s in (-1, 1):
+            m.box("glow_light", (s * 9.9, yy, 6.0), (0.08, 1.4, 1.4))
+            m.box("glow_blue", (s * 9.4, yy, 0.05), (0.06, 2.0, 0.02))
+    for k in range(5):
+        m.box("glow_light_dim", (-6 + k * 3.0, -39, 9.95), (1.4, 5.0, 0.04))
+    # Passarela lateral com guarda-corpo, cabine de controle e portões de carga
+    m.box("steel", (-9.0, -38, 3.2), (1.8, 14, 0.12))
+    _railing(m, (-8.1, -31.0, 0), (-8.1, -45.0, 0), 3.26, posts=7)
+    for k in range(8):
+        m.box("hull_dark_metal", (-9.7, -30.5 - k * 2.0, 1.6), (0.3, 0.2, 3.2))
+    m.box("hull_metal", (8.6, -33, 4.6), (2.6, 4.0, 2.4), bevel=0.04)
+    m.box("glass_win", (7.28, -33, 4.7), (0.04, 3.4, 1.2))
+    m.box("glow_screen", (8.6, -33, 3.5), (2.2, 3.6, 0.04))
+    for k, (x, y) in enumerate(((-7.4, -29.5), (-7.4, -31.0), (7.8, -46.0), (8.8, -46.0), (8.3, -44.5))):
+        m.box("orange" if k % 2 == 0 else "panel", (x, y, 0.55), (1.2, 1.2, 1.1), bevel=0.03)
+        m.box("steel", (x, y, 1.12), (1.24, 1.24, 0.05))
+    m.cyl("panel", (7.6, -29.0, 1.6), 0.7, 0.7, 3.2, seg=16)
+    m.cyl("steel", (7.6, -29.0, 3.25), 0.75, 0.75, 0.1, seg=16)
+    for s in (-1, 1):
+        m.tube("pipe", (s * 9.5, -27.5, 8.8), (s * 9.5, -50.5, 8.8), 0.14, seg=12)
+        m.tube("steel", (s * 9.1, -27.5, 8.4), (s * 9.1, -50.5, 8.4), 0.07, seg=10)
+    return m
+
+
+def suit_locker():
+    m = Model("suit_locker", "Station")
+    m.greeble = False
+    _st_mats(m)
+    m.box("hull_metal", (0, 0, 1.15), (1.1, 0.7, 2.3), bevel=0.03)
+    m.box("hull_dark_metal", (0, 0.36, 1.2), (0.9, 0.02, 2.1))
+    m.box("glass_win", (0, 0.38, 1.2), (0.84, 0.02, 2.0))
+    # Traje dentro: torso, cabeça (capacete) e braços
+    m.box("suit", (0, 0.1, 1.3), (0.5, 0.26, 0.7), bevel=0.06)
+    m.blob("suit", (0, 0.1, 1.9), (0.2, 0.2, 0.22), sub=2, noise=0.0, seed=1, smooth=True)
+    m.blob("glow_blue", (0, 0.3, 1.9), (0.13, 0.03, 0.1), sub=2, noise=0.0, seed=1, smooth=True)
+    for s in (-1, 1):
+        m.tube("suit", (s * 0.3, 0.1, 1.55), (s * 0.34, 0.1, 0.9), 0.07, seg=8)
+        m.tube("suit", (s * 0.14, 0.1, 0.95), (s * 0.14, 0.1, 0.1), 0.09, seg=8)
+        m.box("orange", (s * 0.3, 0.1, 1.6), (0.16, 0.2, 0.1))
+    m.box("glow_screen", (0, 0.37, 2.2), (0.5, 0.02, 0.06))
+    m.box("yellow", (0, 0.37, 0.15), (0.8, 0.02, 0.1))
+    return m
+
+
+def lander():
+    """Nave de descida (~9 m): fuselagem lisa, cabine de vidro, asas, dois motores, três pernas e rampa lateral aberta.
+    Nariz para -Y do Blender (= +Z no Unity), origem no centro da base dos trens de pouso."""
+    m = Model("lander", "Station")
+    m.greeble = False
+    _st_mats(m)
+    m.material("lander_white", (0.86, 0.87, 0.88), 0.45, 0.2)
+    B = T(0, 4.5, 1.75) @ R(90, 0, 0)
+    prof = [(0.0, 0.0), (0.7, 0.2), (1.25, 1.2), (1.4, 3.0), (1.35, 6.2), (1.0, 8.0), (0.5, 9.0), (0.0, 9.2)]
+    m.lathe("lander_white", (0, 0, 0), prof, seg=28, base=B)
+    m.lathe("hull_dark_metal", (0, 0, 0), [(1.43, 2.0), (1.43, 2.35)], seg=28, caps=False, base=B)
+    m.lathe("hull_dark_metal", (0, 0, 0), [(1.38, 5.7), (1.38, 6.0)], seg=28, caps=False, base=B)
+    m.blob("glass_win", (0, -3.9, 2.05), (0.95, 1.6, 0.8), sub=3, noise=0.0, seed=2, smooth=True)       # cabine
+    m.box("hull_dark_metal", (0, -3.9, 1.55), (1.8, 2.6, 0.12))
+    for s in (-1, 1):
+        # asas em delta
+        m.poly("lander_white", [(s * 1.2, 1.5, 1.5), (s * 4.6, 3.8, 1.35), (s * 4.6, 4.5, 1.35), (s * 1.3, 4.0, 1.7),
+                                (s * 1.2, 1.5, 1.25), (s * 4.6, 3.8, 1.25), (s * 4.6, 4.5, 1.25), (s * 1.3, 4.0, 1.3)],
+               [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)])
+        m.box("orange", (s * 4.4, 4.1, 1.38), (0.35, 0.9, 0.18))
+        m.cyl("hull_dark_metal", (s * 1.9, 5.0, 1.4), 0.5, 0.45, 1.9, rot=(90, 0, 0), seg=18)
+        m.cyl("glow_heat", (s * 1.9, 5.95, 1.4), 0.4, 0.4, 0.05, rot=(90, 0, 0), seg=18)
+        m.cyl("steel", (s * 1.9, 5.9, 1.4), 0.52, 0.52, 0.12, rot=(90, 0, 0), seg=18)
+        # trens de pouso
+    for k, (x, y) in enumerate(((-1.7, -3.2), (1.7, -3.2), (0.0, 3.6))):
+        m.tube("steel", (x * 0.4, y, 1.3), (x, y, 0.2), 0.1, seg=10)
+        m.tube("hull_dark_metal", (x * 0.7, y, 0.7), (x, y, 0.25), 0.06, seg=8)
+        m.cyl("hull_dark_metal", (x, y, 0.07), 0.45, 0.45, 0.14, seg=14)
+    # Rampa lateral (lado +X) aberta e porta com luz interna
+    m.box("hull_dark_metal", (1.3, 0.6, 1.75), (0.1, 2.4, 1.8), rot=(0, 0, 0))
+    m.box("glow_light", (1.28, 0.6, 1.85), (0.06, 2.0, 1.5))
+    m.box("steel", (1.6, 0.6, 0.75), (1.2, 2.2, 0.08), rot=(0, 28, 0))
+    for yy in (-0.3, 0.6, 1.5):
+        m.box("hull_dark_metal", (1.68, yy, 0.75), (1.1, 0.05, 0.02), rot=(0, 28, 0))
+    # Detalhes: faixa de alerta, antena, números e luzes de posição
+    hazard_strip(m, (0, -1.0, 2.7), 0.9, "x", height=0.1)
+    m.tube("steel", (0, 2.5, 3.0), (0, 2.5, 3.9), 0.025, seg=6)
+    m.blob("glow_red", (-4.6, 4.2, 1.45), (0.08, 0.08, 0.08), sub=1, noise=0, seed=1)
+    m.blob("glow_screen", (4.6, 4.2, 1.45), (0.08, 0.08, 0.08), sub=1, noise=0, seed=1)
+    m.box("orange", (0, -5.8, 1.45), (1.2, 0.05, 0.3))
+    m.box("glow_blue", (0, -0.4, 3.12), (0.4, 1.2, 0.03))
+    return m
+
+
+def wrist_arm():
+    """Antebraço esquerdo de traje espacial com o comunicador de pulso (primeira pessoa). Origem no centro do
+    mostrador. O cotovelo fica em +Y (perto da câmera) e a mão aponta para -Y; o relógio fica em cima (+Z).
+    A luva (NASA, importada à parte) encaixa no anel de vedação do punho, em y = 0,075, logo à frente do relógio."""
+    m = Model("wrist_arm", "Station")
+    m.greeble = False
+    _st_mats(m)
+    m.material("sleeve", (0.80, 0.81, 0.80), 0.82, 0.0)
+    m.material("strap", (0.12, 0.13, 0.14), 0.7, 0.0)
+    m.material("cuff_orange", (0.9, 0.38, 0.1), 0.6)
+    # Manga de tecido em camadas: afina para o punho e tem dobras (sanfona) como os trajes reais.
+    prof = [(0.0, 0.0)]
+    for i in range(41):
+        t = i / 40
+        r = 0.071 + 0.03 * t ** 1.4 + 0.0022 * math.sin(t * 46) * (1 - t * 0.6)
+        prof.append((r, t * 0.62))
+    prof.append((0.0, 0.62))
+    m.lathe("sleeve", (0, 0, 0), prof, seg=16, base=T(0, 0.08, 0) @ aim((0, 0, 0), (0, 1, 0)))
+    m.tube("cuff_orange", (0, 0.40, 0.0), (0, 0.36, 0.0), 0.0905, seg=18)
+    # Anel metálico de vedação da luva (wrist disconnect) na ponta da manga.
+    m.tube("hull_dark_metal", (0, 0.105, 0.0), (0, 0.075, 0.0), 0.076, seg=20)
+    m.tube("steel", (0, 0.092, 0.0), (0, 0.082, 0.0), 0.079, seg=20)
+    # Comunicador: pulseira em volta da manga, caixa redonda compacta, aro luminoso, tela e projetor.
+    m.tube("strap", (0, 0.155, 0.0), (0, 0.105, 0.0), 0.079, seg=20)
+    m.cyl("hull_dark_metal", (0, 0.13, 0.096), 0.06, 0.056, 0.036, seg=20)
+    m.lathe("glow_blue", (0, 0, 0), [(0.057, 0), (0.057, 0.006)], seg=26, caps=False, base=T(0, 0.13, 0.114))
+    m.cyl("glow_screen", (0, 0.13, 0.117), 0.046, 0.046, 0.005, seg=20)
+    for s_ in (-1, 1):
+        m.cyl("steel", (s_ * 0.064, 0.13, 0.1), 0.009, 0.009, 0.016, rot=(0, 90, 0), seg=8)
+    m.cyl("steel", (0, 0.13, 0.128), 0.016, 0.013, 0.022, seg=10)                   # lente do projetor
+    m.blob("glow_core", (0, 0.13, 0.145), (0.009, 0.009, 0.009), sub=1, noise=0, seed=1)
+    return m
+
+
+# =============================================================================
 BUILDERS = {
     "tree_broad_0": lambda: tree_broad(0), "tree_broad_1": lambda: tree_broad(1), "tree_broad_2": lambda: tree_broad(2),
     "tree_conifer_0": lambda: tree_conifer(0), "tree_conifer_1": lambda: tree_conifer(1),
@@ -2715,6 +3044,7 @@ BUILDERS = {
                                                "base_o2gen", "base_battery", "base_purifier")},
     **{n: (lambda n=n: defense(n)) for n in ("base_turret_1", "base_turret_2", "base_floodlight", "base_shock_fence")},
     "sentinel": sentinel,
+    "station_interior": station_interior, "suit_locker": suit_locker, "lander": lander, "wrist_arm": wrist_arm,
 }
 
 

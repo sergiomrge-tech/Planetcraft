@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -6,8 +6,8 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace Planetcraft.EditorTools
 {
-    // Configura o projeto para HDRP por código (sem o assistente): asset do pipeline com os recursos que o jogo usa,
-    // configurações globais e os perfis de volume das cenas. Pode rodar de novo; só cria o que falta.
+    // Configura o projeto para HDRP por cÃ³digo (sem o assistente): asset do pipeline com os recursos que o jogo usa,
+    // configuraÃ§Ãµes globais e os perfis de volume das cenas. Pode rodar de novo; sÃ³ cria o que falta.
     public static class HdrpSetup
     {
         const string Dir = "Assets/_Project/Settings";
@@ -34,17 +34,17 @@ namespace Planetcraft.EditorTools
             for (int i = 0; i < QualitySettings.names.Length; i++)
             {
                 QualitySettings.SetQualityLevel(i, false);
-                QualitySettings.renderPipeline = null; // todos os níveis usam o pipeline padrão
+                QualitySettings.renderPipeline = null; // todos os nÃ­veis usam o pipeline padrÃ£o
             }
             QualitySettings.SetQualityLevel(current, false);
 
             EnsureGlobalSettings();
             AssetDatabase.SaveAssets();
 
-            // Num projeto recém-clonado os FBX podem ter sido importados antes dos shaders do HDRP existirem
-            // (Shader.Find devolve null e o material fica rosa). Reimporta os modelos com o pipeline já ativo.
+            // Num projeto recÃ©m-clonado os FBX podem ter sido importados antes dos shaders do HDRP existirem
+            // (Shader.Find devolve null e o material fica rosa). Reimporta os modelos com o pipeline jÃ¡ ativo.
             if (Shader.Find("HDRP/Lit") == null)
-                Debug.LogError("[Planetcraft] Shader HDRP/Lit não encontrado; os modelos ficarão sem material.");
+                Debug.LogError("[Planetcraft] Shader HDRP/Lit nÃ£o encontrado; os modelos ficarÃ£o sem material.");
             AssetDatabase.ImportAsset("Assets/_Project/Models",
                 ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
             Debug.Log("[Planetcraft] HDRP configurado: " + PipelinePath);
@@ -61,26 +61,26 @@ namespace Planetcraft.EditorTools
             {
                 var p = so.FindProperty("m_RenderPipelineSettings." + feature);
                 if (p != null) p.boolValue = true;
-                else Debug.LogWarning("[Planetcraft] Recurso HDRP não encontrado: " + feature);
+                else Debug.LogWarning("[Planetcraft] Recurso HDRP nÃ£o encontrado: " + feature);
             }
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(pipeline);
         }
 
-        // HDRenderPipelineGlobalSettings.Ensure é interno; é o mesmo que o assistente do HDRP chama.
+        // HDRenderPipelineGlobalSettings.Ensure Ã© interno; Ã© o mesmo que o assistente do HDRP chama.
         static void EnsureGlobalSettings()
         {
             var type = typeof(HDRenderPipelineAsset).Assembly.GetType("UnityEngine.Rendering.HighDefinition.HDRenderPipelineGlobalSettings");
             var ensure = type?.GetMethod("Ensure", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             if (ensure == null)
             {
-                Debug.LogWarning("[Planetcraft] Não achei HDRenderPipelineGlobalSettings.Ensure; abra o HDRP Wizard.");
+                Debug.LogWarning("[Planetcraft] NÃ£o achei HDRenderPipelineGlobalSettings.Ensure; abra o HDRP Wizard.");
                 return;
             }
             ensure.Invoke(null, new object[] { true });
         }
 
-        // Perfil da Terra: céu físico, nuvens volumétricas, neblina volumétrica e pós-processamento.
+        // Perfil da Terra: cÃ©u fÃ­sico, nuvens volumÃ©tricas, neblina volumÃ©trica e pÃ³s-processamento.
         // Os valores animados pelo Ti ficam no AtmosphereReactor e no WeatherController.
         public static VolumeProfile AtmosphereProfile()
         {
@@ -109,7 +109,7 @@ namespace Planetcraft.EditorTools
             fog.maximumHeight.Override(220f);
             fog.albedo.Override(new Color(0.55f, 0.45f, 0.38f));
 
-            // Sem este override a água recebe só metade da luz ambiente e fica quase preta.
+            // Sem este override a Ã¡gua recebe sÃ³ metade da luz ambiente e fica quase preta.
             var water = Add<WaterRendering>(profile);
             water.enable.Override(true);
             water.ambientProbeDimmer.Override(1f);
@@ -128,7 +128,23 @@ namespace Planetcraft.EditorTools
             return profile;
         }
 
-        // Perfil do título: espaço preto (a câmera limpa com preto), exposição fixa de luz do sol e bloom.
+        // Perfil do tÃ­tulo: espaÃ§o preto (a cÃ¢mera limpa com preto), exposiÃ§Ã£o fixa de luz do sol e bloom.
+        // Interior da estaÃ§Ã£o: exposiÃ§Ã£o fixa mais baixa (luzes de ambiente) e a Terra clara pelas janelas.
+        public static VolumeProfile StationProfile()
+        {
+            var profile = LoadOrCreate(Dir + "/StationInterior.asset", out bool created);
+            if (!created) return profile;
+            Add<VisualEnvironment>(profile).skyType.Override(0);
+            var exposure = Add<Exposure>(profile);
+            exposure.mode.Override(ExposureMode.Fixed);
+            exposure.fixedExposure.Override(9.1f);
+            Add<Tonemapping>(profile).mode.Override(TonemappingMode.ACES);
+            Add<Bloom>(profile).intensity.Override(0.45f);
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssets();
+            return profile;
+        }
+
         public static VolumeProfile TitleProfile()
         {
             var profile = LoadOrCreate(TitlePath, out bool created);
@@ -144,8 +160,8 @@ namespace Planetcraft.EditorTools
             return profile;
         }
 
-        // Efeitos que "assentam" os objetos no mundo: reflexos em espaço de tela (água e metal), sombras de contato
-        // para frestas e pés de máquinas, micro-sombras dos normal maps e uma vinheta leve. Adiciona o que faltar.
+        // Efeitos que "assentam" os objetos no mundo: reflexos em espaÃ§o de tela (Ã¡gua e metal), sombras de contato
+        // para frestas e pÃ©s de mÃ¡quinas, micro-sombras dos normal maps e uma vinheta leve. Adiciona o que faltar.
         static void EnsureGroundingEffects(VolumeProfile profile)
         {
             bool changed = false;
@@ -181,7 +197,7 @@ namespace Planetcraft.EditorTools
             AssetDatabase.SaveAssets();
         }
 
-        // As folhas translúcidas (PolyHavenMaterials) usam o perfil Foliage; ele precisa estar na lista da cena.
+        // As folhas translÃºcidas (PolyHavenMaterials) usam o perfil Foliage; ele precisa estar na lista da cena.
         static void EnsureFoliageProfile(VolumeProfile profile)
         {
             if (profile.Has<DiffusionProfileList>()) return;

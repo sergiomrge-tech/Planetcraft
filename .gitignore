@@ -48,3 +48,8 @@ Thumbs.db
 
 # Gerados pelo Test Framework (Performance Testing)
 /Assets/Resources/PerformanceTestRun*.json*
+
+/Assets/_Recovery/
+/Assets/_Recovery.meta
+/Assets/Screenshots/
+/Assets/Screenshots.meta

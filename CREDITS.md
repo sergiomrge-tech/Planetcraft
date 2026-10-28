@@ -69,3 +69,7 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 - Share Tech Mono — Carrois Type Design
 - Patrick Hand — Patrick Wagesreiter
 - Kalam — Indian Type Foundry
+
+## NASA (domínio público)
+
+- Apollo Lunar Module e Astronaut Glove — [NASA 3D Resources](https://github.com/nasa/NASA-3D-Resources): modelos livres e sem copyright, usados como nave de descida e luva do comunicador de pulso.

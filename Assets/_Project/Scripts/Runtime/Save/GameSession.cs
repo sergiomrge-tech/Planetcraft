@@ -11,6 +11,7 @@ namespace Planetcraft.Save
         public const string Title = "Title";
         public const string Game = "Prototype";
         public const string Epilogue = "Epilogue";
+        public const string Intro = "Station";
     }
 
     // Transições entre título e jogo. O estado global (projetos, registros, nós coletados...) vive em
@@ -26,7 +27,19 @@ namespace Planetcraft.Save
             ResourceNode.RestoreCollected(null);
             ShipProgress.Restore(null, false);
             PlayClock.Seconds = 0;
-            StartGame();
+            // Jogo novo começa na Estação Horizonte (abertura); a abertura termina chamando StartGame(fromIntro: true).
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(Scenes.Intro);
+        }
+
+        /// <summary>Verdadeiro quando o jogo acabou de chegar da abertura (pouso): o HUD faz o clarão de entrada.</summary>
+        public static bool FromIntro { get; private set; }
+
+        public static bool ConsumeIntroFlag()
+        {
+            bool v = FromIntro;
+            FromIntro = false;
+            return v;
         }
 
         public static bool ContinueGame()
@@ -36,8 +49,9 @@ namespace Planetcraft.Save
             return true;
         }
 
-        public static void StartGame()
+        public static void StartGame(bool fromIntro = false)
         {
+            FromIntro = fromIntro;
             Time.timeScale = 1f;
             SceneManager.LoadScene(Scenes.Game);
         }

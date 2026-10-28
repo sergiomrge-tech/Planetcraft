@@ -34,6 +34,7 @@ namespace Planetcraft.EditorTools
         const string ScenePath = SceneDir + "/Prototype.unity";
         const string TitleScenePath = SceneDir + "/Title.unity";
         const string EpilogueScenePath = SceneDir + "/Epilogue.unity";
+        const string StationScenePath = SceneDir + "/Station.unity";
         const string NasaDir = "Assets/ThirdParty/NASA";
 
         const float TerrainSize = 500f;
@@ -73,9 +74,11 @@ namespace Planetcraft.EditorTools
             if (icon != null) PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
             BuildTitleScene();
             BuildEpilogueScene();
+            BuildStationScene();
             EditorBuildSettings.scenes = new[]
             {
                 new EditorBuildSettingsScene(TitleScenePath, true),
+                new EditorBuildSettingsScene(StationScenePath, true),
                 new EditorBuildSettingsScene(ScenePath, true),
                 new EditorBuildSettingsScene(EpilogueScenePath, true),
             };
@@ -363,11 +366,8 @@ namespace Planetcraft.EditorTools
             lamp.transform.localRotation = Quaternion.Euler(35f, 180f, 0f);
             var l = lamp.AddComponent<Light>();
             l.type = LightType.Spot;
-            l.range = 38f;
             l.spotAngle = 95f;
-            l.intensity = 90000f;
-            l.color = new Color(1f, 0.96f, 0.85f);
-            l.shadows = LightShadows.None;
+            ConfigureHdLight(l, 60000f, LightUnit.Lumen, 38f, new Color(1f, 0.96f, 0.85f));
             var f = root.AddComponent<Planetcraft.Defense.Floodlight>();
             var so = new SerializedObject(f);
             var arr = so.FindProperty("lights");
@@ -851,6 +851,238 @@ namespace Planetcraft.EditorTools
             ui.AddComponent<TitleMenu>();
 
             EditorSceneManager.SaveScene(scene, TitleScenePath);
+        }
+
+
+        // Luz do HDRP com intensidade na unidade certa: o HDAdditionalLightData reescreve Light.intensity com o padrão dele,
+        // então o valor precisa ir por aqui (lúmens para pontos e refletores, lux para o sol).
+        static void ConfigureHdLight(Light l, float intensity, LightUnit unit, float range = 0f, Color? color = null, bool shadows = false)
+        {
+            var hd = l.GetComponent<HDAdditionalLightData>();
+            if (hd == null) hd = l.gameObject.AddComponent<HDAdditionalLightData>();
+            hd.SetIntensity(intensity, unit);
+            if (range > 0f) hd.range = range;
+            if (color.HasValue) hd.color = color.Value;
+            hd.EnableShadows(shadows);
+        }
+
+        // Abertura: a Estação Horizonte por dentro (cabine, corredor, hangar com a nave de descida) e o comunicador de pulso.
+        // Coordenadas do Unity: o jogador anda de +Z (cabine em z 0..7, corredor 7..27, hangar 27..51).
+        static void BuildStationScene()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            SpaceLighting(Quaternion.LookRotation(new Vector3(-0.55f, -0.45f, -0.7f)));
+            var stationSun = GameObject.Find("Sol").GetComponent<Light>();
+            // Sem sombras o sol atravessaria as paredes e acenderia tudo por dentro.
+            ConfigureHdLight(stationSun, 6000f, LightUnit.Lux, shadows: true);
+            GameObject.Find("Espaço").GetComponent<Volume>().sharedProfile = HdrpSetup.StationProfile();
+            Earth(new Vector3(430f, -380f, 430f), 360f, scorched: true);
+            Stars(900f, 0.8f, 2.4f);
+            var mats = new MaterialLibrary();
+
+            var station = new GameObject("Estação");
+            Model("Station/station_interior", station.transform);
+
+            // Luzes: cabine morna, corredor e hangar frios (as unidades do HDRP pedem valores altos com o brilho de saída).
+            void Lamp(string name, Vector3 pos, float lumen, float range, Color color)
+            {
+                var go = new GameObject(name);
+                go.transform.SetParent(station.transform, false);
+                go.transform.position = pos;
+                var l = go.AddComponent<Light>();
+                l.type = LightType.Point;
+                ConfigureHdLight(l, lumen, LightUnit.Lumen, range, color);
+            }
+            var warm = new Color(1f, 0.9f, 0.75f);
+            var cold = new Color(0.82f, 0.92f, 1f);
+            Lamp("Luz cabine 1", new Vector3(0f, 2.9f, 1.8f), 40000f, 9f, warm);
+            Lamp("Luz cabine 2", new Vector3(0f, 2.9f, 5.2f), 40000f, 9f, warm);
+            for (int i = 0; i < 5; i++) Lamp($"Luz corredor {i}", new Vector3(0f, 2.8f, 9f + i * 4.2f), 36000f, 8f, cold);
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 2; j++)
+                    Lamp($"Luz hangar {i}{j}", new Vector3(-5.5f + j * 11f, 9.4f, 31f + i * 8.5f), 160000f, 22f, cold);
+
+            // Armário do traje (corredor, parede -X, de frente para o corredor) e nave de descida no pad do hangar.
+            var locker = Model("Station/suit_locker", station.transform);
+            locker.name = "ArmárioTraje";
+            locker.transform.position = new Vector3(-1.42f, 0f, 15.5f);
+            locker.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+            var lockerUse = locker.AddComponent<Planetcraft.Intro.IntroInteract>();
+            new SerializedObject(lockerUse).FindProperty("prompt").stringValue = "Pegar o traje";
+            var lso = new SerializedObject(lockerUse);
+            lso.FindProperty("prompt").stringValue = "Pegar o traje";
+            lso.ApplyModifiedPropertiesWithoutUndo();
+
+            // Nave de descida: o módulo lunar Apollo da NASA (domínio público), 9,6 m, com escotilha e escada de frente para o +Z.
+            var lander = new GameObject("NaveDescida");
+            lander.transform.position = new Vector3(0f, 0f, 39f);
+            var landerModel = (GameObject)PrefabUtility.InstantiatePrefab(
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ThirdParty/NASA/lunar_module/lunar_module.fbx"), lander.transform);
+            landerModel.transform.localPosition = Vector3.zero;
+            var landerBody = lander.AddComponent<BoxCollider>();
+            landerBody.center = new Vector3(0f, 3.6f, 0f);
+            landerBody.size = new Vector3(5.2f, 6f, 5.2f);
+            var hatch = new GameObject("Escotilha");
+            hatch.transform.SetParent(lander.transform, false);
+            hatch.transform.localPosition = new Vector3(0f, 1.6f, 3.9f);
+            hatch.AddComponent<BoxCollider>().size = new Vector3(2.4f, 3.2f, 2.2f);
+            var hatchUse = hatch.AddComponent<Planetcraft.Intro.IntroInteract>();
+            var hso = new SerializedObject(hatchUse);
+            hso.FindProperty("prompt").stringValue = "Embarcar";
+            hso.ApplyModifiedPropertiesWithoutUndo();
+            var cockpit = new GameObject("Cabine");
+            cockpit.transform.SetParent(lander.transform, false);
+            cockpit.transform.localPosition = new Vector3(0f, 6.5f, 1.6f);
+            var engineLights = new List<GameObject>();
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var glow = new GameObject("Propulsor");
+                glow.transform.SetParent(lander.transform, false);
+                glow.transform.localPosition = new Vector3(side * 1.2f, 0.9f, 0f);
+                var l = glow.AddComponent<Light>();
+                l.type = LightType.Point;
+                ConfigureHdLight(l, 90000f, LightUnit.Lumen, 18f, new Color(1f, 0.55f, 0.2f));
+                engineLights.Add(glow);
+            }
+            // Luz de apoio de baixo para a cabine da nave: o hangar é iluminado por cima e a parte de baixo ficava preta.
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var fill = new GameObject("Apoio nave");
+                fill.transform.SetParent(lander.transform, false);
+                fill.transform.localPosition = new Vector3(side * 4.2f, 2.2f, -3.2f);
+                var fl = fill.AddComponent<Light>();
+                fl.type = LightType.Point;
+                ConfigureHdLight(fl, 70000f, LightUnit.Lumen, 14f, new Color(0.85f, 0.92f, 1f));
+            }
+
+            // Marcadores do caminho (feixe azul com losango): cabine, armário, hangar e escotilha.
+            var beaconMat = mats.Emissive("Beacon", new Color(0.4f, 0.9f, 1f));
+            var beacons = new List<GameObject>();
+            foreach (var pos in new[] { new Vector3(0f, 0f, 6.2f), new Vector3(-0.6f, 0f, 15.5f), new Vector3(0f, 0f, 28.2f), new Vector3(0f, 0f, 43.4f) })
+            {
+                var b = new GameObject("Marcador");
+                b.transform.SetParent(station.transform, false);
+                b.transform.position = pos;
+                // Marcador discreto: anel luminoso no chão (sem feixe vertical no meio da tela) e uma seta que gira de leve.
+                var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                Object.DestroyImmediate(ring.GetComponent<Collider>());
+                ring.transform.SetParent(b.transform, false);
+                ring.transform.localPosition = new Vector3(0f, 0.015f, 0f);
+                ring.transform.localScale = new Vector3(1.3f, 0.01f, 1.3f);
+                ring.GetComponent<Renderer>().sharedMaterial = beaconMat;
+                ring.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+                var inner = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                Object.DestroyImmediate(inner.GetComponent<Collider>());
+                inner.transform.SetParent(b.transform, false);
+                inner.transform.localPosition = new Vector3(0f, 0.025f, 0f);
+                inner.transform.localScale = new Vector3(1.05f, 0.01f, 1.05f);
+                inner.GetComponent<Renderer>().sharedMaterial = mats.Lit("BeaconInner", new Color(0.03f, 0.06f, 0.08f), 0.2f);
+                inner.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+                beacons.Add(b);
+            }
+
+            // Jogador (começa deitado na cápsula: o IntroDirector posiciona a câmera) com o comunicador no braço.
+            var playerGo = new GameObject("Player") { tag = "Player" };
+            playerGo.transform.position = new Vector3(-0.9f, 0f, 3.2f);
+            var cc = playerGo.AddComponent<CharacterController>();
+            cc.height = 1.8f;
+            cc.radius = 0.35f;
+            cc.center = new Vector3(0f, 0.9f, 0f);
+            var cam = SpaceCamera(3000f);
+            cam.nearClipPlane = 0.05f;
+            cam.transform.SetParent(playerGo.transform, false);
+            cam.transform.localPosition = new Vector3(0f, 1.6f, 0f);
+            var fpc = playerGo.AddComponent<FirstPersonController>();
+            SetRef(fpc, "cameraPivot", cam.transform);
+            var interactor = playerGo.AddComponent<Interactor>();
+            SetRef(interactor, "cam", cam);
+            playerGo.AddComponent<FootstepAudio>();
+
+            var wrist = new GameObject("Pulso");
+            wrist.transform.SetParent(cam.transform, false);
+            wrist.transform.localPosition = new Vector3(-0.14f, -0.72f, 0.3f);
+            wrist.transform.localRotation = Quaternion.Euler(-12f, 25f, 28f);
+            wrist.transform.localScale = Vector3.one * 0.72f;
+            Model("Station/wrist_arm", wrist.transform);
+            // Luva de astronauta da NASA (domínio público) na ponta da manga.
+            var glove = (GameObject)PrefabUtility.InstantiatePrefab(
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/ThirdParty/NASA/glove/glove.fbx"), wrist.transform);
+            glove.transform.localPosition = new Vector3(0f, -0.09f, 0.03f);
+            glove.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+
+            // Holograma: a UI do comunicador é desenhada numa RenderTexture e mostrada num quadro sobre o relógio.
+            const string rtPath = Root + "/UI/HoloRT.renderTexture";
+            var rt = AssetDatabase.LoadAssetAtPath<RenderTexture>(rtPath);
+            if (rt == null)
+            {
+                rt = new RenderTexture(768, 576, 0, RenderTextureFormat.ARGB32) { name = "HoloRT" };
+                AssetDatabase.CreateAsset(rt, rtPath);
+            }
+            var holoSettings = Asset<PanelSettings>(Root + "/UI/HoloPanelSettings.asset", ps => { });
+            holoSettings.themeStyleSheet = HudPanelSettings().themeStyleSheet;
+            holoSettings.targetTexture = rt;
+            holoSettings.scaleMode = PanelScaleMode.ConstantPixelSize;
+            holoSettings.clearColor = true;
+            holoSettings.colorClearValue = new Color(0f, 0f, 0f, 0f);
+            EditorUtility.SetDirty(holoSettings);
+
+            var holoUi = new GameObject("HoloUI");
+            holoUi.transform.SetParent(station.transform, false);
+            holoUi.AddComponent<UIDocument>().panelSettings = holoSettings;
+            var comm = holoUi.AddComponent<Planetcraft.Intro.HoloComm>();
+
+            var holo = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            holo.name = "Holograma";
+            Object.DestroyImmediate(holo.GetComponent<Collider>());
+            holo.transform.SetParent(wrist.transform, false);
+            holo.transform.localPosition = new Vector3(0f, 0.27f, 0.12f);
+            holo.transform.localRotation = Quaternion.Euler(-62f, 180f, 0f);
+            holo.transform.localScale = new Vector3(0.5f, 0.375f, 1f);
+            var holoMat = new Material(Shader.Find("Planetcraft/FxSoft")) { name = "Holograma" };
+            holoMat.SetTexture("_MainTex", rt);
+            holoMat.SetFloat("_Intensity", 700f);
+            const string holoMatPath = Root + "/Materials/Holograma.mat";
+            AssetDatabase.DeleteAsset(holoMatPath);
+            AssetDatabase.CreateAsset(holoMat, holoMatPath);
+            var holoRenderer = holo.GetComponent<Renderer>();
+            holoRenderer.sharedMaterial = holoMat;
+            holoRenderer.shadowCastingMode = ShadowCastingMode.Off;
+
+            // Diretor da abertura e overlay (fade, dicas de interação).
+            var director = new GameObject("Abertura");
+            director.AddComponent<UIDocument>().panelSettings = HudPanelSettings();
+            var intro = director.AddComponent<Planetcraft.Intro.IntroDirector>();
+            var iso = new SerializedObject(intro);
+            iso.FindProperty("player").objectReferenceValue = fpc;
+            iso.FindProperty("interactor").objectReferenceValue = interactor;
+            iso.FindProperty("cameraPivot").objectReferenceValue = cam.transform;
+            iso.FindProperty("comm").objectReferenceValue = comm;
+            iso.FindProperty("wrist").objectReferenceValue = wrist.transform;
+            iso.FindProperty("holo").objectReferenceValue = holo.transform;
+            var bed = new GameObject("PontoCama");
+            bed.transform.SetParent(station.transform, false);
+            bed.transform.SetPositionAndRotation(new Vector3(-1.55f, 1.25f, 1.8f), Quaternion.Euler(-78f, 6f, 0f));
+            var stand = new GameObject("PontoEmPé");
+            stand.transform.SetParent(station.transform, false);
+            stand.transform.SetPositionAndRotation(new Vector3(-0.9f, 1.6f, 3.2f), Quaternion.Euler(0f, 0f, 0f));
+            iso.FindProperty("bedPoint").objectReferenceValue = bed.transform;
+            iso.FindProperty("standPoint").objectReferenceValue = stand.transform;
+            iso.FindProperty("locker").objectReferenceValue = lockerUse;
+            iso.FindProperty("hatch").objectReferenceValue = hatchUse;
+            var beaconArr = iso.FindProperty("beacons");
+            beaconArr.arraySize = beacons.Count;
+            for (int i = 0; i < beacons.Count; i++) beaconArr.GetArrayElementAtIndex(i).objectReferenceValue = beacons[i];
+            iso.FindProperty("lander").objectReferenceValue = lander.transform;
+            iso.FindProperty("cockpitPoint").objectReferenceValue = cockpit.transform;
+            var earthPoint = new GameObject("AlvoTerra");
+            earthPoint.transform.position = new Vector3(430f, -380f, 430f);
+            iso.FindProperty("earthTarget").objectReferenceValue = earthPoint.transform;
+            var fxArr = iso.FindProperty("engineFx");
+            fxArr.arraySize = engineLights.Count;
+            for (int i = 0; i < engineLights.Count; i++) fxArr.GetArrayElementAtIndex(i).objectReferenceValue = engineLights[i];
+            iso.ApplyModifiedPropertiesWithoutUndo();
+
+            EditorSceneManager.SaveScene(scene, StationScenePath);
         }
 
         // Epílogo: a Terra viva lá embaixo, a Estação Horizonte em órbita e a nave-mãe chegando para acoplar.

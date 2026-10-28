@@ -6,6 +6,8 @@ Shader "Planetcraft/FxSoft"
     {
         _MainTex("Textura suave", 2D) = "white" {}
         [Toggle] _Additive("Aditivo", Float) = 0
+        // Unlit do HDRP é em nits: sem isso a cor (0-1) some depois da exposição. ~10000 = fumaça sob o sol; 300-800 = holograma em ambiente interno.
+        _Intensity("Intensidade (nits)", Float) = 10000
     }
 
     SubShader
@@ -30,6 +32,7 @@ Shader "Planetcraft/FxSoft"
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
+            float _Intensity;
 
             struct Attributes
             {
@@ -59,7 +62,7 @@ Shader "Planetcraft/FxSoft"
             {
                 float4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
                 float4 c = input.color * tex;
-                c.rgb *= GetCurrentExposureMultiplier();
+                c.rgb *= _Intensity * GetCurrentExposureMultiplier();
                 return c;
             }
             ENDHLSL

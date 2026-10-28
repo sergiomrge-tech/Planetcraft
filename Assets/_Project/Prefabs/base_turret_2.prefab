@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5843167625443459037}
   - component: {fileID: 8307434260367573979}
   - component: {fileID: 2103080175277150313}
-  - component: {fileID: 6990113074627840366}
+  - component: {fileID: 3491194949910154937}
   m_Layer: 0
   m_Name: base_turret_2
   m_TagString: Untagged
@@ -92,7 +92,7 @@ MonoBehaviour:
   maxHealth: 520
   armor: 0.25
   isAirSource: 0
---- !u!114 &6990113074627840366
+--- !u!114 &3491194949910154937
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -101,7 +101,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5774332979731916490}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a77c3ef06f7ad44a8318f9f7e59e109, type: 3}
+  m_Script: {fileID: 11500000, guid: fa33e5aaf27d8c040aa0335b0b23542b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Defense.Turret
   range: 36

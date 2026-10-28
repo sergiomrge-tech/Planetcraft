@@ -97,6 +97,9 @@ namespace Planetcraft.UI
             hint.style.left = 120;
             hint.style.bottom = 36;
             root.Add(hint);
+
+            // -pc-newgame: começa um jogo novo sozinho (testes automáticos da abertura).
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-pc-newgame") >= 0) GameSession.NewGame();
         }
 
         // Créditos dos assets de terceiros (CREDITS.md copiado para Resources pelo gerador): exigido pelas licenças CC BY.

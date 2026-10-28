@@ -25,7 +25,7 @@ namespace Planetcraft.EditorTools
         {
             if (!assetPath.StartsWith(ModelRoot)) return;
             var importer = (ModelImporter)assetImporter;
-            importer.addCollider = assetPath.Contains("/Machines/") || assetPath.Contains("/Base/") || assetPath.Contains("/Ore/") || assetPath.Contains("/Props/");
+            importer.addCollider = assetPath.Contains("/Machines/") || assetPath.Contains("/Base/") || (assetPath.Contains("/Station/") && !assetPath.Contains("wrist_arm")) || assetPath.Contains("/Ore/") || assetPath.Contains("/Props/");
             importer.importAnimation = false;
             importer.importCameras = false;
             importer.importLights = false;
@@ -44,7 +44,7 @@ namespace Planetcraft.EditorTools
 
             string name = description.materialName ?? material.name;
             ConfigureLit(material, color, name.StartsWith("glass_") ? 0.9f : 0.3f);
-            if (name.StartsWith("glow_")) MakeEmissive(material, color, GlowNits);
+            if (name.StartsWith("glow_")) MakeEmissive(material, color, name.EndsWith("_dim") ? GlowNits * 0.18f : GlowNits);
             else if (name.StartsWith("glass_")) MakeTransparent(material, 0.35f);
             else ApplySurface(material, name, color);
             HDMaterial.ValidateMaterial(material);
