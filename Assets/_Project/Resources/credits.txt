@@ -43,6 +43,15 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 - Modelo: [Rusted Wheel Rim 01](https://polyhaven.com/a/rusted_wheel_rim_01) — John Hutcheson
 - Modelo: [Metal Trash Can](https://polyhaven.com/a/metal_trash_can) — GurJas Studios
 - Modelo: [Barrel_01](https://polyhaven.com/a/Barrel_01) — Jorge Camacho
+- Modelo: [Dandelion 01](https://polyhaven.com/a/dandelion_01) — Rob Tuytel, Rico Cilliers
+- Modelo: [Periwinkle Plant](https://polyhaven.com/a/periwinkle_plant) — Amal Kumar
+- Modelo: [Flower Gazania](https://polyhaven.com/a/flower_gazania) — James Ray Cock, Jenelle van Heerden
+- Modelo: [Flower Ursinia](https://polyhaven.com/a/flower_ursinia) — Jenelle van Heerden, Rico Cilliers
+- Modelo: [Flower Empodium](https://polyhaven.com/a/flower_empodium) — Jenelle van Heerden, Rico Cilliers
+- Modelo: [Shrub 03](https://polyhaven.com/a/shrub_03) — Rico Cilliers
+- Modelo: [Shrub 04](https://polyhaven.com/a/shrub_04) — Rico Cilliers
+- Modelo: [Shrub Sorrel 01](https://polyhaven.com/a/shrub_sorrel_01) — Rico Cilliers
+- Modelo: [Weed Plant 02](https://polyhaven.com/a/weed_plant_02) — Rob Tuytel, Rico Cilliers
 - Superfície: [Metal Plate 02](https://polyhaven.com/a/metal_plate_02) — Rob Tuytel
 - Superfície: [Cracked Concrete Wall](https://polyhaven.com/a/cracked_concrete_wall) — Dimitrios Savva, Rico Cilliers
 - Superfície: [Rusty Metal 02](https://polyhaven.com/a/rusty_metal_02) — Rob Tuytel

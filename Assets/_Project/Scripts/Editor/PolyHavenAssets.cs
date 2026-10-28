@@ -110,7 +110,8 @@ namespace Planetcraft.EditorTools
             // Folhagem recortada: textura com alfa E nome de planta (peças de máquinas também trazem canal alfa cheio).
             string lower = name.ToLowerInvariant();
             bool foliage = lower.Contains("leaves") || lower.Contains("leaf") || lower.Contains("branches") ||
-                           lower.Contains("shrub") || lower.Contains("fern");
+                           lower.Contains("shrub") || lower.Contains("fern") || lower.Contains("flower") ||
+                           lower.Contains("dandelion") || lower.Contains("periwinkle") || lower.Contains("weed");
             bool cutout = foliage && diff != null && AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(diff)) is TextureImporter ti &&
                           ti.DoesSourceTextureHaveAlpha();
 

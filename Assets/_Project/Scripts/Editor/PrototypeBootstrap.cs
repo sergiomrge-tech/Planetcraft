@@ -992,14 +992,16 @@ namespace Planetcraft.EditorTools
 
             // Vegetação por estágio
             var rng = new System.Random(4242);
+            VegetationSpacing.Reset();
             var vegetation = new GameObject("Vegetação");
             // Modelos fotoescaneados do Poly Haven (CC0), otimizados para jogo com LOD.
             // Densidade de paisagem real: samambaias e arbustos em tufos, árvores formando bosques. Nada nasce
             // abaixo do nível final da água nem em encostas de rocha.
             AddVegetationLayer(vegetation.transform, "Musgo", stages["moss"].requiredTi, stages["flora"].requiredTi, 2600, rng, terrain, center, (p, r) =>
-                Scaled(PolyHaven(Variant(r, "fern_02", 4), p), 0.8f + (float)r.NextDouble() * 0.7f), maxSlope: 32f, clustering: 0.5f);
+                Scaled(PolyHaven(Variant(r, "fern_02", 4), p), 0.8f + (float)r.NextDouble() * 0.7f), maxSlope: 32f, clustering: 0.5f, footprint: 0.55f);
             AddVegetationLayer(vegetation.transform, "Flora", stages["flora"].requiredTi, stages["forest"].requiredTi, 1500, rng, terrain, center, (p, r) =>
-                Scaled(PolyHaven(Variant(r, "shrub_02", 4), p), 0.7f + (float)r.NextDouble() * 0.7f), maxSlope: 30f, clustering: 0.6f);
+                Scaled(PolyHaven(Variant(r, new[] { "shrub_02", "shrub_03", "shrub_04" }[r.Next(3)], 4), p), 0.7f + (float)r.NextDouble() * 0.7f),
+                maxSlope: 30f, clustering: 0.6f, footprint: 0.7f);
             // Bosques mistos: jacarandás grandes (10-15 m) e árvores pequenas de copa aberta (5-8 m).
             AddVegetationLayer(vegetation.transform, "Florestas", stages["forest"].requiredTi, stages["fauna"].requiredTi * 2, 700, rng, terrain, center, (p, r) =>
             {
@@ -1012,7 +1014,9 @@ namespace Planetcraft.EditorTools
                 trunk.height = big ? 8f : 3f;
                 trunk.center = new Vector3(0f, trunk.height / 2f, 0f);
                 return tree;
-            }, minRadius: 40f, maxRadius: 235f, maxSlope: 26f, clustering: 0.8f);
+            }, minRadius: 40f, maxRadius: 235f, maxSlope: 26f, clustering: 0.8f, footprint: 1f, isTree: true);
+
+            GroundCoverAssets.Configure(terrain, ground);
 
             // Restos da Terra morta (sempre visíveis): rochas, troncos secos e tocos fossilizados.
             var remains = new GameObject("Restos da Terra").transform;
@@ -1322,7 +1326,7 @@ namespace Planetcraft.EditorTools
 
         static void AddVegetationLayer(Transform parent, string name, double tiStart, double tiEnd, int count, System.Random rng,
             Terrain terrain, Vector3 center, Func<Transform, System.Random, GameObject> make, float minRadius = 30f, float maxRadius = 235f,
-            float maxSlope = 35f, float clustering = 0.5f)
+            float maxSlope = 35f, float clustering = 0.5f, float footprint = 0f, bool isTree = false)
         {
             var layer = new GameObject(name);
             layer.transform.SetParent(parent, false);
@@ -1338,6 +1342,11 @@ namespace Planetcraft.EditorTools
                 float patch = Mathf.PerlinNoise(pos.x * 0.018f + noiseOffset, pos.z * 0.018f + noiseOffset);
                 if (rng.NextDouble() > Mathf.Lerp(1f, Mathf.SmoothStep(0f, 1f, (patch - 0.3f) / 0.4f), clustering)) continue;
                 var go = make(layer.transform, rng);
+                if (footprint > 0f)
+                {
+                    // Regra de distância: a área ocupada cresce com o tamanho da planta, e árvores nunca encostam as copas.
+                    if (!VegetationSpacing.TryPlace(pos, VegetationSpacing.CrownRadius(go) * footprint, isTree)) { Object.DestroyImmediate(go); continue; }
+                }
                 go.transform.position = pos - Vector3.up * 0.05f;
                 go.transform.rotation = Quaternion.Euler(0f, rng.Next(0, 360), 0f);
                 i++;
@@ -1504,7 +1513,7 @@ namespace Planetcraft.EditorTools
                 // Camadas PBR (Poly Haven, CC0): 0 solo seco e pedregoso, 1 rocha (encostas), 2 grama (cresce com o Ti).
                 var dead = PolyHavenLayer("dry_ground_rocks", 10f, 0.05f);
                 var rockLayer = PolyHavenLayer("rocky_terrain_02", 12f, 0.1f);
-                var grass = PolyHavenLayer("leafy_grass", 6f, 0.15f, new Color(0.8f, 1.08f, 0.6f));
+                var grass = PolyHavenLayer("leafy_grass", 6f, 0.15f, new Color(0.6f, 1.1f, 0.42f));
 
                 td = new TerrainData { heightmapResolution = HeightmapRes, alphamapResolution = 256 };
                 td.size = new Vector3(TerrainSize, TerrainHeight, TerrainSize);

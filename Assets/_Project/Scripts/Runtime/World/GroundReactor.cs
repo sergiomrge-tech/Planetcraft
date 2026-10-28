@@ -20,6 +20,7 @@ namespace Planetcraft.World
         float[,] mask;
         float[,] rock;
         float[,,] maps;
+        float[,] greenMap;
         float lastApplied = -1f;
 
         protected override void Start()
@@ -61,6 +62,22 @@ namespace Planetcraft.World
             }
         }
 
+        // Progresso (0-1) já aplicado ao solo e um contador que muda a cada reaplicação: a cobertura de capim
+        // (GroundCover) regenera seus blocos quando o contador muda.
+        public float Progress => Mathf.Max(0f, lastApplied);
+        public int Version { get; private set; }
+
+        // Peso do verde (0-1) num ponto do mundo, o mesmo que pinta a textura do solo.
+        public float GreenAt(float worldX, float worldZ)
+        {
+            if (greenMap == null || data == null) return 0f;
+            int res = greenMap.GetLength(0);
+            var origin = terrain.transform.position;
+            int x = Mathf.Clamp(Mathf.RoundToInt((worldX - origin.x) / data.size.x * (res - 1)), 0, res - 1);
+            int y = Mathf.Clamp(Mathf.RoundToInt((worldZ - origin.z) / data.size.z * (res - 1)), 0, res - 1);
+            return greenMap[y, x];
+        }
+
         protected override void Apply(float t)
         {
             if (data == null) return;
@@ -71,6 +88,7 @@ namespace Planetcraft.World
 
             int res = data.alphamapResolution;
             int layers = data.alphamapLayers;
+            if (greenMap == null) greenMap = new float[res, res];
             float threshold = t * 1.15f;
             for (int y = 0; y < res; y++)
             for (int x = 0; x < res; x++)
@@ -81,8 +99,10 @@ namespace Planetcraft.World
                 maps[y, x, rockLayer] = r;
                 maps[y, x, greenLayer] = green;
                 maps[y, x, deadLayer] = Mathf.Max(0f, 1f - r - green);
+                greenMap[y, x] = green;
             }
             data.SetAlphamaps(0, 0, maps);
+            Version++;
         }
     }
 }

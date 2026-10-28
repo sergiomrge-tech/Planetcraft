@@ -61,6 +61,16 @@ ASSETS = {
     "rusted_wheel_rim_01": (5000, None, 1.0, False),
     "metal_trash_can": (6000, None, 1.0, False),
     "Barrel_01": (2500, None, 1.0, False),
+    # Cobertura do solo: só folhagem, raleada por orçamento de triângulos e ampliada para manter a densidade visual.
+    "dandelion_01": (0, 0.07, 1.4, True),
+    "periwinkle_plant": (0, 0.06, 1.4, True),
+    "flower_gazania": (0, 0.12, 1.2, True),
+    "flower_ursinia": (0, 0.08, 1.2, True),
+    "flower_empodium": (0, 1.0, 1.0, True),
+    "shrub_03": (0, 0.5, 1.2, True),
+    "shrub_04": (0, 0.2, 1.3, True),
+    "shrub_sorrel_01": (0, 1.0, 1.0, True),
+    "weed_plant_02": (0, 0.5, 1.2, True),
 }
 LEAF_WORDS = ("leaves", "leaf", "twig", "foliage", "branches")
 LOD1_FACTOR = 0.3
