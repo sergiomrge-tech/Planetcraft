@@ -65,6 +65,25 @@ namespace Planetcraft.EditorTools
                 material.SetFloat("_Metallic", 0.15f);
                 return;
             }
+            // Alumínio polido (interior da estação): liso, sem textura, metálico e bem brilhante.
+            if (n.StartsWith("alu"))
+            {
+                material.SetFloat("_Metallic", 1f);
+                material.SetFloat("_Smoothness", 0.84f);
+                return;
+            }
+            // Estação: chapas de casco metálicas limpas e painéis brancos foscos (visual claro de módulo habitável).
+            if (n.StartsWith("hull_"))
+            {
+                material.SetFloat("_Metallic", 0.9f);
+                material.SetFloat("_Smoothness", 0.62f);
+                return;
+            }
+            if (n.StartsWith("white") || n.StartsWith("padding"))
+            {
+                material.SetFloat("_Smoothness", n.StartsWith("white") ? 0.55f : 0.25f);
+                return;
+            }
             string family = n.Contains("concrete") ? "concrete"
                 : n.Contains("rock") || n.Contains("stone") ? "rock"
                 : n.Contains("rust") || n.Contains("scorch") ? "rust" : "panel";

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Planetcraft.Building;
@@ -893,14 +893,32 @@ namespace Planetcraft.EditorTools
                 l.type = LightType.Point;
                 ConfigureHdLight(l, lumen, LightUnit.Lumen, range, color);
             }
-            var warm = new Color(1f, 0.9f, 0.75f);
             var cold = new Color(0.82f, 0.92f, 1f);
-            Lamp("Luz cabine 1", new Vector3(0f, 2.9f, 1.8f), 40000f, 9f, warm);
-            Lamp("Luz cabine 2", new Vector3(0f, 2.9f, 5.2f), 40000f, 9f, warm);
+            var cabinLight = new Color(1f, 0.97f, 0.92f);
+            Lamp("Luz cabine 1", new Vector3(0f, 2.9f, 1.8f), 90000f, 10f, cabinLight);
+            Lamp("Luz cabine 2", new Vector3(0f, 2.9f, 5.2f), 90000f, 10f, cabinLight);
             for (int i = 0; i < 5; i++) Lamp($"Luz corredor {i}", new Vector3(0f, 2.8f, 9f + i * 4.2f), 36000f, 8f, cold);
             for (int i = 0; i < 3; i++)
                 for (int j = 0; j < 2; j++)
                     Lamp($"Luz hangar {i}{j}", new Vector3(-5.5f + j * 11f, 9.4f, 31f + i * 8.5f), 160000f, 22f, cold);
+            // Sondas de reflexo em tempo real (atualizadas ao carregar): sem elas o alumínio polido fica preto.
+            void Probe(string name, Vector3 center, Vector3 size)
+            {
+                var go = new GameObject(name);
+                go.transform.SetParent(station.transform, false);
+                go.transform.position = center;
+                var rp = go.AddComponent<ReflectionProbe>();
+                rp.size = size;
+                var hd = go.GetComponent<HDAdditionalReflectionData>() ?? go.AddComponent<HDAdditionalReflectionData>();
+                hd.mode = ProbeSettings.Mode.Realtime;
+                hd.realtimeMode = ProbeSettings.RealtimeMode.OnEnable;
+                hd.influenceVolume.shape = InfluenceShape.Box;
+                hd.influenceVolume.boxSize = size;
+                hd.influenceVolume.boxBlendDistancePositive = Vector3.one * 0.3f;
+                hd.influenceVolume.boxBlendDistanceNegative = Vector3.one * 0.3f;
+            }
+            Probe("Reflexo cabine", new Vector3(0f, 1.6f, 3.5f), new Vector3(6.4f, 3.6f, 7.4f));
+            Probe("Reflexo corredor", new Vector3(0f, 1.5f, 17f), new Vector3(4f, 3.4f, 20.4f));
 
             // Armário do traje (corredor, parede -X, de frente para o corredor) e nave de descida no pad do hangar.
             var locker = Model("Station/suit_locker", station.transform);
@@ -1068,6 +1086,40 @@ namespace Planetcraft.EditorTools
             iso.FindProperty("bedPoint").objectReferenceValue = bed.transform;
             iso.FindProperty("standPoint").objectReferenceValue = stand.transform;
             iso.FindProperty("locker").objectReferenceValue = lockerUse;
+            // Portas deslizantes: cabine -> corredor e corredor -> hangar (as molduras estão no station_interior).
+            Planetcraft.Intro.SlidingDoor Door(string name, float z, float width, float height)
+            {
+                var root = new GameObject(name);
+                root.transform.SetParent(station.transform, false);
+                root.transform.localPosition = new Vector3(0f, 0f, z);
+                var leaves = new Transform[2];
+                for (int i = 0; i < 2; i++)
+                {
+                    var leaf = Model("Station/station_door", root.transform);
+                    leaf.name = i == 0 ? "FolhaEsq" : "FolhaDir";
+                    float side = i == 0 ? -1f : 1f;
+                    leaf.transform.localPosition = new Vector3(side * width / 4f, 0f, 0f);
+                    leaf.transform.localRotation = Quaternion.Euler(0f, i == 0 ? 0f : 180f, 0f);
+                    leaf.transform.localScale = new Vector3((width / 2f + 0.03f) / 1f, height / 2.6f, 1f);
+                    leaves[i] = leaf.transform;
+                }
+                var status = new GameObject("LuzEstado");
+                status.transform.SetParent(root.transform, false);
+                status.transform.localPosition = new Vector3(0f, height + 0.05f, -0.45f);
+                var sl = status.AddComponent<Light>();
+                sl.type = LightType.Point;
+                ConfigureHdLight(sl, 1800f, LightUnit.Lumen, 3f, new Color(1f, 0.25f, 0.15f));
+                var door = root.AddComponent<Planetcraft.Intro.SlidingDoor>();
+                var dso = new SerializedObject(door);
+                dso.FindProperty("left").objectReferenceValue = leaves[0];
+                dso.FindProperty("right").objectReferenceValue = leaves[1];
+                dso.FindProperty("travel").floatValue = width / 2f + 0.05f;
+                dso.FindProperty("statusLight").objectReferenceValue = sl;
+                dso.ApplyModifiedPropertiesWithoutUndo();
+                return door;
+            }
+            iso.FindProperty("cabinDoor").objectReferenceValue = Door("PortaCabine", 7f, 1.8f, 2.5f);
+            iso.FindProperty("hangarDoor").objectReferenceValue = Door("PortaHangar", 27f, 2.0f, 2.6f);
             iso.FindProperty("hatch").objectReferenceValue = hatchUse;
             var beaconArr = iso.FindProperty("beacons");
             beaconArr.arraySize = beacons.Count;

@@ -2684,8 +2684,8 @@ def sentinel():
 # =============================================================================
 def _st_mats(m):
     _kit_mats(m)
-    m.material("hull_metal", (0.62, 0.65, 0.7), 0.35, 0.9)
-    m.material("hull_dark_metal", (0.26, 0.29, 0.34), 0.4, 0.9)
+    m.material("hull_metal", (0.74, 0.77, 0.8), 0.35, 0.9)
+    m.material("hull_dark_metal", (0.48, 0.52, 0.57), 0.4, 0.9)
     m.material("floor_deck_metal", (0.36, 0.39, 0.44), 0.4, 0.9)
     m.material("suit", (0.82, 0.84, 0.86), 0.7, 0.0)
     m.material("suit_dark", (0.12, 0.13, 0.15), 0.8, 0.0)
@@ -2695,12 +2695,12 @@ def _st_mats(m):
     m.material("glow_light_dim", (1.0, 0.95, 0.8), 0.4)
 
 
-def _shell_box(m, x0, x1, y0, y1, z0, z1, t=0.3, openings=(), mat="hull_metal"):
+def _shell_box(m, x0, x1, y0, y1, z0, z1, t=0.3, openings=(), mat="hull_metal", ceil_mat="hull_dark_metal"):
     """Sala vazia: piso, teto e quatro paredes. `openings` = ('x+'|'x-'|'y+'|'y-', centro, largura, base_z, topo_z)."""
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     w, d, h = x1 - x0, y1 - y0, z1 - z0
     m.box("floor_deck_metal", (cx, cy, z0 - t / 2), (w + 2 * t, d + 2 * t, t))
-    m.box("hull_dark_metal", (cx, cy, z1 + t / 2), (w + 2 * t, d + 2 * t, t))
+    m.box(ceil_mat, (cx, cy, z1 + t / 2), (w + 2 * t, d + 2 * t, t))
 
     def wall(side):
         ops = [o for o in openings if o[0] == side]
@@ -2764,6 +2764,33 @@ def _plating(m, x0, x1, y0, y1, z0, z1, openings=()):
 
 
 
+def _fillet(m, mat, axis, c, r, a0, lo, hi, t=0.05, seg=10):
+    """Canto arredondado (quarto de cilindro maciço, raio interno `r`, espessura `t`) estendido ao longo de `axis`
+    de `lo` a `hi`. `c` = centro do arco no plano dos outros dois eixos; o arco vai de `a0` a `a0` + 90 graus.
+    A face côncava (raio r) fica voltada para o centro, ou seja, para dentro da sala."""
+    plane = {"x": (1, 2), "y": (0, 2), "z": (0, 1)}[axis]
+    ax = "xyz".index(axis)
+    verts, faces = [], []
+
+    def P(u, v, w):
+        p = [0.0, 0.0, 0.0]
+        p[plane[0]], p[plane[1]], p[ax] = u, v, w
+        return tuple(p)
+    for i in range(seg + 1):
+        a = math.radians(a0 + 90.0 * i / seg)
+        ca, sa = math.cos(a), math.sin(a)
+        for w in (lo, hi):
+            verts.append(P(c[0] + ca * r, c[1] + sa * r, w))
+            verts.append(P(c[0] + ca * (r + t), c[1] + sa * (r + t), w))
+    for i in range(seg):
+        b, n = i * 4, (i + 1) * 4
+        faces += [(b, n, n + 1, b + 1), (b + 2, b + 3, n + 3, n + 2),       # tampas nas duas pontas
+                  (b, b + 2, n + 2, n), (b + 1, n + 1, n + 3, b + 3)]        # face interna e externa
+    e = seg * 4
+    faces += [(0, 1, 3, 2), (e, e + 2, e + 3, e + 1)]
+    m.poly(mat, verts, faces, smooth=True)
+
+
 def _door_frame(m, x, y, along, width, height, glow="glow_screen"):
     """Moldura de porta com faixa de alerta e luz de estado (along='x' = porta numa parede perpendicular a Y)."""
     if along == "x":
@@ -2800,76 +2827,143 @@ def station_interior():
     m = Model("station_interior", "Station")
     m.greeble = False
     _st_mats(m)
-    # --- Cabine (7 x 6 x 3,2) com porta no fundo (y = -7)
-    _shell_box(m, -3, 3, -7, 0, 0, 3.2, openings=[("y-", 0, 1.8, 0, 2.5), ("x+", -3.8, 3.2, 0.9, 2.6)])
+    # --- Cabine (7 x 6 x 3,2) com porta no fundo (y = -7). Alumínio polido, cantos arredondados (teto, piso e
+    # quinas), arcos estruturais, escotilha redonda na parede +X, parede acolchoada junto da cápsula e armários altos.
+    m.material("padding", (0.72, 0.7, 0.64), 0.92, 0.0)
+    m.material("padding_dark", (0.3, 0.32, 0.35), 0.9, 0.0)
+    m.material("alu_panel", (0.86, 0.88, 0.9), 0.2, 1.0)
+    m.material("alu_rib", (0.6, 0.63, 0.67), 0.25, 1.0)
+    m.material("white_panel", (0.93, 0.93, 0.91), 0.55, 0.0)
+    m.material("teal_accent", (0.15, 0.62, 0.66), 0.5, 0.0)
+    _shell_box(m, -3, 3, -7, 0, 0, 3.2, openings=[("y-", 0, 1.8, 0, 2.5), ("x+", -3.8, 1.6, 0.95, 2.55)],
+               mat="alu_panel", ceil_mat="alu_panel")
     _door_frame(m, 0, -7, "x", 1.8, 2.5)
-    # Janela da cabine (parede +X) com vidro e moldura
-    m.box("glass_win", (3.12, -3.8, 1.75), (0.06, 3.2, 1.7))
-    for yy in (-2.2, -5.4):
-        m.box("steel", (3.14, yy, 1.75), (0.14, 0.12, 1.8))
-    for zz in (0.9, 2.6):
-        m.box("steel", (3.14, -3.8, zz), (0.14, 3.3, 0.12))
-    # Cápsula de sono (aberta) encostada na parede -X
-    m.box("hull_dark_metal", (-1.6, -1.8, 0.2), (2.4, 1.2, 0.4), bevel=0.04)
-    m.box("hull_metal", (-1.6, -1.8, 0.55), (2.2, 1.0, 0.3), bevel=0.06)
-    m.box("cloth", (-1.55, -1.8, 0.78), (2.0, 0.86, 0.16), bevel=0.05)
-    m.box("body_light", (-2.35, -1.8, 0.92), (0.45, 0.5, 0.1), bevel=0.04)
-    m.box("hull_metal", (-1.6, -2.6, 1.2), (2.3, 0.1, 1.2), rot=(-35, 0, 0), bevel=0.03)          # tampa aberta
-    m.box("glow_blue", (-1.6, -2.55, 1.15), (1.8, 0.02, 0.5), rot=(-35, 0, 0))
+    RC, RF, RV = 0.75, 0.25, 0.55            # raios: teto-parede, piso-parede, quinas verticais
+    for sx in (-1, 1):                       # cantos ao longo das paredes laterais (eixo y)
+        _fillet(m, "alu_panel", "y", (sx * (3 - RC), 3.2 - RC), RC, 0 if sx > 0 else 90, -7, 0)
+        _fillet(m, "alu_panel", "y", (sx * (3 - RF), RF), RF, 270 if sx > 0 else 180, -7, 0)
+    for sy, y in ((1, 0.0), (-1, -7.0)):     # cantos ao longo das paredes do fundo e da frente (eixo x)
+        _fillet(m, "alu_panel", "x", (y - sy * RC, 3.2 - RC), RC, 0 if sy > 0 else 90, -3, 3)
+        for lo, hi in (((-3, 3),) if sy > 0 else ((-3, -1.0), (1.0, 3))):      # vão livre na porta
+            _fillet(m, "alu_panel", "x", (y - sy * RF, RF), RF, 270 if sy > 0 else 180, lo, hi)
+    for sx in (-1, 1):                       # quinas verticais
+        for sy, y in ((1, 0.0), (-1, -7.0)):
+            a0 = {(1, 1): 0, (-1, 1): 90, (-1, -1): 180, (1, -1): 270}[(sx, sy)]
+            _fillet(m, "alu_panel", "z", (sx * (3 - RV), y - sy * RV), RV, a0, 0, 3.2)
+    # Arcos estruturais acompanhando o arredondado (parede, curva e teto), com frisos de rebites.
+    for yy in (-1.0, -2.6, -4.4, -6.0):
+        for sx in (-1, 1):
+            m.box("alu_rib", (sx * 2.94, yy, 1.35), (0.12, 0.22, 2.0), bevel=0.03)
+            _fillet(m, "alu_rib", "y", (sx * (3 - RC), 3.2 - RC), RC - 0.1, 0 if sx > 0 else 90, yy - 0.11, yy + 0.11, t=0.1)
+        m.box("alu_rib", (0, yy, 3.14), (6 - 2 * RC, 0.22, 0.12), bevel=0.03)
+    # Painéis brancos entre os arcos (parede da escotilha e parede do fundo, fora da escotilha).
+    m.material("white_panel", (0.93, 0.93, 0.91), 0.55, 0.0)
+    for y0, y1 in ((-0.15, -0.95), (-1.1, -2.5), (-4.5, -5.9), (-6.1, -6.75)):
+        m.box("white_panel", (2.94, (y0 + y1) / 2, 1.3), (0.06, abs(y1 - y0) - 0.08, 1.7), bevel=0.04)
+    for x0, x1 in ((-2.4, -1.05), (1.05, 2.4)):
+        m.box("white_panel", ((x0 + x1) / 2, -0.06, 1.3), (abs(x1 - x0), 0.06, 1.7), bevel=0.04)
+    # Calha de luz no centro do teto e frisos de luz no piso junto das curvas.
+    m.box("alu_rib", (0, -3.5, 3.13), (0.9, 6.0, 0.1), bevel=0.02)
+    m.box("glow_light_dim", (0, -3.5, 3.07), (0.7, 5.8, 0.02))
+    for sx in (-1, 1):
+        m.box("glow_blue", (sx * 2.7, -3.5, 0.08), (0.04, 6.4, 0.02))
+    # Escotilha redonda: aro grosso em volta do vidro, cobrindo a abertura quadrada da parede.
+    aim_x = aim((0, 0, 0), (-1, 0, 0))
+    m.lathe("hull_dark_metal", (0, 0, 0), [(1.16, 0.0), (1.16, 0.05), (0.92, 0.08), (0.82, 0.2), (0.76, 0.2), (0.76, 0.0)],
+            seg=24, caps=False, base=T(2.99, -3.8, 1.75) @ aim_x)
+    m.lathe("steel", (0, 0, 0), [(0.98, 0.0), (0.98, 0.1), (0.93, 0.1), (0.93, 0.0)], seg=24, caps=False,
+            base=T(2.98, -3.8, 1.75) @ aim_x)
+    m.cyl("glass_win", (3.1, -3.8, 1.75), 0.78, 0.78, 0.04, rot=(0, 90, 0), seg=24)
+    for k in range(12):
+        ang = k * math.pi / 6
+        m.cyl("plate_rivet_metal", (2.93, -3.8 + math.cos(ang) * 1.04, 1.75 + math.sin(ang) * 1.04), 0.025, 0.025, 0.03,
+              rot=(0, 90, 0), seg=6)
+    # Cápsula de sono (aberta) encostada na parede -X, com base arredondada e tampa curva.
+    m.box("hull_dark_metal", (-1.6, -1.8, 0.2), (2.4, 1.2, 0.4), bevel=0.12)
+    m.box("hull_metal", (-1.6, -1.8, 0.55), (2.2, 1.0, 0.3), bevel=0.12)
+    m.box("cloth", (-1.55, -1.8, 0.78), (2.0, 0.86, 0.16), bevel=0.07)
+    m.box("body_light", (-2.35, -1.8, 0.92), (0.45, 0.5, 0.1), bevel=0.05)
+    m.box("alu_panel", (-1.6, -2.55, 1.2), (2.3, 0.1, 1.15), rot=(-35, 0, 0), bevel=0.05)         # tampa aberta
+    m.box("glass_shield", (-1.6, -2.48, 1.24), (1.7, 0.02, 0.7), rot=(-35, 0, 0))
+    m.box("glow_blue", (-1.6, -2.42, 1.2), (1.8, 0.02, 0.4), rot=(-45, 0, 0))
     m.box("glow_screen", (-0.45, -1.8, 0.62), (0.03, 0.5, 0.12))
-    # Mesa com tela e armário da cabine
-    m.box("panel", (2.3, -0.6, 0.45), (1.1, 1.6, 0.9), bevel=0.02)
-    m.box("steel", (2.3, -0.6, 0.93), (1.14, 1.64, 0.05))
-    m.box("dark", (2.7, -0.6, 1.5), (0.06, 0.9, 0.6)); m.box("glow_screen", (2.66, -0.6, 1.5), (0.01, 0.8, 0.5))
+    # Parede acolchoada atrás da cápsula (como os alojamentos da ISS): almofadas em grade com costura escura.
+    for iy in range(4):
+        for iz in range(3):
+            m.box("padding" if (iy + iz) % 2 == 0 else "padding_dark", (-2.93, -0.55 - iy * 0.82, 1.05 + iz * 0.6),
+                  (0.12, 0.76, 0.54), bevel=0.06)
+    # Mesa dobrável com tela e console na parede +X, ao lado da escotilha.
+    m.box("panel", (2.45, -0.9, 0.85), (0.9, 1.4, 0.06), bevel=0.02)
+    m.box("steel", (2.62, -0.9, 0.45), (0.06, 1.2, 0.8))
+    m.box("dark", (2.85, -0.9, 1.5), (0.06, 0.9, 0.6), bevel=0.01); m.box("glow_screen", (2.81, -0.9, 1.5), (0.01, 0.8, 0.5))
+    m.box("dark", (2.85, -6.0, 1.4), (0.08, 0.7, 1.0), bevel=0.01)
+    for k in range(4):
+        m.box("glow_screen" if k % 2 else "glow_blue", (2.8, -6.2 + k * 0.13, 1.6), (0.01, 0.08, 0.05))
+    # Armários altos de frente arredondada e armário suspenso sobre a cápsula.
     for k in range(2):
-        m.box("panel", (-2.6, -5.8 + k * 0.7, 1.0), (0.6, 0.62, 2.0), bevel=0.02)
-        m.box("panel_dark", (-2.3, -5.8 + k * 0.7, 1.4), (0.01, 0.5, 0.6))
-    for z in (0.3, 1.6, 2.9):
-        m.box("glow_light", (0, -3.5, 3.18), (2.0, 0.3, 0.02)) if z == 2.9 else None
-    for sx in (-1, 1):                                   # racks de armazenamento ao lado da porta
-        _rack_panel(m, sx * 2.3, -6.55, 0, depth=1.6, facing="y")
-    m.tube("steel", (-2.8, -0.6, 1.15), (-2.8, -4.4, 1.15), 0.025, seg=8)   # corrimão junto da cápsula
-    m.box("dark", (-2.84, -5.0, 1.8), (0.03, 0.34, 0.26)); m.box("glow_screen", (-2.82, -5.0, 1.8), (0.01, 0.28, 0.2))   # foto da família
-    m.tube("pipe", (-2.6, -0.3, 3.0), (-2.6, -6.7, 3.0), 0.06, seg=10)
-    m.tube("pipe", (2.6, -0.3, 3.0), (2.6, -6.7, 3.0), 0.06, seg=10)
-    m.box("glow_light_dim", (0, -1.5, 3.17), (1.6, 0.3, 0.03))
-    m.box("glow_light_dim", (0, -5.5, 3.17), (1.6, 0.3, 0.03))
-    # --- Corredor (3,6 x 20 x 3): costelas, luzes, janelas laterais
-    _shell_box(m, -1.8, 1.8, -27, -7, 0, 3.0, openings=[("x+", -12.5, 2.4, 0.9, 2.5), ("x+", -21.0, 2.4, 0.9, 2.5), ("y-", 0, 2.0, 0, 2.6), ("y+", 0, 1.8, 0, 2.5)])
+        m.box("panel", (-2.6, -5.8 + k * 0.7, 1.0), (0.6, 0.62, 2.0), bevel=0.06)
+        m.box("panel_dark", (-2.28, -5.8 + k * 0.7, 1.4), (0.01, 0.5, 0.6))
+        m.box("yellow", (-2.28, -5.58 + k * 0.7, 1.0), (0.02, 0.03, 0.14))
+    m.box("panel", (-2.6, -1.8, 2.45), (0.6, 2.6, 0.55), bevel=0.08)
+    for k in range(3):
+        m.box("panel_dark", (-2.29, -2.65 + k * 0.85, 2.45), (0.01, 0.78, 0.45))
+    for sx in (-1, 1):                                   # armários brancos arredondados ao lado da porta
+        m.box("white_panel", (sx * 2.05, -6.6, 1.25), (1.5, 0.7, 2.4), bevel=0.12)
+        m.box("alu_rib", (sx * 2.05, -6.24, 1.25), (0.04, 0.02, 2.1))
+        m.box("glow_blue", (sx * 2.05, -6.24, 2.2), (1.1, 0.02, 0.04))
+        m.box("teal_accent", (sx * 2.05, -6.24, 0.35), (1.3, 0.02, 0.06))
+    for yy in (-0.8, -4.0):                                                            # corrimãos com suportes
+        m.tube("steel", (-2.78, yy, 1.15), (-2.78, yy - 0.9, 1.15), 0.022, seg=8)
+        for dy in (0, -0.9):
+            m.tube("steel", (-2.78, yy + dy, 1.15), (-2.95, yy + dy, 1.15), 0.018, seg=6)
+    m.box("dark", (-2.86, -5.0, 1.8), (0.03, 0.34, 0.26)); m.box("glow_screen", (-2.84, -5.0, 1.8), (0.01, 0.28, 0.2))   # foto da família
+    # Grade de piso com chapa antiderrapante no centro.
+    m.box("floor_deck_metal", (0, -3.5, 0.015), (2.2, 6.4, 0.03))
+    for k in range(13):
+        m.box("dark", (0, -0.5 - k * 0.5, 0.032), (2.1, 0.03, 0.01))
+    # --- Corredor (3,6 x 20 x 3) no estilo de módulo habitável claro: alumínio polido, cantos bem arredondados,
+    # painéis brancos entre arcos estruturais, faixa de luz contínua no teto, escotilhas redondas e racks nas paredes.
+    m.material("white_panel", (0.93, 0.93, 0.91), 0.55, 0.0)
+    m.material("teal_accent", (0.15, 0.62, 0.66), 0.5, 0.0)
+    _shell_box(m, -1.8, 1.8, -27, -7, 0, 3.0, openings=[("x+", -12.5, 1.5, 1.0, 2.3), ("x+", -21.0, 1.5, 1.0, 2.3),
+               ("y-", 0, 2.0, 0, 2.6), ("y+", 0, 1.8, 0, 2.5)], mat="alu_panel", ceil_mat="alu_panel")
+    CR, CF = 0.9, 0.3
+    for sx in (-1, 1):
+        _fillet(m, "alu_panel", "y", (sx * (1.8 - CR), 3.0 - CR), CR, 0 if sx > 0 else 90, -27, -7)
+        _fillet(m, "alu_panel", "y", (sx * (1.8 - CF), CF), CF, 270 if sx > 0 else 180, -27, -7)
+    for k in range(11):
+        yy = -7.6 - k * 1.95
+        for sx in (-1, 1):                                  # arco: coluna, curva e viga, um pouco para dentro
+            m.box("alu_rib", (sx * 1.74, yy, 1.2), (0.12, 0.24, 1.6), bevel=0.04)
+            _fillet(m, "alu_rib", "y", (sx * (1.8 - CR), 3.0 - CR), CR - 0.1, 0 if sx > 0 else 90, yy - 0.12, yy + 0.12, t=0.1)
+            _fillet(m, "alu_rib", "y", (sx * (1.8 - CF), CF), CF - 0.06, 270 if sx > 0 else 180, yy - 0.12, yy + 0.12, t=0.06)
+        m.box("alu_rib", (0, yy, 2.94), (3.6 - 2 * CR, 0.24, 0.1), bevel=0.03)
+        m.box("floor_deck_metal", (0, yy, 0.03), (2.6, 0.2, 0.04))
+        if k < 10:                                          # painéis brancos acolchoados entre os arcos (paredes)
+            for sx in (-1, 1):
+                if sx > 0 and any(abs(yy - 0.97 - wy) < 1.0 for wy in (-12.5, -21.0)):
+                    continue
+                m.box("white_panel", (sx * 1.76, yy - 0.97, 1.25), (0.06, 1.6, 1.5), bevel=0.05)
+                m.box("teal_accent", (sx * 1.74, yy - 0.97, 0.55), (0.03, 1.5, 0.05))
+    m.box("alu_rib", (0, -17.0, 2.95), (0.8, 20.0, 0.08))
+    m.box("glow_light", (0, -17.0, 2.9), (0.6, 19.6, 0.02))
+    for sx in (-1, 1):
+        m.box("glow_blue", (sx * 1.35, -17.0, 0.04), (0.04, 19.6, 0.02))
+    # Escotilhas redondas na parede +X.
     for yy in (-12.5, -21.0):
-        m.box("glass_win", (1.92, yy, 1.7), (0.06, 2.4, 1.6))
-        for dy in (-1.25, 0.0, 1.25):
-            m.box("steel", (1.94, yy + dy, 1.7), (0.14, 0.1, 1.7))
-        for zz in (0.9, 2.5):
-            m.box("steel", (1.94, yy, zz), (0.14, 2.5, 0.1))
-    for k in range(10):
-        yy = -8.0 - k * 2.0
-        m.box("hull_dark_metal", (0, yy, 2.9), (3.72, 0.16, 0.2))   # costela: viga do teto (as colunas vêm abaixo)
-        m.box("floor_deck_metal", (0, yy, 0.05), (2.4, 0.18, 0.04))
-        m.box("glow_light_dim", (0, yy - 1.0, 2.97), (1.4, 0.3, 0.03))
-        for s in (-1, 1):
-            m.box("steel", (s * 1.72, yy, 1.5), (0.1, 0.22, 2.9))
-        for s in (-1, 1):
-            m.box("glow_blue", (s * 1.2, yy - 1.0, 0.03), (0.04, 1.4, 0.02))
-    for s in (-1, 1):
-        m.tube("pipe", (s * 1.5, -7.5, 2.7), (s * 1.5, -26.5, 2.7), 0.07, seg=10)
-        m.tube("steel", (s * 1.5, -7.5, 2.45), (s * 1.5, -26.5, 2.45), 0.04, seg=8)
+        base = T(1.79, yy, 1.65) @ aim((0, 0, 0), (-1, 0, 0))
+        m.lathe("alu_rib", (0, 0, 0), [(1.0, 0.0), (1.0, 0.05), (0.8, 0.08), (0.7, 0.18), (0.66, 0.18), (0.66, 0.0)],
+                seg=24, caps=False, base=base)
+        m.cyl("glass_win", (1.9, yy, 1.65), 0.68, 0.68, 0.04, rot=(0, 90, 0), seg=24)
 
-    # --- Referências (ISS, nós com "quatro racks" e corredores de ficção): racks com painéis de acesso, grades de ventilação e
-    # telas ao longo das paredes, corrimãos com suportes, feixes de cabos, cantos chanfrados no teto e vigas em arco.
-    for side, ys in ((-1, (-9.0, -11.0, -13.0, -18.5, -20.5, -23.0, -25.0)), (1, (-9.0, -16.5, -18.5, -24.5))):
+    # Racks (poucos, para não poluir) e corrimãos com suportes; feixes de cabos rente ao piso.
+    for side, ys in ((-1, (-9.6, -15.4, -23.2)), (1, (-17.4,))):
         for yy in ys:
             _rack_panel(m, side * 1.64, yy, side)
     for side in (-1, 1):
-        m.tube("steel", (side * 1.5, -7.6, 1.15), (side * 1.5, -26.4, 1.15), 0.025, seg=8)
+        m.tube("steel", (side * 1.52, -7.6, 1.15), (side * 1.52, -26.4, 1.15), 0.025, seg=8)
         for k in range(10):
-            m.tube("steel", (side * 1.62, -8.2 - k * 2.0, 1.15), (side * 1.5, -8.2 - k * 2.0, 1.15), 0.02, seg=6)
-        for dz in (0.22, 0.34):
-            m.tube("dark", (side * 1.7, -7.6, dz), (side * 1.7, -26.4, dz), 0.035, seg=8)
-        m.box("hull_metal", (side * 1.5, -17.0, 2.78), (0.55, 19.2, 0.06), rot=(0, side * 45, 0))
-    for k in range(10):
-        for side in (-1, 1):
-            m.box("steel", (side * 1.4, -8.0 - k * 2.0, 2.82), (0.5, 0.14, 0.05), rot=(0, side * 45, 0))
+            m.tube("steel", (side * 1.7, -8.6 - k * 1.95, 1.15), (side * 1.52, -8.6 - k * 1.95, 1.15), 0.02, seg=6)
     hazard_strip(m, (0, -7.2, 2.7), 3.4, "x", height=0.08)
     _door_frame(m, 0, -27, "x", 2.0, 2.6)
     # --- Hangar (20 x 24 x 10)
@@ -2973,6 +3067,33 @@ def lander():
     return m
 
 
+def station_door():
+    """Folha de porta deslizante da estação (uma metade): 1,0 m de largura, 2,6 m de altura, 7 cm de espessura.
+    Origem embaixo, no centro da folha; a borda que encontra a outra metade fica em +X. Igual dos dois lados."""
+    m = Model("station_door", "Station")
+    m.greeble = False
+    _st_mats(m)
+    m.material("yellow", (0.95, 0.72, 0.1), 0.5)
+    m.material("dark", (0.05, 0.05, 0.06), 0.6)
+    m.box("hull_metal", (0, 0, 1.3), (1.0, 0.07, 2.6), bevel=0.012)
+    for side in (-1, 1):
+        y = side * 0.036
+        # Placas aparafusadas em relevo e friso escuro entre elas
+        for z0, h in ((0.08, 1.02), (1.16, 0.66), (1.88, 0.64)):
+            m.box("hull_dark_metal", (-0.06, y, z0 + h / 2), (0.74, 0.012, h), bevel=0.004)
+            for bx in (-0.39, 0.27):
+                for bz in (z0 + 0.05, z0 + h - 0.05):
+                    m.cyl("steel", (bx, y + side * 0.007, bz), 0.01, 0.01, 0.006, rot=(90, 0, 0), seg=6)
+        # Visor estreito, faixa de alerta na borda que se encontra e luz de estado
+        m.box("steel", (0.3, y, 1.62), (0.16, 0.016, 0.62), bevel=0.004)
+        m.box("glass_win", (0.3, y + side * 0.006, 1.62), (0.1, 0.008, 0.54))
+        for k in range(9):
+            m.box("yellow" if k % 2 == 0 else "dark", (0.455, y, 0.15 + k * 0.29), (0.07, 0.014, 0.29))
+        m.box("glow_screen", (0.3, y + side * 0.008, 1.22), (0.1, 0.006, 0.03))
+        m.box("steel", (0.12, y + side * 0.02, 1.05), (0.04, 0.03, 0.3), bevel=0.006)   # puxador
+    return m
+
+
 def wrist_arm():
     """Antebraço esquerdo de traje espacial com o comunicador de pulso (primeira pessoa). Origem no centro do
     mostrador. O cotovelo fica em +Y (perto da câmera) e a mão aponta para -Y; o relógio fica em cima (+Z).
@@ -3044,7 +3165,7 @@ BUILDERS = {
                                                "base_o2gen", "base_battery", "base_purifier")},
     **{n: (lambda n=n: defense(n)) for n in ("base_turret_1", "base_turret_2", "base_floodlight", "base_shock_fence")},
     "sentinel": sentinel,
-    "station_interior": station_interior, "suit_locker": suit_locker, "lander": lander, "wrist_arm": wrist_arm,
+    "station_interior": station_interior, "suit_locker": suit_locker, "lander": lander, "wrist_arm": wrist_arm, "station_door": station_door,
 }
 
 

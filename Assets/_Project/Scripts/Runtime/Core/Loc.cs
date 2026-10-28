@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Planetcraft.Core
@@ -159,6 +159,9 @@ namespace Planetcraft.Core
             ["Iniciando a descida. Boa sorte, Colono 7. A humanidade conta com você."] = "Starting descent. Good luck, Colonist 7. Humanity is counting on you.",
             ["Entrando na atmosfera. Segure firme."] = "Entering the atmosphere. Hold on tight.",
             ["Segure [Esc] para pular a abertura"] = "Hold [Esc] to skip the intro",
+            ["[Esc] pausa · pular abertura"] = "[Esc] pause · skip intro",
+            ["Pular abertura"] = "Skip intro",
+            ["Sair do jogo"] = "Quit game",
             ["Pouso confirmado. Boa sorte, Colono 7."] = "Touchdown confirmed. Good luck, Colonist 7.",
             ["CENTRAL HORIZONTE"] = "HORIZON CONTROL",
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using Planetcraft.Core;
 using Planetcraft.Player;
@@ -25,6 +25,8 @@ namespace Planetcraft.Intro
         [SerializeField] float doorZ = 7.2f;
         [SerializeField] float hangarZ = 28.5f;
         [SerializeField] IntroInteract locker;
+        [SerializeField] SlidingDoor cabinDoor;
+        [SerializeField] SlidingDoor hangarDoor;
         [SerializeField] IntroInteract hatch;
         [SerializeField] GameObject[] beacons;
         [SerializeField] Transform lander;
@@ -34,8 +36,9 @@ namespace Planetcraft.Intro
 
         VisualElement fade, entry;
         Label prompt, skipHint, caption;
-        float skipHold;
-        bool skipping;
+        bool skipping, paused;
+        float speedBeforePause = 1f;
+        VisualElement pausePanel;
         float shake;
         bool boarded;
         AudioSource hum, engine, music;
@@ -130,6 +133,8 @@ namespace Planetcraft.Intro
                 SetFade(0f);
                 ReleasePlayer(at);
                 ShowWrist(true);
+                if (startStep >= 2) cabinDoor.Unlock(player.transform);
+                if (startStep >= 3) hangarDoor.Unlock(player.transform);
             }
 
             // 2) Instruções de movimento e saída da cabine.
@@ -138,6 +143,7 @@ namespace Planetcraft.Intro
                 Objective("Saia da cabine pela porta");
                 yield return Say("CENTRAL HORIZONTE", "Seu comunicador de pulso está ativo. Eu vou guiá-lo. Mova-se com [WASD] e olhe com o mouse.");
                 Beacon(0);
+                cabinDoor.Unlock(player.transform);
                 yield return WaitUntil(() => player.transform.position.z > doorZ, () => Warp(doorZ + 1f));
                 Beacon(-1);
             }
@@ -152,6 +158,7 @@ namespace Planetcraft.Intro
                 Beacon(-1);
                 Sfx.Craft();
                 yield return Say("CENTRAL HORIZONTE", "Traje ajustado e selado. Oxigênio em cem por cento. Sua pistola de pulso também foi liberada: o botão esquerdo do mouse atira.");
+                hangarDoor.Unlock(player.transform);
             }
 
             // 4) Até o hangar.
@@ -377,12 +384,32 @@ namespace Planetcraft.Intro
             promptPanel = panel;
             root.Add(panel);
 
-            skipHint = HudStyle.MakeLabel(HudStyle.KeyCaps(Loc.T("Segure [Esc] para pular a abertura")), 15, new Color(0.8f, 0.85f, 0.9f));
+            skipHint = HudStyle.MakeLabel(HudStyle.KeyCaps(Loc.T("[Esc] pausa · pular abertura")), 15, new Color(0.8f, 0.85f, 0.9f));
             skipHint.style.position = Position.Absolute;
             skipHint.style.right = 24;
             skipHint.style.bottom = 16;
             root.Add(skipHint);
             caption = null;
+
+            // Pausa da abertura: continuar, pular para a Terra ou sair do jogo.
+            pausePanel = HudStyle.FullScreen();
+            pausePanel.style.backgroundColor = new Color(0.01f, 0.015f, 0.02f, 0.72f);
+            pausePanel.style.alignItems = Align.Center;
+            pausePanel.style.justifyContent = Justify.Center;
+            pausePanel.style.display = DisplayStyle.None;
+            var box = HudStyle.Panel();
+            box.style.width = 360;
+            box.style.alignItems = Align.Stretch;
+            HudStyle.Pad(box, 18, 20);
+            box.Add(HudStyle.Tag("Sistema"));
+            var title = HudStyle.MakeLabel(Loc.T("Pausado"), 34, HudStyle.Ink, bold: true);
+            title.style.marginBottom = 12;
+            box.Add(title);
+            box.Add(HudStyle.BigButton("Continuar", () => SetPaused(false)));
+            box.Add(HudStyle.BigButton("Pular abertura", Skip));
+            box.Add(HudStyle.BigButton("Sair do jogo", Application.Quit));
+            pausePanel.Add(box);
+            root.Add(pausePanel);
         }
 
         VisualElement promptPanel;
@@ -450,21 +477,33 @@ namespace Planetcraft.Intro
             }
             else if (beams != null) foreach (var b in beams) b.enabled = false;
 
-            // Segurar Esc pula a abertura.
-            if (!skipping && GameInput.Pause.IsPressed())
-            {
-                skipHold += Time.deltaTime;
-                if (skipHold > 1.2f)
-                {
-                    skipping = true;
-                    StopAllCoroutines();
-                    GameSession.StartGame(fromIntro: true);
-                }
-            }
-            else if (!GameInput.Pause.IsPressed()) skipHold = 0f;
+            // Esc abre/fecha a pausa (continuar, pular abertura, sair do jogo).
+            if (!skipping && GameInput.Pause.WasPressedThisFrame()) SetPaused(!paused);
 
             if (shake > 0.0001f && boarded)
                 cameraPivot.localPosition = new Vector3(0f, 1.6f, 0f) + UnityEngine.Random.insideUnitSphere * shake;
+        }
+
+        void SetPaused(bool value)
+        {
+            if (paused == value) return;
+            paused = value;
+            if (paused) speedBeforePause = Time.timeScale;
+            Time.timeScale = paused ? 0f : speedBeforePause;
+            pausePanel.style.display = paused ? DisplayStyle.Flex : DisplayStyle.None;
+            if (paused) pausePanel.Q<Button>()?.Focus();
+            UIState.MenuOpen = paused;
+            AudioListener.pause = paused;
+        }
+
+        void Skip()
+        {
+            if (skipping) return;
+            skipping = true;
+            SetPaused(false);
+            Time.timeScale = 1f;
+            StopAllCoroutines();
+            GameSession.StartGame(fromIntro: true);
         }
 
         IEnumerator ShotAndQuit(string path, float wait)

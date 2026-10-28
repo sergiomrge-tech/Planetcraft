@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using Planetcraft.Building;
 using Planetcraft.Core;
 using Planetcraft.Crafting;
@@ -764,6 +764,7 @@ namespace Planetcraft.UI
             }));
             pauseButtons.Add(BigButton("Opções", () => ShowPauseOptions(true)));
             pauseButtons.Add(BigButton("Menu principal", () => Planetcraft.Save.GameSession.ToTitle()));
+            pauseButtons.Add(BigButton("Sair do jogo", Application.Quit));
             pausePanel.Add(pauseButtons);
             pauseOptions = new VisualElement();
             pauseOptions.style.display = DisplayStyle.None;
