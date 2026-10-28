@@ -137,7 +137,7 @@ namespace Planetcraft.Building
                 $"Tempo de jogo: {PlayClock.Formatted}\n" +
                 $"Índice de terraformação: {TiFormat.Format(TerraformManager.Instance.Ti)}\n" +
                 $"Construções na Terra: {PlacedObject.All.Count}\n" +
-                $"Registros encontrados: {StoryLogs.All.Count()} de 5";
+                $"Registros encontrados: {StoryLogs.All.Count()} de {StoryLogs.Total}";
             var save = FindAnyObjectByType<SaveSystem>();
             if (save != null) save.Save();
             SceneManager.LoadScene(Scenes.Epilogue);

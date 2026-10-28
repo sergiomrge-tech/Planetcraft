@@ -20,6 +20,7 @@ namespace Planetcraft.Save
         public static void NewGame()
         {
             SaveSystem.ClearPendingLoad();
+            PlayerPrefs.DeleteKey(UI.TutorialHints.PrefKey); // as dicas de primeira vez voltam num jogo novo
             Blueprints.Restore(null);
             StoryLogs.Restore(null);
             ResourceNode.RestoreCollected(null);

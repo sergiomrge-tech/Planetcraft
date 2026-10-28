@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70b01dfe29c224549b8108c490d73eff, type: 3}
+  m_Name: log_08
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
+  id: log_08
+  title: "Arquivo ATLAS \u2014 Cronologia da \xDAltima Guerra"
+  body: "Dia 1: colapso das redes de alerta. Dia 2: ativa\xE7\xE3o dos esterilizadores atmosf\xE9ricos em oito frentes. Dia 3: evacua\xE7\xE3o da Terra encerrada, quarenta mil a bordo.\n\nN\xE3o houve vencedor. Os esterilizadores foram feitos para tornar o territ\xF3rio inimigo inabit\xE1vel; ningu\xE9m previu que o inimigo respirava o mesmo ar. Registro encerrado por ordem do Conselho."

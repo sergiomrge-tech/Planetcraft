@@ -140,6 +140,79 @@ namespace Planetcraft.Core
                 "the valley, deep enough to outlast the radiation.\n\nWhen Earth breathes on its own, they wake up. You will " +
                 "know it worked when you hear something running between the trees.";
 
+            // Novas máquinas
+            en["Condensador Atmosférico"] = "Atmospheric Condenser";
+            en["Pressão +8/s, Biomassa +4/s. Consome 2.5 kW."] = "Pressure +8/s, Biomass +4/s. Uses 2.5 kW.";
+            en["Gerador a Combustível"] = "Fuel Generator";
+            en["+8 kW. Barulhento, mas compacto."] = "+8 kW. Loud, but compact.";
+
+            // Registros 6 a 10
+            en["Diário da Estação Horizonte — Ano 14"] = "Horizon Station Journal — Year 14";
+            en["Ano 14 da estação. Hoje as crianças perguntaram por que o céu do vídeo é azul se a janela mostra marrom.\n\n" +
+               "Explicamos que a Terra é um lugar que está dormindo. A mais nova respondeu que então era preciso acordá-la " +
+               "com cuidado. Anotei isso no quadro da escola: a primeira lição da nossa geração é paciência."] =
+                "Station year 14. Today the children asked why the sky in the video is blue when the window shows brown.\n\n" +
+                "We explained that Earth is a place that is asleep. The youngest answered that then it had to be woken " +
+                "carefully. I wrote that on the school board: our generation's first lesson is patience.";
+            en["Carta de Tomás Rocha, engenheiro de reatores"] = "Letter from Tomás Rocha, reactor engineer";
+            en["A quem encontrar este abrigo: o KR-4 não perdoa pressa. Antes de ligar o núcleo, tenha energia estável e " +
+               "filtros de radiação rodando — o ar daqui ainda cobra juros.\n\nDeixei o projeto do filtro de três estágios " +
+               "na caixa preta da porta. Se a luz do painel estiver verde, o ar já está limpando. Boa sorte, e desculpe " +
+               "pelo estado do mundo."] =
+                "To whoever finds this shelter: the KR-4 does not forgive haste. Before you start the core, have stable " +
+                "power and radiation filters running — the air here still charges interest.\n\nI left the three-stage " +
+                "filter design in the black box by the door. If the panel light is green, the air is already clearing. Good " +
+                "luck, and sorry about the state of the world.";
+            en["Arquivo ATLAS — Cronologia da Última Guerra"] = "ATLAS Archive — Timeline of the Last War";
+            en["Dia 1: colapso das redes de alerta. Dia 2: ativação dos esterilizadores atmosféricos em oito frentes. " +
+               "Dia 3: evacuação da Terra encerrada, quarenta mil a bordo.\n\nNão houve vencedor. Os esterilizadores foram " +
+               "feitos para tornar o território inimigo inabitável; ninguém previu que o inimigo respirava o mesmo ar. " +
+               "Registro encerrado por ordem do Conselho."] =
+                "Day 1: collapse of the warning networks. Day 2: atmospheric sterilizers activated on eight fronts. " +
+                "Day 3: evacuation of Earth ends, forty thousand aboard.\n\nThere was no winner. The sterilizers were built " +
+                "to make enemy territory uninhabitable; nobody foresaw that the enemy breathed the same air. Log closed " +
+                "by order of the Council.";
+            en["Canção de ninar (transcrição danificada)"] = "Lullaby (damaged transcript)";
+            en["...durma, Terra, durma, a chuva vai voltar. Teu azul está guardado onde a gente vai buscar. Quando o vento " +
+               "for brisa e o mar tiver cheiro de sal, a gente desce de volta pra cuidar do teu quintal...\n\nA última " +
+               "estrofe foi cantada por uma criança. A estação a tocou todas as noites durante um milhão de anos."] =
+                "...sleep, Earth, sleep, the rain will come again. Your blue is kept where we will fetch it. When the wind " +
+                "is a breeze and the sea smells of salt, we will come down to tend your yard...\n\nThe last verse was sung by " +
+                "a child. The station played it every night for a million years.";
+            en["Mensagem final — Estação Horizonte"] = "Final message — Horizon Station";
+            en["Aqui é a Estação Horizonte. Recebemos o sinal de terraformação há onze anos e não ousamos acreditar. Hoje os " +
+               "sensores confirmaram: há oxigênio, há água, há vida.\n\nSe alguém aí embaixo ouve isto: terminem o que " +
+               "começaram e voltem para casa. A porta de acoplagem está aberta. Esperamos um milhão de anos; podemos " +
+               "esperar mais um dia."] =
+                "This is Horizon Station. We received the terraforming signal eleven years ago and did not dare believe it. " +
+                "Today the sensors confirmed: there is oxygen, there is water, there is life.\n\nIf anyone down there can " +
+                "hear this: finish what you started and come home. The docking port is open. We have waited a million " +
+                "years; we can wait one more day.";
+
+            // Opções de áudio, dicas e objetivos
+            en["Volume da música"] = "Music volume";
+            en["Volume dos efeitos"] = "Effects volume";
+            en["Salvamento automático"] = "Autosave";
+            en["Dica"] = "Hint";
+            en["{WASD} andar   ·   mouse olhar   ·   [SHIFT] correr   ·   [ESPAÇO] pular"] =
+                "{WASD} move   ·   mouse look   ·   [SHIFT] sprint   ·   [SPACE] jump";
+            en["Aperte {E} para coletar o minério. Ferro, silício, gelo e magnésio abrem as primeiras máquinas."] =
+                "Press {E} to collect the ore. Iron, silicon, ice and magnesium unlock the first machines.";
+            en["Aperte {TAB} para abrir o menu: fabrique itens e construa máquinas com o que você coletou."] =
+                "Press {TAB} to open the menu: craft items and build machines with what you collected.";
+            en["{R} gira a construção, o clique esquerdo confirma e o direito cancela."] =
+                "{R} rotates the building, left click confirms and right click cancels.";
+            en["Seu oxigênio está acabando! Entre num Módulo de Base ou use uma Cápsula de O2 pelo menu ({TAB})."] =
+                "You are running out of oxygen! Enter a Base Module or use an O2 Capsule from the menu ({TAB}).";
+            en["Faltou energia: as máquinas param. Construa um Gerador Eólico ou um Painel Solar."] =
+                "Out of power: machines stop. Build a Wind Turbine or a Solar Panel.";
+            en["Os pilares azuis no horizonte são ruínas do velho mundo: guardam registros, projetos novos e urânio."] =
+                "The blue pillars on the horizon are old-world ruins: they hold logs, new designs and uranium.";
+            en["Colete 2 de ferro: aproxime-se de uma rocha escura com nódulos e aperte [E]."] =
+                "Collect 2 iron: approach a dark rock with nodules and press [E].";
+            en["Construa um Módulo de Base: ele recarrega seu oxigênio. Abra o menu [TAB] e escolha Construir."] =
+                "Build a Base Module: it refills your oxygen. Open the [TAB] menu and choose Build.";
+
             // Prompts, avisos e banners
             en["Coletar"] = "Collect";
             en["Desmontar"] = "Dismantle";

@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70b01dfe29c224549b8108c490d73eff, type: 3}
+  m_Name: log_10
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
+  id: log_10
+  title: "Mensagem final \u2014 Esta\xE7\xE3o Horizonte"
+  body: "Aqui \xE9 a Esta\xE7\xE3o Horizonte. Recebemos o sinal de terraforma\xE7\xE3o h\xE1 onze anos e n\xE3o ousamos acreditar. Hoje os sensores confirmaram: h\xE1 oxig\xEAnio, h\xE1 \xE1gua, h\xE1 vida.\n\nSe algu\xE9m a\xED embaixo ouve isto: terminem o que come\xE7aram e voltem para casa. A porta de acoplagem est\xE1 aberta. Esperamos um milh\xE3o de anos; podemos esperar mais um dia."

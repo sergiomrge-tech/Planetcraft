@@ -12,6 +12,7 @@ namespace Planetcraft.Building
         [SerializeField] GameObject runningIndicator;
 
         PlacedObject placed;
+        AudioSource hum;
 
         BuildableDefinition Def => placed != null ? placed.Definition : null;
 
@@ -46,6 +47,31 @@ namespace Planetcraft.Building
         void RefreshIndicator()
         {
             if (runningIndicator != null) runningIndicator.SetActive(IsRunning);
+            UpdateHum();
+        }
+
+        // Máquinas que consomem energia zumbem (som 3D) enquanto funcionam; geradores e a base ficam em silêncio.
+        void UpdateHum()
+        {
+            bool should = IsRunning && PowerDemand > 0f;
+            if (should && hum == null)
+            {
+                var clip = Resources.Load<AudioClip>("Audio/Ambience/hum_loop");
+                if (clip == null) return;
+                hum = gameObject.AddComponent<AudioSource>();
+                hum.clip = clip;
+                hum.loop = true;
+                hum.spatialBlend = 1f;
+                hum.minDistance = 2.5f;
+                hum.maxDistance = 22f;
+                hum.rolloffMode = AudioRolloffMode.Linear;
+                hum.pitch = Random.Range(0.85f, 1.2f);
+                hum.time = Random.value * clip.length;
+            }
+            if (hum == null) return;
+            hum.volume = 0.22f * Settings.EffectsVolume;
+            if (should && !hum.isPlaying) hum.Play();
+            else if (!should && hum.isPlaying) hum.Pause();
         }
     }
 }

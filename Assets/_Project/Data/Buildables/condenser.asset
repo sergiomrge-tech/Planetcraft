@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d05df1c84e3d59143983b32ed329f720, type: 3}
+  m_Name: condenser
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
+  id: condenser
+  displayName: "Condensador Atmosf\xE9rico"
+  description: "Press\xE3o +8/s, Biomassa +4/s. Consome 2.5 kW."
+  prefab: {fileID: 7686469353755693410, guid: acb79dfffa64a794193ccab53043fb4d, type: 3}
+  cost:
+  - item: {fileID: 11400000, guid: 74e3b37d99edd1a479d4cce1e91e41e4, type: 2}
+    amount: 2
+  - item: {fileID: 11400000, guid: 992d46b4fabab2a4eafbbaf792fb73d9, type: 2}
+    amount: 2
+  - item: {fileID: 11400000, guid: 783a5425aa2cbe44295a50439d650d9e, type: 2}
+    amount: 1
+  requiredTi: 8000
+  blueprintId: 
+  unique: 0
+  powerGeneration: 0
+  powerDemand: 2.5
+  terraformRates:
+  - parameter: 2
+    perSecond: 8
+  - parameter: 3
+    perSecond: 4

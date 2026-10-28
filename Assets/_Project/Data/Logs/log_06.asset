@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70b01dfe29c224549b8108c490d73eff, type: 3}
+  m_Name: log_06
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Core.StoryLog
+  id: log_06
+  title: "Di\xE1rio da Esta\xE7\xE3o Horizonte \u2014 Ano 14"
+  body: "Ano 14 da esta\xE7\xE3o. Hoje as crian\xE7as perguntaram por que o c\xE9u do v\xEDdeo \xE9 azul se a janela mostra marrom.\n\nExplicamos que a Terra \xE9 um lugar que est\xE1 dormindo. A mais nova respondeu que ent\xE3o era preciso acord\xE1-la com cuidado. Anotei isso no quadro da escola: a primeira li\xE7\xE3o da nossa gera\xE7\xE3o \xE9 paci\xEAncia."

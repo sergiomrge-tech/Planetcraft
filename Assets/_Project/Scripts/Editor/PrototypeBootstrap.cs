@@ -230,6 +230,13 @@ namespace Planetcraft.EditorTools
             Add("algae_farm", "Fazenda de Algas", "Biomassa +25/s, Oxigênio +5/s. Consome 2 kW.", 20_000, 0, 2f,
                 new[] { C(it["ice"], 2), C(it["magnesium"], 1) },
                 new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, "Machines/algae_farm");
+            // Máquinas escaneadas (Poly Haven): condensador (unidade externa de ar-condicionado) e gerador a combustível.
+            Add("condenser", "Condensador Atmosférico", "Pressão +8/s, Biomassa +4/s. Consome 2.5 kW.", 8_000, 0, 2.5f,
+                new[] { C(it["titanium"], 2), C(it["silicon"], 2), C(it["magnesium"], 1) },
+                new[] { new TerraformRate(TerraformParameter.Pressure, 8), new TerraformRate(TerraformParameter.Biomass, 4) },
+                true, "ph:exterior_aircon_unit");
+            Add("fuel_generator", "Gerador a Combustível", "+8 kW. Barulhento, mas compacto.", 20_000, 8f, 0,
+                new[] { C(it["iron"], 4), C(it["alloy"], 1), C(it["titanium"], 1) }, none, true, "ph:portable_generator");
             Add("shipyard", "Estaleiro", "Plataforma para montar a nave-mãe que leva a notícia de volta à Estação Horizonte. Só um por mundo.", 2_500_000, 0, 0,
                 new[] { C(it["alloy"], 6), C(it["titanium"], 4), C(it["iron"], 8) }, none, false, "Machines/shipyard", unique: true);
             Add("decon_t2", "Filtro de Radiação II", "Descontaminação +15/s. Consome 4 kW.", 5_000, 0, 4f,
@@ -334,6 +341,29 @@ namespace Planetcraft.EditorTools
                  "Selei o cofre genético antes do último apagão. Sementes, insetos, animais: tudo em estase no fundo " +
                  "do vale, fundo o bastante para atravessar a radiação.\n\nQuando a Terra respirar sozinha, eles " +
                  "acordam. Você vai saber que deu certo quando ouvir algo correndo entre as árvores."),
+                ("log_06", "Diário da Estação Horizonte — Ano 14",
+                 "Ano 14 da estação. Hoje as crianças perguntaram por que o céu do vídeo é azul se a janela mostra marrom.\n\n" +
+                 "Explicamos que a Terra é um lugar que está dormindo. A mais nova respondeu que então era preciso acordá-la " +
+                 "com cuidado. Anotei isso no quadro da escola: a primeira lição da nossa geração é paciência."),
+                ("log_07", "Carta de Tomás Rocha, engenheiro de reatores",
+                 "A quem encontrar este abrigo: o KR-4 não perdoa pressa. Antes de ligar o núcleo, tenha energia estável e " +
+                 "filtros de radiação rodando — o ar daqui ainda cobra juros.\n\nDeixei o projeto do filtro de três estágios " +
+                 "na caixa preta da porta. Se a luz do painel estiver verde, o ar já está limpando. Boa sorte, e desculpe " +
+                 "pelo estado do mundo."),
+                ("log_08", "Arquivo ATLAS — Cronologia da Última Guerra",
+                 "Dia 1: colapso das redes de alerta. Dia 2: ativação dos esterilizadores atmosféricos em oito frentes. " +
+                 "Dia 3: evacuação da Terra encerrada, quarenta mil a bordo.\n\nNão houve vencedor. Os esterilizadores foram " +
+                 "feitos para tornar o território inimigo inabitável; ninguém previu que o inimigo respirava o mesmo ar. " +
+                 "Registro encerrado por ordem do Conselho."),
+                ("log_09", "Canção de ninar (transcrição danificada)",
+                 "...durma, Terra, durma, a chuva vai voltar. Teu azul está guardado onde a gente vai buscar. Quando o vento " +
+                 "for brisa e o mar tiver cheiro de sal, a gente desce de volta pra cuidar do teu quintal...\n\nA última " +
+                 "estrofe foi cantada por uma criança. A estação a tocou todas as noites durante um milhão de anos."),
+                ("log_10", "Mensagem final — Estação Horizonte",
+                 "Aqui é a Estação Horizonte. Recebemos o sinal de terraformação há onze anos e não ousamos acreditar. Hoje os " +
+                 "sensores confirmaram: há oxigênio, há água, há vida.\n\nSe alguém aí embaixo ouve isto: terminem o que " +
+                 "começaram e voltem para casa. A porta de acoplagem está aberta. Esperamos um milhão de anos; podemos " +
+                 "esperar mais um dia."),
             };
             var list = new List<StoryLog>();
             foreach (var d in data)
@@ -437,6 +467,8 @@ namespace Planetcraft.EditorTools
             "drill_press_01" => 2.6f,
             "metal_tool_chest" => 2.0f,
             "old_military_compressor" => 1.5f,
+            "exterior_aircon_unit" => 2.2f,
+            "portable_generator" => 3.0f,
             _ => 1f,
         };
 
@@ -837,6 +869,24 @@ namespace Planetcraft.EditorTools
             td.SetHeights(x0, z0, heights);
         }
 
+        // Do raio externo para dentro, o primeiro ponto do ângulo com pelo menos 20 m de altura (acima da água final)
+        // e inclinação suave; se nenhum servir, devolve o mais alto encontrado.
+        static float FindFirmGround(Terrain terrain, Vector3 center, float angleRad)
+        {
+            float best = 190f, bestHeight = float.MinValue;
+            var dir = new Vector3(Mathf.Cos(angleRad), 0f, Mathf.Sin(angleRad));
+            var td = terrain.terrainData;
+            for (float r = 215f; r >= 110f; r -= 4f)
+            {
+                var p = center + dir * r;
+                float h = terrain.SampleHeight(p);
+                float slope = td.GetSteepness(p.x / td.size.x, p.z / td.size.z);
+                if (h >= 20f && slope < 16f) return r;
+                if (h > bestHeight) { bestHeight = h; best = r; }
+            }
+            return best;
+        }
+
         static void SnapToGround(Transform t, Terrain terrain)
         {
             var p = t.position;
@@ -924,6 +974,7 @@ namespace Planetcraft.EditorTools
 
             // Sistemas
             var systems = new GameObject("Sistemas");
+            systems.AddComponent<TutorialHints>();
             var tm = systems.AddComponent<TerraformManager>();
             SetRef(tm, "stages", stageDb);
 
@@ -1016,12 +1067,19 @@ namespace Planetcraft.EditorTools
                 (165f, 184f, "bp_heater4", "Aquecedor IV"),
                 (238f, 192f, "bp_drill3", "Perfuratriz III"),
                 (308f, 200f, "bp_decon3", "Filtro de Radiação III"),
+                // Ruínas sem projeto: só registro, urânio e história. O raio é buscado de fora para dentro até achar chão firme.
+                (52f, 0f, null, null),
+                (128f, 0f, null, null),
+                (202f, 0f, null, null),
+                (275f, 0f, null, null),
+                (342f, 0f, null, null),
             };
             var beaconMat = m.Emissive("Beacon", new Color(0.4f, 0.9f, 1f));
             for (int s = 0; s < sites.Length; s++)
             {
                 float a = sites[s].angle * Mathf.Deg2Rad;
-                var pos = center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * sites[s].radius;
+                float radius = sites[s].radius > 0f ? sites[s].radius : FindFirmGround(terrain, center, a);
+                var pos = center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * radius;
                 pos.y = terrain.SampleHeight(pos);
                 var site = new GameObject($"Ruína_{s + 1}");
                 site.transform.SetParent(wrecks.transform, false);

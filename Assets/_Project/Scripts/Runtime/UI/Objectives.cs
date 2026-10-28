@@ -15,13 +15,26 @@ namespace Planetcraft.UI
 
         static bool HasAny(params string[] ids) => ids.Any(Has);
 
-        public static string Current()
+        static int Count(Planetcraft.Items.Inventory inv, string id)
+        {
+            int n = 0;
+            for (int i = 0; i < inv.Capacity; i++)
+                if (!inv[i].IsEmpty && inv[i].item.id == id) n += inv[i].amount;
+            return n;
+        }
+
+        public static string Current(Planetcraft.Items.Inventory inv = null)
         {
             var tm = TerraformManager.Instance;
             double ti = tm != null ? tm.Ti : 0;
 
             if (ShipProgress.Launched) return Loc.T("A nave-mãe voltou à Estação Horizonte. Explore a Terra viva.");
-            if (!Has("base_module")) return Loc.T("Construa um Módulo de Base: ele recarrega seu oxigênio.");
+            if (!Has("base_module"))
+            {
+                if (inv != null && Count(inv, "iron") < 2)
+                    return Loc.T("Colete 2 de ferro: aproxime-se de uma rocha escura com nódulos e aperte [E].");
+                return Loc.T("Construa um Módulo de Base: ele recarrega seu oxigênio. Abra o menu [TAB] e escolha Construir.");
+            }
             if (PowerGrid.Generation <= 0f) return Loc.T("Construa um Gerador Eólico para ter energia.");
             if (!HasAny("heater_t1", "heater_t2", "heater_t3", "heater_t4") || !HasAny("drill_t1", "drill_t2", "drill_t3") ||
                 !HasAny("decon_t1", "decon_t2", "decon_t3"))

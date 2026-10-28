@@ -35,13 +35,13 @@ namespace Planetcraft.Core
         public static void Step(float volume)
         {
             var s = Source;
-            s.PlayOneShot(steps[Random.Range(0, steps.Length)], volume * Random.Range(0.8f, 1f));
+            s.PlayOneShot(steps[Random.Range(0, steps.Length)], volume * Random.Range(0.8f, 1f) * Settings.EffectsVolume);
         }
 
-        public static void Collect() => Source.PlayOneShot(collect);
-        public static void Craft() => Source.PlayOneShot(craft);
-        public static void Click() => Source.PlayOneShot(click, 0.6f);
-        public static void Build() => Source.PlayOneShot(build);
-        public static void Deconstruct() => Source.PlayOneShot(deconstruct);
+        public static void Collect() => Source.PlayOneShot(collect, Settings.EffectsVolume);
+        public static void Craft() => Source.PlayOneShot(craft, Settings.EffectsVolume);
+        public static void Click() => Source.PlayOneShot(click, 0.6f * Settings.EffectsVolume);
+        public static void Build() => Source.PlayOneShot(build, Settings.EffectsVolume);
+        public static void Deconstruct() => Source.PlayOneShot(deconstruct, Settings.EffectsVolume);
     }
 }

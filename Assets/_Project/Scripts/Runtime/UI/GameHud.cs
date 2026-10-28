@@ -45,7 +45,9 @@ namespace Planetcraft.UI
         Label help;
         bool helpGamepad;
         bool helpDirty = true;
-        VisualElement statusPanel, vitalsPanel, objectivePanel;
+        VisualElement statusPanel, vitalsPanel, objectivePanel, hintPanel;
+        Label hintLabel;
+        float hintUntil;
         Label objectiveLabel;
         float nextObjectiveRefresh;
         Meter progress, oxygen, water, food;
@@ -68,6 +70,7 @@ namespace Planetcraft.UI
         void Start()
         {
             BuildUi(GetComponent<UIDocument>().rootVisualElement);
+            if (database != null) StoryLogs.Total = database.logs.Count;
             inventory.Inventory.Changed += MarkMenuDirty;
             if (survival != null) survival.Died += OnDied;
             if (TerraformManager.Instance != null) TerraformManager.Instance.TiChanged += OnTiChanged;
@@ -171,6 +174,14 @@ namespace Planetcraft.UI
             pauseOptions.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
+        // Dica de primeira vez (TutorialHints): painel no rodapé, acima da ajuda de teclas.
+        public void ShowHint(string text, float seconds)
+        {
+            hintLabel.text = KeyCaps(WithHints(text));
+            hintPanel.style.display = DisplayStyle.Flex;
+            hintUntil = Time.unscaledTime + seconds;
+        }
+
         public void ShowToast(string message, float seconds = 3f)
         {
             toast.text = message;
@@ -245,10 +256,12 @@ namespace Planetcraft.UI
             // Com menu, pausa ou registro abertos, o visor recolhe os mostradores para não sobrepor os painéis.
             var hudDisplay = UIState.MenuOpen ? DisplayStyle.None : DisplayStyle.Flex;
             statusPanel.style.display = vitalsPanel.style.display = objectivePanel.style.display = hudDisplay;
+            if (hintPanel.style.display == DisplayStyle.Flex && (UIState.MenuOpen || Time.unscaledTime > hintUntil))
+                hintPanel.style.display = DisplayStyle.None;
             if (Time.unscaledTime >= nextObjectiveRefresh)
             {
                 nextObjectiveRefresh = Time.unscaledTime + 0.5f;
-                objectiveLabel.text = Objectives.Current();
+                objectiveLabel.text = KeyCaps(WithHints(Objectives.Current(inventory != null ? inventory.Inventory : null)));
             }
             var tm = TerraformManager.Instance;
             if (tm != null)
@@ -525,6 +538,22 @@ namespace Planetcraft.UI
             powerLabel = Cell(TableRow(table, "Energia"), 208, 14, Ink);
             status.Add(table);
             root.Add(status);
+
+            // Dica contextual (rodapé central).
+            var hintHost = FullScreen();
+            hintHost.style.alignItems = Align.Center;
+            hintHost.style.justifyContent = Justify.FlexEnd;
+            hintHost.style.paddingBottom = 70;
+            hintPanel = Panel();
+            hintPanel.style.maxWidth = 640;
+            hintPanel.Add(Tag("Dica", Signal));
+            hintLabel = MakeLabel("", 17, Ink);
+            hintLabel.style.whiteSpace = WhiteSpace.Normal;
+            hintLabel.style.marginTop = 2;
+            hintPanel.Add(hintLabel);
+            hintPanel.style.display = DisplayStyle.None;
+            hintHost.Add(hintPanel);
+            root.Add(hintHost);
 
             // Objetivo atual (canto superior direito).
             objectivePanel = Panel();

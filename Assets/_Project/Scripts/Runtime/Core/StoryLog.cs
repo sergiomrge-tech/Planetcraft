@@ -19,6 +19,9 @@ namespace Planetcraft.Core
 
         public static IEnumerable<string> All => read;
 
+        // Quantos registros existem no jogo (definido pelo HUD a partir do banco de dados).
+        public static int Total { get; set; } = 10;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics() => read.Clear();
 

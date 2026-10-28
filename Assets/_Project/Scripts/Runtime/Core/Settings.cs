@@ -7,7 +7,8 @@ namespace Planetcraft.Core
     public static class Settings
     {
         const string VolumeKey = "pc.volume", SensitivityKey = "pc.sensitivity", InvertKey = "pc.invertY",
-            FovKey = "pc.fov", QualityKey = "pc.quality", LanguageKey = "pc.language", VSyncKey = "pc.vsync";
+            FovKey = "pc.fov", QualityKey = "pc.quality", LanguageKey = "pc.language", VSyncKey = "pc.vsync",
+            MusicKey = "pc.music", EffectsKey = "pc.effects";
 
         static bool loaded;
         static float volume, sensitivity, fov;
@@ -15,6 +16,7 @@ namespace Planetcraft.Core
         static int quality;
         static string language;
         static bool vsync;
+        static float music, effects;
 
         public static event Action Changed;
 
@@ -25,6 +27,8 @@ namespace Planetcraft.Core
         public static int QualityLevel { get { Load(); return quality; } set { quality = Mathf.Clamp(value, 0, QualitySettings.names.Length - 1); Save(); } }
         /// <summary>"pt" ou "en" (padrão: idioma do sistema).</summary>
         public static string Language { get { Load(); return language; } set { language = value == "en" ? "en" : "pt"; Save(); } }
+        public static float MusicVolume { get { Load(); return music; } set { music = Mathf.Clamp01(value); Save(); } }
+        public static float EffectsVolume { get { Load(); return effects; } set { effects = Mathf.Clamp01(value); Save(); } }
         public static bool VSync { get { Load(); return vsync; } set { vsync = value; Save(); } }
 
         // Resolução é aplicada só quando o jogador escolhe (como a tela cheia), não na inicialização.
@@ -58,6 +62,8 @@ namespace Planetcraft.Core
             quality = PlayerPrefs.GetInt(QualityKey, QualitySettings.GetQualityLevel());
             language = PlayerPrefs.GetString(LanguageKey, Loc.SystemDefault());
             vsync = PlayerPrefs.GetInt(VSyncKey, 1) == 1;
+            music = PlayerPrefs.GetFloat(MusicKey, 0.6f);
+            effects = PlayerPrefs.GetFloat(EffectsKey, 0.9f);
         }
 
         static void Save()
@@ -69,6 +75,8 @@ namespace Planetcraft.Core
             PlayerPrefs.SetInt(QualityKey, quality);
             PlayerPrefs.SetString(LanguageKey, language);
             PlayerPrefs.SetInt(VSyncKey, vsync ? 1 : 0);
+            PlayerPrefs.SetFloat(MusicKey, music);
+            PlayerPrefs.SetFloat(EffectsKey, effects);
             PlayerPrefs.Save();
             Apply();
         }

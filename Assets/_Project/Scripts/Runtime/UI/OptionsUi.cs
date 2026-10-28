@@ -38,6 +38,14 @@ namespace Planetcraft.UI
             volume.RegisterValueChangedCallback(e => Settings.MasterVolume = e.newValue);
             content.Add(Style(volume));
 
+            var music = new Slider(Loc.T("Volume da música"), 0f, 1f) { value = Settings.MusicVolume, showInputField = false };
+            music.RegisterValueChangedCallback(e => Settings.MusicVolume = e.newValue);
+            content.Add(Style(music));
+
+            var effects = new Slider(Loc.T("Volume dos efeitos"), 0f, 1f) { value = Settings.EffectsVolume, showInputField = false };
+            effects.RegisterValueChangedCallback(e => Settings.EffectsVolume = e.newValue);
+            content.Add(Style(effects));
+
             var sensitivity = new Slider(Loc.T("Sensibilidade do mouse"), 0.03f, 0.4f) { value = Settings.MouseSensitivity };
             sensitivity.RegisterValueChangedCallback(e => Settings.MouseSensitivity = e.newValue);
             content.Add(Style(sensitivity));
