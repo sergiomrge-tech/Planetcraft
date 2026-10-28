@@ -61,21 +61,21 @@ namespace Planetcraft.UI
             layout.style.justifyContent = Justify.Center;
             root.Add(layout);
 
-            layout.Add(HudStyle.Tag("Estação Horizonte  ·  Missão de retorno", HudStyle.Accent));
-            var title = HudStyle.MakeLabel("RETURN TO EARTH", 96, HudStyle.Ink, bold: true);
-            title.style.letterSpacing = 10;
+            layout.Add(HudStyle.Tag("Estação Horizonte  ·  Missão de retorno", HudStyle.SceneAccent));
+            var title = HudStyle.MakeLabel("RETURN TO EARTH", 96, HudStyle.OnScene, bold: true);
+            title.style.letterSpacing = HudStyle.Paper ? 2 : 10;
             title.style.marginTop = -6;
             layout.Add(title);
             var subtitle = HudStyle.MakeLabel("Um milhão de anos depois, a humanidade volta para casa.", 22,
-                new Color(0.8f, 0.78f, 0.72f));
+                HudStyle.OnSceneSoft);
             subtitle.style.marginBottom = 44;
             subtitle.style.paddingLeft = 12;
             subtitle.style.borderLeftWidth = 2;
-            subtitle.style.borderLeftColor = HudStyle.Accent;
+            subtitle.style.borderLeftColor = HudStyle.SceneAccent;
             layout.Add(subtitle);
 
-            buttons = new VisualElement();
-            buttons.style.width = 320;
+            buttons = HudStyle.Panel(true, -1f);
+            buttons.style.width = 340;
             layout.Add(buttons);
             buttons.Add(MenuButton("Novo jogo", GameSession.NewGame));
             var cont = MenuButton("Continuar", () => GameSession.ContinueGame());
@@ -92,7 +92,7 @@ namespace Planetcraft.UI
             var hint = HudStyle.MakeLabel(HudStyle.KeyCaps(string.Join("   ·   ", $"[WASD] {Loc.T("mover")}",
                     $"{GameInput.Hint(GameInput.Interact)} {Loc.T("interagir")}", $"{GameInput.Hint(GameInput.Menu)} {Loc.T("menu")}",
                     $"{GameInput.Hint(GameInput.Deconstruct)} {Loc.T("desmontar")}", $"{GameInput.Hint(GameInput.Pause)} {Loc.T("pausa")}")),
-                14, HudStyle.Muted);
+                14, HudStyle.OnSceneSoft);
             hint.style.position = Position.Absolute;
             hint.style.left = 120;
             hint.style.bottom = 36;
@@ -109,13 +109,13 @@ namespace Planetcraft.UI
             panel.style.maxHeight = 520;
             HudStyle.Pad(panel, 18, 22);
             panel.Add(HudStyle.Tag("Sistema"));
-            var title = HudStyle.MakeLabel("CRÉDITOS", 30, HudStyle.Ink, bold: true);
+            var title = HudStyle.MakeLabel(HudStyle.Paper ? "Créditos" : "CRÉDITOS", 30, HudStyle.Ink, bold: true);
             title.style.marginBottom = 10;
             panel.Add(title);
             var scroll = new ScrollView(ScrollViewMode.Vertical);
             scroll.style.flexShrink = 1;
             var text = Resources.Load<TextAsset>("credits");
-            var body = HudStyle.MakeLabel(text != null ? CreditsToRichText(text.text) : "-", 14, new Color(0.82f, 0.82f, 0.78f));
+            var body = HudStyle.MakeLabel(text != null ? CreditsToRichText(text.text) : "-", 14, HudStyle.Body);
             body.style.whiteSpace = WhiteSpace.Normal;
             scroll.Add(body);
             panel.Add(scroll);

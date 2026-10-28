@@ -67,3 +67,5 @@ Assets de [Poly Haven](https://polyhaven.com), licença CC0 (domínio público).
 
 - Rajdhani — Indian Type Foundry
 - Share Tech Mono — Carrois Type Design
+- Patrick Hand — Patrick Wagesreiter
+- Kalam — Indian Type Foundry

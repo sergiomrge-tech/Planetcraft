@@ -1,41 +1,42 @@
-/* Return to Earth — visor do traje: tipografia técnica condensada, molduras finas com cantoneiras, âmbar de sinal. */
+/* Return to Earth — caderno de campo: letra manuscrita, notas de papel, tinta e lápis. */
 
 .rte-root {
-    -unity-font-definition: url("Fonts/Rajdhani-SemiBold.ttf");
-    color: rgb(238, 232, 218);
+    -unity-font-definition: url("Fonts/PatrickHand-Regular.ttf");
+    color: rgb(41, 31, 18);
 }
 
 .rte-root Label,
 .rte-root Button,
 .rte-root TextElement {
-    -unity-font-definition: url("Fonts/Rajdhani-SemiBold.ttf");
+    -unity-font-definition: url("Fonts/PatrickHand-Regular.ttf");
 }
 
 .rte-root .rte-strong {
-    -unity-font-definition: url("Fonts/Rajdhani-Bold.ttf");
+    -unity-font-definition: url("Fonts/Kalam-Bold.ttf");
 }
 
+/* Números e colunas: a mesma letra do caderno (a tinta não é monoespaçada). */
 .rte-root .rte-mono {
-    -unity-font-definition: url("Fonts/ShareTechMono-Regular.ttf");
+    -unity-font-definition: url("Fonts/PatrickHand-Regular.ttf");
 }
 
 .rte-root .rte-tag {
-    -unity-font-definition: url("Fonts/Rajdhani-Bold.ttf");
-    letter-spacing: 3px;
-    font-size: 11px;
-    color: rgb(150, 156, 150);
+    -unity-font-definition: url("Fonts/Kalam-Bold.ttf");
+    letter-spacing: 0;
+    font-size: 14px;
+    color: rgb(107, 89, 64);
 }
 
-/* Botões: contorno âmbar, sem preenchimento cinza padrão. */
+/* Botões: etiquetas de papel com contorno a lápis. */
 .rte-button {
-    background-color: rgba(255, 184, 72, 0.05);
+    background-color: rgba(190, 160, 100, 0.22);
     border-width: 1px;
-    border-color: rgba(255, 184, 72, 0.45);
-    border-radius: 0;
-    color: rgb(238, 232, 218);
-    -unity-font-definition: url("Fonts/Rajdhani-Bold.ttf");
-    letter-spacing: 1.5px;
-    padding: 3px 12px;
+    border-color: rgba(70, 52, 26, 0.6);
+    border-radius: 2px;
+    color: rgb(41, 31, 18);
+    -unity-font-definition: url("Fonts/Kalam-Bold.ttf");
+    letter-spacing: 0;
+    padding: 2px 12px;
     margin: 2px 0 2px 6px;
     transition-duration: 0.12s;
 }
@@ -44,19 +45,19 @@
 .rte-button:focus,
 .rte-button:focus:enabled,
 .rte-button:hover:enabled {
-    background-color: rgba(255, 184, 72, 0.2);
-    border-color: rgb(255, 184, 72);
-    color: rgb(255, 255, 255);
+    background-color: rgba(184, 77, 26, 0.18);
+    border-color: rgb(184, 77, 26);
+    color: rgb(120, 45, 10);
 }
 
 .rte-button:active {
-    background-color: rgba(255, 184, 72, 0.38);
+    background-color: rgba(184, 77, 26, 0.34);
 }
 
 .rte-button:disabled {
-    background-color: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: rgba(238, 232, 218, 0.35);
+    background-color: rgba(120, 100, 60, 0.08);
+    border-color: rgba(70, 52, 26, 0.2);
+    color: rgba(41, 31, 18, 0.4);
     opacity: 1;
 }
 
@@ -77,32 +78,32 @@
 }
 
 .rte-root .unity-base-slider__tracker {
-    background-color: rgba(255, 255, 255, 0.06);
+    background-color: rgba(70, 52, 26, 0.22);
     border-width: 0;
 }
 
 .rte-root .unity-base-slider__dragger {
-    background-color: rgb(255, 184, 72);
+    background-color: rgb(184, 77, 26);
     border-width: 0;
     border-radius: 0;
-    width: 4px;
+    width: 5px;
 }
 
-/* Campos das opções (listas, números, caixas de seleção) no tom do visor, sem o branco do tema padrão. */
+/* Campos das opções (listas, números, caixas de seleção) como linhas preenchidas a caneta. */
 .rte-root .unity-base-popup-field__input,
 .rte-root .unity-base-text-field__input,
 .rte-root .unity-toggle__checkmark {
-    background-color: rgba(0, 0, 0, 0.45);
-    border-color: rgba(255, 184, 72, 0.45);
-    border-radius: 0;
-    color: rgb(238, 232, 218);
+    background-color: rgba(255, 250, 235, 0.55);
+    border-color: rgba(70, 52, 26, 0.6);
+    border-radius: 2px;
+    color: rgb(41, 31, 18);
 }
 
 .rte-root .unity-base-popup-field__text,
 .rte-root .unity-text-element {
-    color: rgb(238, 232, 218);
+    color: rgb(41, 31, 18);
 }
 
 .rte-root .unity-base-popup-field__arrow {
-    -unity-background-image-tint-color: rgb(255, 184, 72);
+    -unity-background-image-tint-color: rgb(184, 77, 26);
 }

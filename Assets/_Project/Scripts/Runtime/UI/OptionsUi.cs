@@ -129,7 +129,7 @@ namespace Planetcraft.UI
                 Button key = null;
                 key = HudStyle.MakeButton(GameInput.Display(action), () =>
                 {
-                    key.text = Loc.T("Pressione uma tecla (Esc cancela)").ToUpperInvariant();
+                    key.text = HudStyle.Caps(Loc.T("Pressione uma tecla (Esc cancela)"));
                     GameInput.StartRebind(action, () => key.text = GameInput.Display(action));
                 });
                 key.style.width = 150;

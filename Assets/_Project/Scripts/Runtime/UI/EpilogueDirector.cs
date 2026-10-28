@@ -117,14 +117,21 @@ namespace Planetcraft.UI
             var sheet = HudStyle.Panel();
             sheet.style.width = 720;
             sheet.style.alignItems = Align.Center;
-            sheet.Add(HudStyle.MakeLabel("MISSÃO CUMPRIDA", 14, new Color(0.45f, 0.95f, 0.75f), bold: true));
-            var title = HudStyle.MakeLabel("Dever cumprido", 40, Color.white, bold: true);
+            sheet.Add(HudStyle.MakeLabel(HudStyle.Caps(Loc.T("Missão cumprida")), 16, HudStyle.Signal, bold: true));
+            var title = HudStyle.MakeLabel(HudStyle.Paper ? "DEVER CUMPRIDO" : "Dever cumprido", 40, HudStyle.Paper ? HudStyle.Warn : Color.white, bold: true);
             title.style.marginTop = 4;
+            if (HudStyle.Paper)
+            {
+                // Carimbo vermelho torto sobre o papel.
+                HudStyle.Border(title, 3f, HudStyle.Warn);
+                HudStyle.Pad(title, 2, 14);
+                title.style.rotate = new Rotate(new Angle(-3f, AngleUnit.Degree));
+            }
             sheet.Add(title);
             var text = HudStyle.MakeLabel(
                 "A nave-mãe acopla na Estação Horizonte levando a notícia\n" +
                 "que a humanidade esperou por um milhão de anos: a Terra respira de novo.", 16,
-                new Color(0.88f, 0.9f, 0.92f));
+                HudStyle.Body);
             text.style.unityTextAlign = TextAnchor.MiddleCenter;
             text.style.marginTop = 10;
             text.style.marginBottom = 14;

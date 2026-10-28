@@ -138,6 +138,9 @@ namespace Planetcraft.Core
             ["Créditos"] = "Credits",
             ["CRÉDITOS"] = "CREDITS",
             ["MISSÃO CUMPRIDA"] = "MISSION ACCOMPLISHED",
+            ["Missão cumprida"] = "Mission accomplished",
+            ["Pausado"] = "Paused",
+            ["DEVER CUMPRIDO"] = "DUTY FULFILLED",
             ["Dever cumprido"] = "Duty fulfilled",
             ["A nave-mãe acopla na Estação Horizonte levando a notícia\nque a humanidade esperou por um milhão de anos: a Terra respira de novo."] =
                 "The mothership docks at Horizon Station carrying the news\nhumanity waited a million years for: Earth breathes again.",

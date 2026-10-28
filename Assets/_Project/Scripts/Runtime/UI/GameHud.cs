@@ -267,17 +267,17 @@ namespace Planetcraft.UI
             if (tm != null)
             {
                 tiLabel.text = TiFormat.Format(tm.Ti);
-                stageLabel.text = (tm.CurrentStage != null ? Loc.T(tm.CurrentStage.displayName) : "-").ToUpperInvariant();
+                stageLabel.text = Caps(tm.CurrentStage != null ? Loc.T(tm.CurrentStage.displayName) : "-");
                 var next = tm.NextStage;
                 if (next != null)
                 {
-                    nextLabel.text = $"{Loc.T("Próximo").ToUpperInvariant()}  ·  {Loc.T(next.displayName).ToUpperInvariant()}  ·  {TiFormat.Format(next.requiredTi)}";
+                    nextLabel.text = Caps($"{Loc.T("Próximo")}  ·  {Loc.T(next.displayName)}  ·  {TiFormat.Format(next.requiredTi)}");
                     double from = tm.CurrentStage != null ? tm.CurrentStage.requiredTi : 0d;
                     SetMeter(progress, (float)((tm.Ti - from) / (next.requiredTi - from)), Accent);
                 }
                 else
                 {
-                    nextLabel.text = Loc.T("Todos os estágios alcançados").ToUpperInvariant();
+                    nextLabel.text = Caps(Loc.T("Todos os estágios alcançados"));
                     SetMeter(progress, 1f, Accent);
                 }
                 for (int i = 0; i < TerraformParameters.Count; i++)
@@ -502,7 +502,7 @@ namespace Planetcraft.UI
             root.Add(flash);
 
             // Índice de terraformação (canto superior esquerdo): número grande, estágio e tabela de parâmetros.
-            var status = statusPanel = Panel();
+            var status = statusPanel = Panel(true, -1.2f);
             status.style.position = Position.Absolute;
             status.style.left = 22;
             status.style.top = 22;
@@ -544,7 +544,7 @@ namespace Planetcraft.UI
             hintHost.style.alignItems = Align.Center;
             hintHost.style.justifyContent = Justify.FlexEnd;
             hintHost.style.paddingBottom = 70;
-            hintPanel = Panel();
+            hintPanel = Panel(true, 0.6f);
             hintPanel.style.maxWidth = 640;
             hintPanel.Add(Tag("Dica", Signal));
             hintLabel = MakeLabel("", 17, Ink);
@@ -556,7 +556,7 @@ namespace Planetcraft.UI
             root.Add(hintHost);
 
             // Objetivo atual (canto superior direito).
-            objectivePanel = Panel();
+            objectivePanel = Panel(true, 1.1f);
             objectivePanel.style.position = Position.Absolute;
             objectivePanel.style.right = 22;
             objectivePanel.style.top = 22;
@@ -569,7 +569,7 @@ namespace Planetcraft.UI
             root.Add(objectivePanel);
 
             // Suporte de vida (canto inferior esquerdo).
-            var vitals = vitalsPanel = Panel();
+            var vitals = vitalsPanel = Panel(true, -0.8f);
             vitals.style.position = Position.Absolute;
             vitals.style.left = 22;
             vitals.style.bottom = 50;
@@ -615,7 +615,7 @@ namespace Planetcraft.UI
             banner.style.paddingTop = banner.style.paddingBottom = 16;
             bannerTitle = Tag("", Accent);
             bannerSubtitle = MakeLabel("", 38, Ink, bold: true);
-            bannerBody = MakeLabel("", 16, new Color(0.85f, 0.85f, 0.8f));
+            bannerBody = MakeLabel("", 16, Body);
             bannerBody.style.whiteSpace = WhiteSpace.Normal;
             bannerBody.style.unityTextAlign = TextAnchor.UpperCenter;
             banner.Add(bannerTitle);
@@ -630,6 +630,14 @@ namespace Planetcraft.UI
             help.style.position = Position.Absolute;
             help.style.left = 22;
             help.style.bottom = 16;
+            if (Paper)
+            {
+                help.style.backgroundColor = PanelColor;
+                help.style.color = Muted;
+                Pad(help, 3, 10);
+                help.style.bottom = 12;
+                help.style.rotate = new Rotate(new Angle(-0.6f, AngleUnit.Degree));
+            }
             root.Add(help);
 
             // Menu
@@ -673,7 +681,7 @@ namespace Planetcraft.UI
             sheet.Add(logTitle);
             var bodyScroll = new ScrollView(ScrollViewMode.Vertical);
             bodyScroll.style.flexShrink = 1;
-            logBody = MakeLabel("", 18, new Color(0.86f, 0.86f, 0.82f));
+            logBody = MakeLabel("", 18, Body);
             logBody.style.whiteSpace = WhiteSpace.Normal;
             bodyScroll.Add(logBody);
             sheet.Add(bodyScroll);
@@ -696,7 +704,7 @@ namespace Planetcraft.UI
             pauseButtons.style.alignItems = Align.Stretch;
             Pad(pauseButtons, 18, 20);
             pauseButtons.Add(Tag("Sistema"));
-            var pauseTitle = MakeLabel("PAUSADO", 34, Ink, bold: true);
+            var pauseTitle = MakeLabel(Paper ? "Pausado" : "PAUSADO", 34, Ink, bold: true);
             pauseTitle.style.marginBottom = 12;
             pauseButtons.Add(pauseTitle);
             pauseButtons.Add(BigButton("Continuar", () => SetPaused(false)));
@@ -720,7 +728,7 @@ namespace Planetcraft.UI
             var row = Row();
             row.style.alignItems = Align.Center;
             row.style.height = 21;
-            var label = MakeLabel(name, 15, new Color(0.8f, 0.8f, 0.76f));
+            var label = MakeLabel(name, 15, Body);
             label.style.flexGrow = 1;
             row.Add(label);
             table.Add(row);
@@ -766,8 +774,8 @@ namespace Planetcraft.UI
             col.style.width = 340;
             col.style.height = 580;
             col.style.marginLeft = col.style.marginRight = 7;
-            titleLabel = MakeLabel(Loc.T(title).ToUpperInvariant(), 20, Accent, bold: true);
-            titleLabel.style.letterSpacing = 3;
+            titleLabel = MakeLabel(Caps(Loc.T(title)), Paper ? 24 : 20, Accent, bold: true);
+            titleLabel.style.letterSpacing = Paper ? 0 : 3;
             titleLabel.style.paddingBottom = 6;
             titleLabel.style.marginBottom = 8;
             titleLabel.style.borderBottomWidth = 1;
@@ -783,13 +791,13 @@ namespace Planetcraft.UI
         static VisualElement Card(string title, string body)
         {
             var card = new VisualElement();
-            card.style.backgroundColor = new Color(0f, 0f, 0f, 0.28f);
+            card.style.backgroundColor = CardColor;
             card.style.borderLeftWidth = 2;
             card.style.borderLeftColor = new Color(Accent.r, Accent.g, Accent.b, 0.6f);
             Pad(card, 7, 10);
             card.style.marginBottom = 6;
             card.Add(MakeLabel(title, 17, Ink, bold: true));
-            var b = MakeLabel(body, 14, new Color(0.78f, 0.78f, 0.74f));
+            var b = MakeLabel(body, 14, Body);
             b.style.whiteSpace = WhiteSpace.Normal;
             b.style.marginBottom = 4;
             card.Add(b);
