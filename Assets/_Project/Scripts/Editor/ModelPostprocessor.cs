@@ -25,7 +25,7 @@ namespace Planetcraft.EditorTools
         {
             if (!assetPath.StartsWith(ModelRoot)) return;
             var importer = (ModelImporter)assetImporter;
-            importer.addCollider = assetPath.Contains("/Machines/") || assetPath.Contains("/Ore/") || assetPath.Contains("/Props/");
+            importer.addCollider = assetPath.Contains("/Machines/") || assetPath.Contains("/Base/") || assetPath.Contains("/Ore/") || assetPath.Contains("/Props/");
             importer.importAnimation = false;
             importer.importCameras = false;
             importer.importLights = false;

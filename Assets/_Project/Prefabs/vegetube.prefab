@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8735937160865244931}
   - component: {fileID: 5400573138805870475}
   - component: {fileID: 1831275726096742979}
+  - component: {fileID: 2433851751931036388}
   m_Layer: 0
   m_Name: vegetube
   m_TagString: Untagged
@@ -65,6 +66,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Machine
   runningIndicator: {fileID: 3725862723528188367}
+--- !u!114 &2433851751931036388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7234867197166853691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0c18876b77b9e4b973d7236a606be1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.MachineFx
 --- !u!1001 &1753414645572170583
 PrefabInstance:
   m_ObjectHideFlags: 0

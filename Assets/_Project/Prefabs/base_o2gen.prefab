@@ -1,0 +1,160 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1909600873949770383
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8659881727593207375}
+  - component: {fileID: 184957296717814329}
+  - component: {fileID: 8753215293539598112}
+  - component: {fileID: 6892636468597404422}
+  - component: {fileID: 4664684291780572718}
+  m_Layer: 0
+  m_Name: base_o2gen
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8659881727593207375
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1909600873949770383}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3064503123684121961}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &184957296717814329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1909600873949770383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59aacd8d3dc7c3944a908e15251ace18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.PlacedObject
+  definition: {fileID: 11400000, guid: 000361e11a7da6648bb157f1657c92d8, type: 2}
+  guid: 
+--- !u!114 &8753215293539598112
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1909600873949770383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d75d210e89d59644b29a239c9e66475, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Machine
+  runningIndicator: {fileID: 6561049403920819989}
+--- !u!114 &6892636468597404422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1909600873949770383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0c18876b77b9e4b973d7236a606be1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.MachineFx
+--- !u!114 &4664684291780572718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1909600873949770383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65a52aff991f5ce4fbf60b5b16a9d413, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BasePiece
+  kind: 6
+  maxHealth: 200
+  armor: 0
+  isAirSource: 1
+--- !u!1001 &3246519357881793154
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8659881727593207375}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+      propertyPath: m_Name
+      value: base_o2gen
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+--- !u!4 &3064503123684121961 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+  m_PrefabInstance: {fileID: 3246519357881793154}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6561049403920819989 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8502923143630036375, guid: 13466471323e36e4bae37c0cb11df80e, type: 3}
+  m_PrefabInstance: {fileID: 3246519357881793154}
+  m_PrefabAsset: {fileID: 0}

@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2016980339455853054}
   - component: {fileID: 7171665025135385204}
   - component: {fileID: 3046346237187425796}
+  - component: {fileID: 8055862693456204533}
   m_Layer: 0
   m_Name: algae_farm
   m_TagString: Untagged
@@ -33,7 +34,7 @@ Transform:
   m_Children:
   - {fileID: 6328059526812393422}
   - {fileID: 3850483586940875799}
-  - {fileID: 4746428259730205702}
+  - {fileID: 5520336259817319541}
   - {fileID: 7280089389814266473}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -64,6 +65,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Machine
   runningIndicator: {fileID: 2763805466501096882}
+--- !u!114 &8055862693456204533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3467749842026001001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0c18876b77b9e4b973d7236a606be1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.MachineFx
 --- !u!1001 &3667358459250627580
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -155,7 +168,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.45716292, y: 0.41882202, z: 0.63148785}
   m_Center: {x: -0.0029738247, y: 0.20941101, z: -0.00051033497}
---- !u!1001 &5067686646466825197
+--- !u!1001 &5410676834346191774
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -213,25 +226,20 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 9b52cfd1f3bc2ca4996cdfa5286f0f80, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 9089503068889286252}
+      addedObject: {fileID: 21504626247416771}
   m_SourcePrefab: {fileID: 100100000, guid: 9b52cfd1f3bc2ca4996cdfa5286f0f80, type: 3}
---- !u!4 &4746428259730205702 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9b52cfd1f3bc2ca4996cdfa5286f0f80, type: 3}
-  m_PrefabInstance: {fileID: 5067686646466825197}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &5374311640154535612 stripped
+--- !u!1 &5176883614497830607 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 9b52cfd1f3bc2ca4996cdfa5286f0f80, type: 3}
-  m_PrefabInstance: {fileID: 5067686646466825197}
+  m_PrefabInstance: {fileID: 5410676834346191774}
   m_PrefabAsset: {fileID: 0}
---- !u!65 &9089503068889286252
+--- !u!65 &21504626247416771
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5374311640154535612}
+  m_GameObject: {fileID: 5176883614497830607}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -246,6 +254,11 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.45716292, y: 0.41882202, z: 0.63148785}
   m_Center: {x: -0.0029738247, y: 0.20941101, z: -0.00051033497}
+--- !u!4 &5520336259817319541 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9b52cfd1f3bc2ca4996cdfa5286f0f80, type: 3}
+  m_PrefabInstance: {fileID: 5410676834346191774}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5790346960511744037
 PrefabInstance:
   m_ObjectHideFlags: 0

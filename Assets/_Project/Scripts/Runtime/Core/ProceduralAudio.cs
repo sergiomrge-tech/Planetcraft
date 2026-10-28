@@ -105,6 +105,77 @@ namespace Planetcraft.Core
             return Create("Rumble", data);
         }
 
+        // Tiro de pulso: varredura aguda que cai, com um estalo de ruído no começo.
+        public static AudioClip Zap(bool heavy = false)
+        {
+            float length = heavy ? 0.35f : 0.2f;
+            int n = (int)(SampleRate * length);
+            var data = new float[n];
+            var rng = new System.Random(5);
+            float phase = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)SampleRate;
+                float k = t / length;
+                float freq = Mathf.Lerp(heavy ? 900f : 1900f, heavy ? 90f : 260f, Mathf.Sqrt(k));
+                phase += 2f * Mathf.PI * freq / SampleRate;
+                float env = Mathf.Min(1f, t * 600f) * Mathf.Exp(-t * (heavy ? 7f : 14f));
+                data[i] = (Mathf.Sin(phase) * 0.55f + Mathf.Sign(Mathf.Sin(phase * 0.5f)) * 0.12f +
+                           (float)(rng.NextDouble() * 2.0 - 1.0) * 0.18f * Mathf.Exp(-t * 60f)) * env * 0.6f;
+            }
+            return Create(heavy ? "ZapHeavy" : "Zap", data);
+        }
+
+        // Impacto seco e curto.
+        public static AudioClip Hit()
+        {
+            int n = (int)(SampleRate * 0.15f);
+            var data = new float[n];
+            var rng = new System.Random(8);
+            float lp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)SampleRate;
+                lp += 0.25f * ((float)(rng.NextDouble() * 2.0 - 1.0) - lp);
+                data[i] = (lp * 0.8f + Mathf.Sin(2f * Mathf.PI * 120f * t) * 0.5f) * Mathf.Exp(-t * 28f);
+            }
+            return Create("Hit", data);
+        }
+
+        // Sirene de alerta de dois tons.
+        public static AudioClip Alarm()
+        {
+            int n = (int)(SampleRate * 1.6f);
+            var data = new float[n];
+            float phase = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)SampleRate;
+                float freq = (int)(t / 0.4f) % 2 == 0 ? 640f : 860f;
+                phase += 2f * Mathf.PI * freq / SampleRate;
+                float env = Mathf.Min(1f, t * 80f) * Mathf.Min(1f, (1.6f - t) * 40f);
+                data[i] = (Mathf.Sin(phase) + 0.35f * Mathf.Sin(phase * 2f)) * 0.22f * env;
+            }
+            return Create("Alarm", data);
+        }
+
+        // Explosão: ruído grave com queda rápida.
+        public static AudioClip Boom()
+        {
+            int n = (int)(SampleRate * 0.9f);
+            var data = new float[n];
+            var rng = new System.Random(12);
+            float lp = 0f, lp2 = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float t = i / (float)SampleRate;
+                lp += 0.08f * ((float)(rng.NextDouble() * 2.0 - 1.0) - lp);
+                lp2 += 0.2f * (lp - lp2);
+                data[i] = (lp2 * 5f + Mathf.Sin(2f * Mathf.PI * Mathf.Lerp(90f, 35f, t) * t) * 0.6f) * Mathf.Exp(-t * 5f) * Mathf.Min(1f, t * 400f);
+            }
+            return Create("Boom", data);
+        }
+
         static AudioClip Arpeggio(string name, float[] notes, float gap, float length, float decay, float volume)
         {
             int n = (int)(SampleRate * length);

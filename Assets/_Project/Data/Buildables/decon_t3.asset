@@ -25,6 +25,7 @@ MonoBehaviour:
     amount: 1
   requiredTi: 300000
   blueprintId: bp_decon3
+  snap: 0
   unique: 0
   powerGeneration: 0
   powerDemand: 30

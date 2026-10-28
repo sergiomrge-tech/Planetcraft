@@ -169,4 +169,49 @@ namespace Planetcraft.Tests
             Assert.AreEqual("E", GameInput.Display(GameInput.Interact));
         }
     }
+
+    public class CombatTests
+    {
+        [Test]
+        public void HealthTakesDamageArmorAndDies()
+        {
+            var go = new GameObject("alvo");
+            var h = go.AddComponent<Planetcraft.Combat.Health>();
+            h.Max = 100f;
+            h.Restore();
+            h.Team = Planetcraft.Combat.Team.Hostile;
+            typeof(Planetcraft.Combat.Health).GetField("destroyOnDeath", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(h, false);
+            bool died = false;
+            h.Died += _ => died = true;
+            Assert.IsTrue(h.Damage(30f));
+            Assert.AreEqual(70f, h.Current, 0.01f);
+            h.Heal(500f);
+            Assert.AreEqual(100f, h.Current, 0.01f);
+            h.Damage(1000f);
+            Assert.IsTrue(h.IsDead);
+            Assert.IsTrue(died);
+            Assert.IsFalse(h.Damage(5f), "alvo morto não leva mais dano");
+            Object.DestroyImmediate(go);
+        }
+
+        [Test]
+        public void GridEdgesAreSharedBetweenNeighbours()
+        {
+            // A aresta leste da célula (2,3) é a aresta oeste da célula (3,3); norte/sul idem.
+            Assert.AreEqual(Planetcraft.Building.BaseGrid.EdgeKey(2, 3, 0), Planetcraft.Building.BaseGrid.EdgeKey(3, 3, 2));
+            Assert.AreEqual(Planetcraft.Building.BaseGrid.EdgeKey(2, 3, 1), Planetcraft.Building.BaseGrid.EdgeKey(2, 4, 3));
+            Assert.AreNotEqual(Planetcraft.Building.BaseGrid.EdgeKey(2, 3, 0), Planetcraft.Building.BaseGrid.EdgeKey(2, 3, 1));
+        }
+
+        [Test]
+        public void ThreatLevelsScaleFromOffToHigh()
+        {
+            int old = Planetcraft.Core.Settings.Threat;
+            Planetcraft.Core.Settings.Threat = 0;
+            Assert.AreEqual(0f, Planetcraft.Core.Settings.ThreatScale);
+            Planetcraft.Core.Settings.Threat = 3;
+            Assert.Greater(Planetcraft.Core.Settings.ThreatScale, 1f);
+            Planetcraft.Core.Settings.Threat = old;
+        }
+    }
 }

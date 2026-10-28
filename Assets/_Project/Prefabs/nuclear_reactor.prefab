@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4304634453707169507}
   - component: {fileID: 7883449940885968986}
   - component: {fileID: 2444145014091162280}
+  - component: {fileID: 8446860226972935879}
   m_Layer: 0
   m_Name: nuclear_reactor
   m_TagString: Untagged
@@ -64,6 +65,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Machine
   runningIndicator: {fileID: 0}
+--- !u!114 &8446860226972935879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2664033143094157919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0c18876b77b9e4b973d7236a606be1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.MachineFx
 --- !u!1001 &877397290287803541
 PrefabInstance:
   m_ObjectHideFlags: 0

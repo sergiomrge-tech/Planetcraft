@@ -7,7 +7,7 @@ namespace Planetcraft.Core
     {
         static AudioSource source;
         static AudioClip[] steps;
-        static AudioClip collect, craft, click, build, deconstruct;
+        static AudioClip collect, craft, click, build, deconstruct, zap, zapHeavy, hit, alarm, boom;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics() => source = null;
@@ -28,6 +28,11 @@ namespace Planetcraft.Core
                 click = ProceduralAudio.Click();
                 build = ProceduralAudio.Thump(false);
                 deconstruct = ProceduralAudio.Thump(true);
+                zap = ProceduralAudio.Zap();
+                zapHeavy = ProceduralAudio.Zap(true);
+                hit = ProceduralAudio.Hit();
+                alarm = ProceduralAudio.Alarm();
+                boom = ProceduralAudio.Boom();
                 return source;
             }
         }
@@ -43,5 +48,20 @@ namespace Planetcraft.Core
         public static void Click() => Source.PlayOneShot(click, 0.6f * Settings.EffectsVolume);
         public static void Build() => Source.PlayOneShot(build, Settings.EffectsVolume);
         public static void Deconstruct() => Source.PlayOneShot(deconstruct, Settings.EffectsVolume);
+        public static void Alarm() => Source.PlayOneShot(alarm, 0.7f * Settings.EffectsVolume);
+        public static void Hit() => Source.PlayOneShot(hit, 0.7f * Settings.EffectsVolume);
+
+        // Sons 3D de combate: tocados no ponto (tiros, explosões).
+        public static void ShotAt(Vector3 position, bool heavy = false)
+        {
+            var s = Source;
+            AudioSource.PlayClipAtPoint(heavy ? zapHeavy : zap, position, (heavy ? 0.8f : 0.55f) * Settings.EffectsVolume);
+        }
+
+        public static void BoomAt(Vector3 position)
+        {
+            var s = Source;
+            AudioSource.PlayClipAtPoint(boom, position, 0.9f * Settings.EffectsVolume);
+        }
     }
 }

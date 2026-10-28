@@ -8,7 +8,7 @@ namespace Planetcraft.Core
     {
         const string VolumeKey = "pc.volume", SensitivityKey = "pc.sensitivity", InvertKey = "pc.invertY",
             FovKey = "pc.fov", QualityKey = "pc.quality", LanguageKey = "pc.language", VSyncKey = "pc.vsync",
-            MusicKey = "pc.music", EffectsKey = "pc.effects";
+            MusicKey = "pc.music", EffectsKey = "pc.effects", ThreatKey = "pc.threat";
 
         static bool loaded;
         static float volume, sensitivity, fov;
@@ -17,6 +17,7 @@ namespace Planetcraft.Core
         static string language;
         static bool vsync;
         static float music, effects;
+        static int threat;
 
         public static event Action Changed;
 
@@ -29,6 +30,9 @@ namespace Planetcraft.Core
         public static string Language { get { Load(); return language; } set { language = value == "en" ? "en" : "pt"; Save(); } }
         public static float MusicVolume { get { Load(); return music; } set { music = Mathf.Clamp01(value); Save(); } }
         public static float EffectsVolume { get { Load(); return effects; } set { effects = Mathf.Clamp01(value); Save(); } }
+        /// <summary>Nível de ameaça: 0 nenhuma, 1 baixa, 2 normal, 3 alta (inimigos, ondas e perigos do ambiente).</summary>
+        public static int Threat { get { Load(); return threat; } set { threat = Mathf.Clamp(value, 0, 3); Save(); } }
+        public static float ThreatScale => Threat switch { 0 => 0f, 1 => 0.5f, 2 => 1f, _ => 1.6f };
         public static bool VSync { get { Load(); return vsync; } set { vsync = value; Save(); } }
 
         // Resolução é aplicada só quando o jogador escolhe (como a tela cheia), não na inicialização.
@@ -64,6 +68,7 @@ namespace Planetcraft.Core
             vsync = PlayerPrefs.GetInt(VSyncKey, 1) == 1;
             music = PlayerPrefs.GetFloat(MusicKey, 0.6f);
             effects = PlayerPrefs.GetFloat(EffectsKey, 0.9f);
+            threat = PlayerPrefs.GetInt(ThreatKey, 2);
         }
 
         static void Save()
@@ -77,6 +82,7 @@ namespace Planetcraft.Core
             PlayerPrefs.SetInt(VSyncKey, vsync ? 1 : 0);
             PlayerPrefs.SetFloat(MusicKey, music);
             PlayerPrefs.SetFloat(EffectsKey, effects);
+            PlayerPrefs.SetInt(ThreatKey, threat);
             PlayerPrefs.Save();
             Apply();
         }

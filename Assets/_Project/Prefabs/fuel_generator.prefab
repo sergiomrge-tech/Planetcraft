@@ -102,6 +102,7 @@ GameObject:
   - component: {fileID: 1837614303111476599}
   - component: {fileID: 8272228585264347302}
   - component: {fileID: 7547330570160195591}
+  - component: {fileID: 1393846106030755325}
   m_Layer: 0
   m_Name: fuel_generator
   m_TagString: Untagged
@@ -174,6 +175,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Machine
   runningIndicator: {fileID: 7496294770808553453}
+--- !u!114 &1393846106030755325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8036163463662553757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0c18876b77b9e4b973d7236a606be1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.MachineFx
 --- !u!1001 &9108002024669112719
 PrefabInstance:
   m_ObjectHideFlags: 0

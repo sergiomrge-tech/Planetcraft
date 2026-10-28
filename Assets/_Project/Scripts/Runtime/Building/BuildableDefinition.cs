@@ -16,6 +16,8 @@ namespace Planetcraft.Building
         public double requiredTi;
         [Tooltip("Projeto obtido com microchip das ruínas. Vazio = não precisa.")]
         public string blueprintId;
+        [Tooltip("Peça do kit de base: encaixa na grade de 4 m (fundação, piso, parede...) ou exige piso (mobília).")]
+        public PieceKind snap;
         [Tooltip("Só pode existir um no mundo (ex.: estaleiro).")]
         public bool unique;
 

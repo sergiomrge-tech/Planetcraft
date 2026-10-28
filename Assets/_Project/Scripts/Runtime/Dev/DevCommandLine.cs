@@ -36,11 +36,21 @@ namespace Planetcraft.Dev
                 foreach (var feedback in FindObjectsByType<StageFeedback>()) feedback.enabled = false;
             if (tm != null && TryNumber(args, "-pc-ti", out double ti))
                 for (int i = 0; i < TerraformParameters.Count; i++) tm.Add((TerraformParameter)i, ti / TerraformParameters.Count);
+            // -pc-power: uma usina invisível alimenta tudo (para ver as máquinas funcionando nas capturas).
+            if (HasFlag(args, "-pc-power")) Planetcraft.Power.PowerGrid.Register(new DevPower());
             if (weather != null && HasFlag(args, "-pc-rain")) weather.ForceRain();
             if (player != null && TryNumber(args, "-pc-pitch", out double pitch)) player.SetPitch((float)pitch);
             if (player != null && TryNumber(args, "-pc-yaw", out double startYaw)) player.Teleport(player.transform.position, (float)startYaw);
             // -pc-showcase [-pc-showcase-radius <m>]: uma de cada construção em arco à frente.
-            if (HasFlag(args, "-pc-showcase")) Showcase(TryNumber(args, "-pc-showcase-radius", out double radius) ? (float)radius : 16f);
+            // -pc-only a,b,c e -pc-spacing <m>: só essas construções, afastadas uma da outra (capturas de uma família).
+            if (HasFlag(args, "-pc-showcase"))
+                Showcase(TryNumber(args, "-pc-showcase-radius", out double radius) ? (float)radius : 16f, Value(args, "-pc-only"),
+                    TryNumber(args, "-pc-spacing", out double spacing) ? (float)spacing : 0f);
+            // -pc-base: monta uma sala selada pronta (2 células, 2 andares, gerador de O2, defesas) 16 m à frente.
+            if (HasFlag(args, "-pc-base")) SpawnBase();
+            // -pc-raid <n>: uma invasão de n drones com aviso de 2 s.
+            if (TryNumber(args, "-pc-raid", out double raidCount) && Planetcraft.Enemies.ThreatDirector.Instance != null)
+                Planetcraft.Enemies.ThreatDirector.Instance.SpawnNow((int)raidCount);
             if (HasFlag(args, "-pc-unlock-all") && database != null)
             {
                 foreach (var b in database.buildables) if (b != null) Blueprints.Unlock(b.blueprintId);
@@ -118,6 +128,47 @@ namespace Planetcraft.Dev
             Application.Quit();
         }
 
+        void SpawnBase()
+        {
+            var terrain = Terrain.activeTerrain;
+            if (database == null || player == null || terrain == null) return;
+            var origin = player.transform.position + player.transform.forward * 16f;
+            int cx = BaseGrid.CellOf(origin.x), cz = BaseGrid.CellOf(origin.z);
+            float y = terrain.SampleHeight(new Vector3(cx * 4f, 0f, cz * 4f)) + terrain.transform.position.y + 0.3f;
+            BaseGrid.SetDatum(y);
+            void P(string id, Vector3 pos, float yaw = 0f)
+            {
+                var def = database.buildables.FirstOrDefault(b => b != null && b.id == id);
+                if (def != null) PlacedObject.Spawn(def, pos, Quaternion.Euler(0f, yaw, 0f));
+            }
+            for (int x = 0; x < 2; x++)
+            {
+                float wx = (cx + x) * 4f, wz = cz * 4f;
+                P("base_foundation", new Vector3(wx, y, wz));
+                P("base_floor", new Vector3(wx, y + 3f, wz));
+                P(x == 0 ? "base_wall_window" : "base_wall", new Vector3(wx, y, wz + 2f));
+                P("base_wall", new Vector3(wx, y, wz - 2f));
+            }
+            P("base_wall_door", new Vector3(cx * 4f - 2f, y, cz * 4f), 90f);
+            P("base_airlock", new Vector3((cx + 1) * 4f + 2f, y, cz * 4f), 90f);
+            P("base_pillar", new Vector3(cx * 4f - 2f, y, cz * 4f + 2f));
+            P("base_o2gen", new Vector3(cx * 4f + 1f, y, cz * 4f + 1f), 180f);
+            P("base_battery", new Vector3(cx * 4f + 1.2f, y, cz * 4f - 1.2f));
+            P("base_bunk", new Vector3((cx + 1) * 4f + 0.6f, y, cz * 4f + 1.3f), 90f);
+            P("base_medbay", new Vector3((cx + 1) * 4f, y, cz * 4f - 1.3f));
+            P("base_workbench", new Vector3(cx * 4f - 0.8f, y, cz * 4f - 0.9f), 270f);
+            P("base_turret_1", new Vector3(cx * 4f - 5f, y, cz * 4f + 4f));
+            P("base_turret_2", new Vector3((cx + 1) * 4f + 6f, y, cz * 4f + 5f));
+            P("base_floodlight", new Vector3(cx * 4f - 5f, y, cz * 4f - 4f));
+            P("base_shock_fence", new Vector3(cx * 4f + 2f, y, cz * 4f + 8f));
+        }
+
+        sealed class DevPower : Planetcraft.Power.IPowerNode
+        {
+            public float PowerGeneration => 1_000_000f;
+            public float PowerDemand => 0f;
+        }
+
         // Diagnóstico: por camada de vegetação, quantos itens estão ativos e o tamanho/altura de uma amostra.
         static void LogVegetation()
         {
@@ -185,18 +236,22 @@ namespace Planetcraft.Dev
         }
 
         // Constrói uma de cada construção num arco à frente do jogador, viradas para ele.
-        void Showcase(float radius)
+        void Showcase(float radius, string only = null, float spacing = 0f)
         {
             var terrain = Terrain.activeTerrain;
             if (database == null || player == null || terrain == null) return;
             var origin = player.transform.position;
             var forward = player.transform.forward;
-            int n = database.buildables.Count;
+            var ids = only?.Split(',');
+            var list = database.buildables.Where(b => b != null && (ids == null || Array.IndexOf(ids, b.id) >= 0)).ToList();
+            int n = list.Count;
             for (int i = 0; i < n; i++)
             {
-                var def = database.buildables[i];
-                if (def == null || def.prefab == null) continue;
-                float angle = Mathf.Lerp(-55f, 55f, n == 1 ? 0.5f : i / (float)(n - 1));
+                var def = list[i];
+                if (def.prefab == null) continue;
+                float angle = spacing > 0f
+                    ? (i - (n - 1) / 2f) * spacing / radius * Mathf.Rad2Deg
+                    : Mathf.Lerp(-55f, 55f, n == 1 ? 0.5f : i / (float)(n - 1));
                 var dir = Quaternion.Euler(0f, angle, 0f) * forward;
                 var pos = origin + dir * radius;
                 pos.y = terrain.SampleHeight(pos) + terrain.transform.position.y;

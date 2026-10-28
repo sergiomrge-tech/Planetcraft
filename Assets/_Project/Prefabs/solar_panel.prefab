@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1204803824688605268}
   - component: {fileID: 957547202146997721}
   - component: {fileID: 3880957488496786081}
+  - component: {fileID: 8250118957530091556}
   m_Layer: 0
   m_Name: solar_panel
   m_TagString: Untagged
@@ -62,6 +63,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Machine
   runningIndicator: {fileID: 0}
+--- !u!114 &8250118957530091556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2219497715065132828}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0c18876b77b9e4b973d7236a606be1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.MachineFx
 --- !u!1001 &2969278259741099350
 PrefabInstance:
   m_ObjectHideFlags: 0

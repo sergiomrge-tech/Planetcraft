@@ -20,6 +20,49 @@ namespace Planetcraft.Core
             en["Barra Nutritiva"] = "Nutrient Bar";
             en["Urânio"] = "Uranium";
             en["Barra de Combustível"] = "Fuel Rod";
+            // Kit de base, utilidades e defesas
+            // Kit de base, utilidades e defesas
+            en["Fundação"] = "Foundation";
+            en["Laje de 4 x 4 m sobre estacas: define o nível do piso da base."] = "A 4 x 4 m slab on piles: sets the base's floor level.";
+            en["Piso e Teto"] = "Floor and Ceiling";
+            en["Piso de 4 x 4 m. Empilhe para fazer andares e tetos."] = "4 x 4 m floor. Stack it for upper floors and ceilings.";
+            en["Parede"] = "Wall";
+            en["Parede de painéis de 4 m. Vede as quatro arestas e o teto de uma sala."] = "4 m panel wall. Seal all four edges and the ceiling of a room.";
+            en["Parede com Porta"] = "Wall with Door";
+            en["Parede com passagem. Mantém a sala selada."] = "Wall with a doorway. Keeps the room sealed.";
+            en["Parede com Janela"] = "Wall with Window";
+            en["Parede com janela panorâmica."] = "Wall with a panoramic window.";
+            en["Câmara de Ar"] = "Airlock";
+            en["Escotilha blindada para entrar e sair da base."] = "Armored hatch for entering and leaving the base.";
+            en["Parede Reforçada"] = "Reinforced Wall";
+            en["Liga metálica: aguenta muito mais dano."] = "Metal alloy: takes far more damage.";
+            en["Pilar"] = "Pillar";
+            en["Coluna de apoio para os cantos."] = "Support column for corners.";
+            en["Escada"] = "Stairs";
+            en["Sobe um andar (3 m). [R] gira."] = "Climbs one floor (3 m). [R] rotates.";
+            en["Gerador de O2"] = "O2 Generator";
+            en["Pressuriza a sala selada em que está. Consome 0.8 kW."] = "Pressurizes the sealed room it is in. Uses 0.8 kW.";
+            en["Célula de Energia"] = "Power Cell";
+            en["+3 kW."] = "+3 kW.";
+            en["Purificador de Água"] = "Water Purifier";
+            en["[E] para beber. Consome 0.4 kW."] = "[E] to drink. Uses 0.4 kW.";
+            en["Beliche"] = "Bunk";
+            en["[E] para descansar e recuperar vida."] = "[E] to rest and recover health.";
+            en["Enfermaria"] = "Medbay";
+            en["[E] cura todos os ferimentos. Consome 0.6 kW."] = "[E] heals all injuries. Uses 0.6 kW.";
+            en["Armário"] = "Locker";
+            en["Bancada"] = "Workbench";
+            en["Bancada de trabalho: dá vida à base."] = "Work bench: gives the base some life.";
+            en["Cozinha"] = "Kitchen";
+            en["Cozinha compacta: a base fica mais confortável."] = "Compact kitchen: the base feels more comfortable.";
+            en["Torre de Pulso"] = "Pulse Turret";
+            en["Atira nos inimigos próximos. Consome 0.8 kW."] = "Shoots nearby enemies. Uses 0.8 kW.";
+            en["Torre de Plasma"] = "Plasma Turret";
+            en["Dano pesado e longo alcance. Consome 3 kW."] = "Heavy damage, long range. Uses 3 kW.";
+            en["Refletor"] = "Floodlight";
+            en["Ilumina a área e afasta os lobos. Consome 0.3 kW."] = "Lights the area and scares off wolves. Uses 0.3 kW.";
+            en["Cerca Eletrificada"] = "Electric Fence";
+            en["Dá choque em quem atravessa. Consome 0.6 kW."] = "Shocks anything that crosses it. Uses 0.6 kW.";
 
             // Construções
             en["Módulo de Base"] = "Base Module";

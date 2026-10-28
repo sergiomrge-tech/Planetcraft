@@ -24,7 +24,7 @@ namespace Planetcraft.Player
         public float OxygenNormalized => Oxygen / maxOxygen;
         public float WaterNormalized => Water / maxWater;
         public float FoodNormalized => Food / maxFood;
-        public bool InPressurizedZone => pressurizedZones > 0;
+        public bool InPressurizedZone => pressurizedZones > 0 || Planetcraft.Building.BaseGrid.IsPressurized(transform.position);
 
         public event Action Died;
 
@@ -62,6 +62,9 @@ namespace Planetcraft.Player
 
         public void EnterPressurizedZone() => pressurizedZones++;
         public void ExitPressurizedZone() => pressurizedZones = Mathf.Max(0, pressurizedZones - 1);
+
+        // Chamado quando a vida do jogador acaba: mesma volta ao ponto de partida da falta de ar.
+        public void ForceDie() => Die();
 
         void Die()
         {

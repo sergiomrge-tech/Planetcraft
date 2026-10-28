@@ -23,6 +23,7 @@ MonoBehaviour:
     amount: 1
   requiredTi: 0
   blueprintId: 
+  snap: 0
   unique: 0
   powerGeneration: 0
   powerDemand: 1

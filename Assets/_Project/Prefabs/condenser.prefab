@@ -102,6 +102,7 @@ GameObject:
   - component: {fileID: 8074753581485757755}
   - component: {fileID: 6104103777138204513}
   - component: {fileID: 6248910471714385238}
+  - component: {fileID: 9195824909966640699}
   m_Layer: 0
   m_Name: condenser
   m_TagString: Untagged
@@ -174,6 +175,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.Machine
   runningIndicator: {fileID: 1606583715952117262}
+--- !u!114 &9195824909966640699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7686469353755693410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d0c18876b77b9e4b973d7236a606be1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.MachineFx
 --- !u!1001 &635409941582399004
 PrefabInstance:
   m_ObjectHideFlags: 0

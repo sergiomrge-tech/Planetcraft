@@ -80,6 +80,11 @@ namespace Planetcraft.UI
                 content.Add(Style(resolution));
             }
 
+            var threatNames = new[] { "Nenhuma", "Baixa", "Normal", "Alta" }.Select(Loc.T).ToList();
+            var threat = new DropdownField(Loc.T("Ameaças"), threatNames, Settings.Threat);
+            threat.RegisterValueChangedCallback(_ => Settings.Threat = threat.index);
+            content.Add(Style(threat));
+
             var vsync = new Toggle(Loc.T("Sincronização vertical")) { value = Settings.VSync };
             vsync.RegisterValueChangedCallback(e => Settings.VSync = e.newValue);
             content.Add(Style(vsync));

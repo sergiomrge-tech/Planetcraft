@@ -23,6 +23,10 @@ namespace Planetcraft.UI
         [SerializeField] GameDatabase database;
         [SerializeField] InventoryComponent inventory;
         [SerializeField] SurvivalStats survival;
+        Meter health, weapon;
+        VisualElement hurt;
+        Label pressureLabel;
+        float hurtAlpha;
         [SerializeField] Interactor interactor;
         [SerializeField] BuildPlacer placer;
         [SerializeField] Deconstructor deconstructor;
@@ -64,6 +68,7 @@ namespace Planetcraft.UI
             Blueprints.Unlocked -= OnBlueprintUnlocked;
             GameInput.BindingsChanged -= MarkHelpDirty;
             if (survival != null) survival.Died -= OnDied;
+            PlayerCombat.Hurt -= OnHurt;
             if (TerraformManager.Instance != null) TerraformManager.Instance.TiChanged -= OnTiChanged;
         }
 
@@ -73,6 +78,7 @@ namespace Planetcraft.UI
             if (database != null) StoryLogs.Total = database.logs.Count;
             inventory.Inventory.Changed += MarkMenuDirty;
             if (survival != null) survival.Died += OnDied;
+            PlayerCombat.Hurt += OnHurt;
             if (TerraformManager.Instance != null) TerraformManager.Instance.TiChanged += OnTiChanged;
             Blueprints.Unlocked += OnBlueprintUnlocked;
             GameInput.BindingsChanged += MarkHelpDirty;
@@ -207,6 +213,8 @@ namespace Planetcraft.UI
 
         // ------------------------------------------------------------------ Atualização
 
+        void OnHurt(float fraction) => hurtAlpha = Mathf.Clamp01(hurtAlpha + 0.3f + fraction * 2f);
+
         void Update()
         {
             if (menu == null) return;
@@ -298,6 +306,21 @@ namespace Planetcraft.UI
                 SetMeter(oxygen, survival.OxygenNormalized, survival.InPressurizedZone ? Signal : SurvivalColor(survival.OxygenNormalized));
                 SetMeter(water, survival.WaterNormalized, SurvivalColor(survival.WaterNormalized));
                 SetMeter(food, survival.FoodNormalized, SurvivalColor(survival.FoodNormalized));
+                var combat = PlayerCombat.Instance;
+                if (combat != null)
+                {
+                    SetMeter(health, combat.Health.Normalized, combat.Health.Normalized < 0.35f ? Warn : Signal);
+                    SetMeter(weapon, combat.EnergyNormalized, Accent);
+                    if (survival.InPressurizedZone) { pressureLabel.text = Loc.T("Abrigo pressurizado"); pressureLabel.style.color = Signal; }
+                    else if (PlayerCombat.Radiation > 0.05f && Settings.ThreatScale > 0f)
+                    {
+                        pressureLabel.text = $"{Loc.T("Exposto")} · {Loc.T("radiação")} {PlayerCombat.Radiation * 100f:0}%";
+                        pressureLabel.style.color = Warn;
+                    }
+                    else pressureLabel.text = "";
+                }
+                hurtAlpha = Mathf.MoveTowards(hurtAlpha, 0f, Time.unscaledDeltaTime * 1.4f);
+                hurt.style.opacity = hurtAlpha * 0.45f;
             }
         }
 
@@ -501,6 +524,11 @@ namespace Planetcraft.UI
             flash.style.opacity = 0f;
             root.Add(flash);
 
+            hurt = FullScreen();
+            hurt.style.backgroundColor = new Color(0.75f, 0.05f, 0.03f);
+            hurt.style.opacity = 0f;
+            root.Add(hurt);
+
             // Índice de terraformação (canto superior esquerdo): número grande, estágio e tabela de parâmetros.
             var status = statusPanel = Panel(true, -1.2f);
             status.style.position = Position.Absolute;
@@ -578,6 +606,11 @@ namespace Planetcraft.UI
             oxygen = AddMeter(vitals, "O2", 14, 9);
             water = AddMeter(vitals, "H2O", 14, 9);
             food = AddMeter(vitals, "NUTR", 14, 9);
+            health = AddMeter(vitals, Loc.T("VIDA"), 14, 9);
+            weapon = AddMeter(vitals, Loc.T("ARMA"), 14, 9);
+            pressureLabel = MakeLabel("", 14, Signal);
+            pressureLabel.style.marginTop = 6;
+            vitals.Add(pressureLabel);
             root.Add(vitals);
 
             // Centro: retícula do visor e prompt de interação.

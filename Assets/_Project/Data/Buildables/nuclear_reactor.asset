@@ -25,6 +25,7 @@ MonoBehaviour:
     amount: 1
   requiredTi: 50000
   blueprintId: bp_nuclear
+  snap: 0
   unique: 0
   powerGeneration: 80
   powerDemand: 0

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d05df1c84e3d59143983b32ed329f720, type: 3}
+  m_Name: base_o2gen
+  m_EditorClassIdentifier: Planetcraft.Runtime::Planetcraft.Building.BuildableDefinition
+  id: base_o2gen
+  displayName: Gerador de O2
+  description: "Pressuriza a sala selada em que est\xE1. Consome 0.8 kW."
+  prefab: {fileID: 1909600873949770383, guid: c382f0421de05b341b335e75b1b455a7, type: 3}
+  cost:
+  - item: {fileID: 11400000, guid: 3d069c5c92357464aab27d7bf0f2d17b, type: 2}
+    amount: 2
+  - item: {fileID: 11400000, guid: 992d46b4fabab2a4eafbbaf792fb73d9, type: 2}
+    amount: 1
+  - item: {fileID: 11400000, guid: 4cf5c134c5af81f46a390125011d3308, type: 2}
+    amount: 1
+  requiredTi: 300
+  blueprintId: 
+  snap: 6
+  unique: 0
+  powerGeneration: 0
+  powerDemand: 0.8
+  terraformRates: []

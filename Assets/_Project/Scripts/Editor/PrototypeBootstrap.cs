@@ -46,6 +46,7 @@ namespace Planetcraft.EditorTools
         {
             HdrpSetup.Configure();
             PolyHavenMaterials.Setup();
+            EnsureFxMaterial();
             foreach (var dir in new[] { DataDir + "/Stages", DataDir + "/Items", DataDir + "/Recipes", DataDir + "/Buildables", DataDir + "/Logs", PrefabDir, MatDir, TerrainDir, SceneDir })
                 Directory.CreateDirectory(dir);
             AssetDatabase.Refresh();
@@ -55,6 +56,7 @@ namespace Planetcraft.EditorTools
             var items = CreateItems();
             var recipes = CreateRecipes(items);
             var buildables = CreateBuildables(items, mats);
+            EnsureSentinelPrefab();
             ConfigureShipyardPrefab(buildables.Find(b => b.id == "shipyard"), CreateShipModules(items), stages["genesis"]);
 
             var db = Asset<GameDatabase>(DataDir + "/GameDatabase.asset", d => { });
@@ -181,7 +183,7 @@ namespace Planetcraft.EditorTools
 
             void Add(string id, string name, string desc, double ti, float gen, float demand, ItemAmount[] cost,
                 TerraformRate[] rates, bool isMachine, string model, float scale = 1f, bool pressurized = false, bool storage = false,
-                string blueprint = null, bool unique = false)
+                string blueprint = null, bool unique = false, PieceKind snap = PieceKind.None, System.Action<GameObject> setup = null)
             {
                 var def = Asset<BuildableDefinition>($"{DataDir}/Buildables/{id}.asset", a =>
                 {
@@ -200,7 +202,8 @@ namespace Planetcraft.EditorTools
                 def.blueprintId = blueprint;
                 def.unique = unique;
                 // Prefab é derivado do modelo: sempre regenera para pegar mudanças do gen_models.py.
-                def.prefab = SavePrefab(def, isMachine, pressurized, model, scale, storage);
+                def.snap = snap;
+                def.prefab = SavePrefab(def, isMachine, pressurized, model, scale, storage, setup);
                 EditorUtility.SetDirty(def);
                 list.Add(def);
             }
@@ -213,20 +216,20 @@ namespace Planetcraft.EditorTools
             Add("wind_turbine", "Gerador Eólico", "+1.2 kW", 0, 1.2f, 0,
                 new[] { C(it["iron"], 1), C(it["silicon"], 1) }, none, true, "Machines/wind_turbine");
             Add("heater_t1", "Aquecedor", "Calor +1.2/s. Consome 1 kW.", 0, 0, 1f,
-                new[] { C(it["iron"], 1), C(it["titanium"], 1) }, Rates(TerraformParameter.Heat, 1.2), true, "ph:barrel_stove");
+                new[] { C(it["iron"], 1), C(it["titanium"], 1) }, Rates(TerraformParameter.Heat, 1.2), true, "Machines/heater_1");
             Add("drill_t1", "Perfuratriz", "Pressão +1/s. Consome 1 kW.", 0, 0, 1f,
-                new[] { C(it["iron"], 2) }, Rates(TerraformParameter.Pressure, 1), true, "ph:drill_press_01");
+                new[] { C(it["iron"], 2) }, Rates(TerraformParameter.Pressure, 1), true, "Machines/drill_1");
             Add("decon_t1", "Filtro de Radiação", "Descontaminação +1/s. Consome 1 kW.", 0, 0, 1f,
                 new[] { C(it["iron"], 2), C(it["silicon"], 1) }, Rates(TerraformParameter.Decontamination, 1), true,
-                "ph:old_military_compressor");
+                "Machines/decon_1");
             Add("vegetube", "Vegetubo", "Oxigênio +0.8/s. Consome 0.5 kW.", 50, 0, 0.5f,
                 new[] { C(it["ice"], 1), C(it["silicon"], 1) }, Rates(TerraformParameter.Oxygen, 0.8), true, "Machines/vegetube");
             Add("solar_panel", "Painel Solar", "+6.5 kW", 300, 6.5f, 0,
                 new[] { C(it["silicon"], 2), C(it["iron"], 1) }, none, true, "Machines/solar_panel");
             Add("heater_t2", "Aquecedor II", "Calor +12/s. Consome 4 kW.", 1_000, 0, 4f,
-                new[] { C(it["titanium"], 2), C(it["alloy"], 1) }, Rates(TerraformParameter.Heat, 12), true, "ph:barrel_stove", 1.5f);
+                new[] { C(it["titanium"], 2), C(it["alloy"], 1) }, Rates(TerraformParameter.Heat, 12), true, "Machines/heater_2");
             Add("drill_t2", "Perfuratriz II", "Pressão +10/s. Consome 4 kW.", 2_500, 0, 4f,
-                new[] { C(it["iron"], 3), C(it["alloy"], 1) }, Rates(TerraformParameter.Pressure, 10), true, "ph:drill_press_01", 1.5f);
+                new[] { C(it["iron"], 3), C(it["alloy"], 1) }, Rates(TerraformParameter.Pressure, 10), true, "Machines/drill_2");
             Add("algae_farm", "Fazenda de Algas", "Biomassa +25/s, Oxigênio +5/s. Consome 2 kW.", 20_000, 0, 2f,
                 new[] { C(it["ice"], 2), C(it["magnesium"], 1) },
                 new[] { new TerraformRate(TerraformParameter.Biomass, 25), new TerraformRate(TerraformParameter.Oxygen, 5) }, true, "Machines/algae_farm");
@@ -241,9 +244,9 @@ namespace Planetcraft.EditorTools
                 new[] { C(it["alloy"], 6), C(it["titanium"], 4), C(it["iron"], 8) }, none, false, "Machines/shipyard", unique: true);
             Add("decon_t2", "Filtro de Radiação II", "Descontaminação +15/s. Consome 4 kW.", 5_000, 0, 4f,
                 new[] { C(it["titanium"], 2), C(it["alloy"], 1), C(it["magnesium"], 1) },
-                Rates(TerraformParameter.Decontamination, 15), true, "ph:old_military_compressor", 1.4f);
+                Rates(TerraformParameter.Decontamination, 15), true, "Machines/decon_2");
             Add("heater_t3", "Aquecedor III", "Calor +400/s. Consome 15 kW.", 60_000, 0, 15f,
-                new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "ph:barrel_stove", 2.2f);
+                new[] { C(it["titanium"], 4), C(it["alloy"], 2) }, Rates(TerraformParameter.Heat, 400), true, "Machines/heater_3");
 
             // Tier 4: exigem microchip de destroço (blueprint) além do Ti.
             Add("vegetube_t2", "Vegetubo II", "Oxigênio +60/s. Consome 6 kW.", 60_000, 0, 6f,
@@ -254,14 +257,166 @@ namespace Planetcraft.EditorTools
                 "Machines/nuclear_reactor", blueprint: "bp_nuclear");
             Add("heater_t4", "Aquecedor IV", "Calor +6000/s. Consome 40 kW.", 300_000, 0, 40f,
                 new[] { C(it["titanium"], 5), C(it["alloy"], 3), C(it["fuel_rod"], 1) }, Rates(TerraformParameter.Heat, 6000), true,
-                "ph:barrel_stove", 3f, blueprint: "bp_heater4");
+                "Machines/heater_4", blueprint: "bp_heater4");
             Add("drill_t3", "Perfuratriz III", "Pressão +3000/s. Consome 35 kW.", 300_000, 0, 35f,
                 new[] { C(it["iron"], 6), C(it["alloy"], 3), C(it["fuel_rod"], 1) }, Rates(TerraformParameter.Pressure, 3000), true,
-                "ph:drill_press_01", 2.2f, blueprint: "bp_drill3");
+                "Machines/drill_3", blueprint: "bp_drill3");
             Add("decon_t3", "Filtro de Radiação III", "Descontaminação +3500/s. Consome 30 kW.", 300_000, 0, 30f,
                 new[] { C(it["titanium"], 4), C(it["alloy"], 3), C(it["fuel_rod"], 1) },
-                Rates(TerraformParameter.Decontamination, 3500), true, "ph:old_military_compressor", 2.2f, blueprint: "bp_decon3");
+                Rates(TerraformParameter.Decontamination, 3500), true, "Machines/decon_3", blueprint: "bp_decon3");
+
+            // ---- Kit de base: peças em grade de 4 m (BaseGrid), utilidades, mobília e defesas ----
+            Add("base_foundation", "Fundação", "Laje de 4 x 4 m sobre estacas: define o nível do piso da base.", 100, 0, 0,
+                new[] { C(it["iron"], 2) }, none, false, "Base/base_foundation", snap: PieceKind.Foundation, setup: Piece(PieceKind.Foundation, 500f));
+            Add("base_floor", "Piso e Teto", "Piso de 4 x 4 m. Empilhe para fazer andares e tetos.", 100, 0, 0,
+                new[] { C(it["iron"], 1) }, none, false, "Base/base_floor", snap: PieceKind.Floor, setup: Piece(PieceKind.Floor, 300f));
+            Add("base_wall", "Parede", "Parede de painéis de 4 m. Vede as quatro arestas e o teto de uma sala.", 100, 0, 0,
+                new[] { C(it["iron"], 1) }, none, false, "Base/base_wall", snap: PieceKind.Wall, setup: Piece(PieceKind.Wall, 350f, 0.1f));
+            Add("base_wall_door", "Parede com Porta", "Parede com passagem. Mantém a sala selada.", 250, 0, 0,
+                new[] { C(it["iron"], 1), C(it["silicon"], 1) }, none, false, "Base/base_wall_door", snap: PieceKind.Wall, setup: Piece(PieceKind.Wall, 300f, 0.1f));
+            Add("base_wall_window", "Parede com Janela", "Parede com janela panorâmica.", 500, 0, 0,
+                new[] { C(it["iron"], 1), C(it["silicon"], 2) }, none, false, "Base/base_wall_window", snap: PieceKind.Wall, setup: Piece(PieceKind.Wall, 200f));
+            Add("base_airlock", "Câmara de Ar", "Escotilha blindada para entrar e sair da base.", 1_200, 0, 0,
+                new[] { C(it["iron"], 2), C(it["titanium"], 1) }, none, false, "Base/base_airlock", snap: PieceKind.Wall, setup: Piece(PieceKind.Wall, 450f, 0.2f));
+            Add("base_wall_heavy", "Parede Reforçada", "Liga metálica: aguenta muito mais dano.", 30_000, 0, 0,
+                new[] { C(it["titanium"], 1), C(it["alloy"], 1) }, none, false, "Base/base_wall_heavy", snap: PieceKind.Wall, setup: Piece(PieceKind.Wall, 900f, 0.35f));
+            Add("base_pillar", "Pilar", "Coluna de apoio para os cantos.", 150, 0, 0,
+                new[] { C(it["iron"], 1) }, none, false, "Base/base_pillar", snap: PieceKind.Pillar, setup: Piece(PieceKind.Pillar, 250f));
+            Add("base_stairs", "Escada", "Sobe um andar (3 m). [R] gira.", 200, 0, 0,
+                new[] { C(it["iron"], 2) }, none, false, "Base/base_stairs", snap: PieceKind.Stairs, setup: Piece(PieceKind.Stairs, 250f));
+            Add("base_o2gen", "Gerador de O2", "Pressuriza a sala selada em que está. Consome 0.8 kW.", 300, 0, 0.8f,
+                new[] { C(it["iron"], 2), C(it["silicon"], 1), C(it["ice"], 1) }, none, true, "Base/base_o2gen", snap: PieceKind.Furniture,
+                setup: Piece(PieceKind.Furniture, 200f, 0f, true));
+            Add("base_battery", "Célula de Energia", "+3 kW.", 1_500, 3f, 0,
+                new[] { C(it["silicon"], 2), C(it["iron"], 1), C(it["titanium"], 1) }, none, true, "Base/base_battery", snap: PieceKind.Furniture,
+                setup: Piece(PieceKind.Furniture, 160f));
+            Add("base_purifier", "Purificador de Água", "[E] para beber. Consome 0.4 kW.", 800, 0, 0.4f,
+                new[] { C(it["iron"], 2), C(it["ice"], 1), C(it["silicon"], 1) }, none, true, "Base/base_purifier", snap: PieceKind.Furniture,
+                setup: root => { Piece(PieceKind.Furniture, 160f)(root); Utility(root, 2); });
+            Add("base_bunk", "Beliche", "[E] para descansar e recuperar vida.", 500, 0, 0,
+                new[] { C(it["iron"], 2), C(it["silicon"], 1) }, none, false, "Base/base_bunk", snap: PieceKind.Furniture,
+                setup: root => { Piece(PieceKind.Furniture, 150f)(root); Utility(root, 0); });
+            Add("base_medbay", "Enfermaria", "[E] cura todos os ferimentos. Consome 0.6 kW.", 3_000, 0, 0.6f,
+                new[] { C(it["silicon"], 2), C(it["titanium"], 1), C(it["magnesium"], 1) }, none, true, "Base/base_medbay", snap: PieceKind.Furniture,
+                setup: root => { Piece(PieceKind.Furniture, 160f)(root); Utility(root, 1); });
+            Add("base_locker", "Armário", "Guarda até 30 pilhas de itens. [E] para abrir.", 400, 0, 0,
+                new[] { C(it["iron"], 2) }, none, false, "Base/base_locker", snap: PieceKind.Furniture, storage: true, setup: Piece(PieceKind.Furniture, 150f));
+            Add("base_workbench", "Bancada", "Bancada de trabalho: dá vida à base.", 800, 0, 0,
+                new[] { C(it["iron"], 3), C(it["silicon"], 1) }, none, false, "Base/base_workbench", snap: PieceKind.Furniture, setup: Piece(PieceKind.Furniture, 150f));
+            Add("base_kitchen", "Cozinha", "Cozinha compacta: a base fica mais confortável.", 1_500, 0, 0,
+                new[] { C(it["iron"], 2), C(it["silicon"], 1), C(it["ice"], 1) }, none, false, "Base/base_kitchen", snap: PieceKind.Furniture,
+                setup: Piece(PieceKind.Furniture, 150f));
+            Add("base_turret_1", "Torre de Pulso", "Atira nos inimigos próximos. Consome 0.8 kW.", 3_000, 0, 0.8f,
+                new[] { C(it["iron"], 3), C(it["silicon"], 2), C(it["titanium"], 1) }, none, true, "Base/base_turret_1",
+                setup: root => { Piece(PieceKind.Defense, 220f, 0.1f)(root); Turret(root, 26f, 14f, 0.55f, false); });
+            Add("base_turret_2", "Torre de Plasma", "Dano pesado e longo alcance. Consome 3 kW.", 40_000, 0, 3f,
+                new[] { C(it["titanium"], 3), C(it["alloy"], 2), C(it["silicon"], 3) }, none, true, "Base/base_turret_2",
+                setup: root => { Piece(PieceKind.Defense, 520f, 0.25f)(root); Turret(root, 36f, 38f, 0.8f, true); });
+            Add("base_floodlight", "Refletor", "Ilumina a área e afasta os lobos. Consome 0.3 kW.", 1_200, 0, 0.3f,
+                new[] { C(it["iron"], 2), C(it["silicon"], 1) }, none, true, "Base/base_floodlight",
+                setup: root => { Piece(PieceKind.Defense, 120f)(root); Floodlight(root); });
+            Add("base_shock_fence", "Cerca Eletrificada", "Dá choque em quem atravessa. Consome 0.6 kW.", 4_000, 0, 0.6f,
+                new[] { C(it["iron"], 2), C(it["titanium"], 1) }, none, true, "Base/base_shock_fence",
+                setup: root => { Piece(PieceKind.Defense, 160f)(root); Fence(root); });
             return list;
+        }
+
+
+        // ---------- Componentes do kit de base ----------
+
+        static System.Action<GameObject> Piece(PieceKind kind, float hp, float armor = 0f, bool air = false) => root =>
+        {
+            var bp = root.AddComponent<BasePiece>();
+            var so = new SerializedObject(bp);
+            so.FindProperty("kind").enumValueIndex = (int)kind;
+            so.FindProperty("maxHealth").floatValue = hp;
+            so.FindProperty("armor").floatValue = armor;
+            so.FindProperty("isAirSource").boolValue = air;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        };
+
+        static void Utility(GameObject root, int mode)
+        {
+            var u = root.AddComponent<BaseUtility>();
+            var so = new SerializedObject(u);
+            so.FindProperty("mode").enumValueIndex = mode;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void Turret(GameObject root, float range, float damage, float interval, bool heavy)
+        {
+            var t = root.AddComponent<Planetcraft.Defense.Turret>();
+            var so = new SerializedObject(t);
+            so.FindProperty("range").floatValue = range;
+            so.FindProperty("damage").floatValue = damage;
+            so.FindProperty("interval").floatValue = interval;
+            so.FindProperty("heavy").boolValue = heavy;
+            so.FindProperty("tracer").colorValue = heavy ? new Color(1f, 0.62f, 0.2f, 0.95f) : new Color(0.5f, 0.95f, 1f, 0.9f);
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void Floodlight(GameObject root)
+        {
+            var lamp = new GameObject("Luz");
+            lamp.transform.SetParent(root.transform, false);
+            lamp.transform.localPosition = new Vector3(0f, 3.5f, 0.35f);
+            lamp.transform.localRotation = Quaternion.Euler(35f, 180f, 0f);
+            var l = lamp.AddComponent<Light>();
+            l.type = LightType.Spot;
+            l.range = 38f;
+            l.spotAngle = 95f;
+            l.intensity = 90000f;
+            l.color = new Color(1f, 0.96f, 0.85f);
+            l.shadows = LightShadows.None;
+            var f = root.AddComponent<Planetcraft.Defense.Floodlight>();
+            var so = new SerializedObject(f);
+            var arr = so.FindProperty("lights");
+            arr.arraySize = 1;
+            arr.GetArrayElementAtIndex(0).objectReferenceValue = l;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static void Fence(GameObject root)
+        {
+            var box = root.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.center = new Vector3(0f, 0.9f, 0f);
+            box.size = new Vector3(4f, 1.8f, 1.4f);
+            root.AddComponent<Planetcraft.Defense.ShockFence>();
+        }
+
+        // Sentinela: drone hostil. Fica em Resources para a invasão (ThreatDirector) instanciar em jogo.
+        static GameObject EnsureSentinelPrefab()
+        {
+            const string path = "Assets/_Project/Resources/Enemies/sentinel.prefab";
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            var root = new GameObject("Sentinela");
+            var visual = Model("Fauna/sentinel", root.transform);
+            visual.transform.localScale = Vector3.one * 1.1f;
+            var col = root.AddComponent<SphereCollider>();
+            col.radius = 0.7f;
+            var health = root.AddComponent<Planetcraft.Combat.Health>();
+            var hso = new SerializedObject(health);
+            hso.FindProperty("max").floatValue = 60f;
+            hso.FindProperty("team").enumValueIndex = (int)Planetcraft.Combat.Team.Hostile;
+            hso.ApplyModifiedPropertiesWithoutUndo();
+            root.AddComponent<Planetcraft.Enemies.Sentinel>();
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return prefab;
+        }
+
+        // Material das partículas das máquinas (fumaça, poeira, névoa, faíscas): fica em Resources para o jogo carregar.
+        static void EnsureFxMaterial()
+        {
+            const string path = "Assets/_Project/Resources/Fx/FxSoft.mat";
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            var shader = Shader.Find("Planetcraft/FxSoft");
+            if (shader == null) return;
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null) AssetDatabase.CreateAsset(new Material(shader), path);
+            else if (mat.shader != shader) mat.shader = shader;
+            AssetDatabase.SaveAssets();
         }
 
         // Etapas da nave-mãe, em ordem de montagem (a tabela é a fonte da verdade).
@@ -606,7 +761,8 @@ namespace Planetcraft.EditorTools
             return go;
         }
 
-        static GameObject SavePrefab(BuildableDefinition def, bool isMachine, bool pressurized, string model, float scale, bool storage)
+        static GameObject SavePrefab(BuildableDefinition def, bool isMachine, bool pressurized, string model, float scale, bool storage,
+            System.Action<GameObject> setup = null)
         {
             string path = $"{PrefabDir}/{def.id}.prefab";
             var root = new GameObject(def.displayName);
@@ -640,6 +796,7 @@ namespace Planetcraft.EditorTools
             if (isMachine)
             {
                 var machine = root.AddComponent<Machine>();
+                root.AddComponent<MachineFx>();
                 var indicator = scannedIndicator != null ? scannedIndicator.transform : visual.transform.Find("Indicator");
                 if (indicator != null) SetRef(machine, "runningIndicator", indicator.gameObject);
             }
@@ -661,6 +818,8 @@ namespace Planetcraft.EditorTools
                 box.size = new Vector3(3.6f, 2.6f, 3.6f);
                 root.AddComponent<PressurizedZone>();
             }
+
+            setup?.Invoke(root);
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
@@ -975,6 +1134,9 @@ namespace Planetcraft.EditorTools
             // Sistemas
             var systems = new GameObject("Sistemas");
             systems.AddComponent<TutorialHints>();
+            var threats = systems.AddComponent<Planetcraft.Enemies.ThreatDirector>();
+            SetRef(threats, "sentinelPrefab", AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Resources/Enemies/sentinel.prefab"));
+            SetRef(threats, "atmosphere", atmosphere);
             var tm = systems.AddComponent<TerraformManager>();
             SetRef(tm, "stages", stageDb);
 
@@ -1123,6 +1285,19 @@ namespace Planetcraft.EditorTools
                 SnapToGround(terminal.transform, terrain);
                 terminal.AddComponent<LogTerminal>().EditorSetup(db.logs[s]);
 
+                // Sentinelas do velho mundo ainda guardam as ruínas mais afastadas.
+                if (s >= 2)
+                {
+                    var guardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Resources/Enemies/sentinel.prefab");
+                    int guards = s % 3 == 0 ? 2 : 1;
+                    for (int g = 0; g < guards; g++)
+                    {
+                        var guard = (GameObject)PrefabUtility.InstantiatePrefab(guardPrefab, site.transform);
+                        guard.name = "Sentinela guarda";
+                        guard.transform.position = pos + new Vector3(g * 3f - 1.5f, terrain.transform.position.y + 3f, 4f);
+                    }
+                }
+
                 if (sites[s].blueprint != null)
                 {
                     var chip = new GameObject("Microchip");
@@ -1222,6 +1397,7 @@ namespace Planetcraft.EditorTools
             playerGo.AddComponent<FootstepAudio>();
             var survival = playerGo.AddComponent<SurvivalStats>();
             SetRef(survival, "respawnPoint", respawn);
+            playerGo.AddComponent<PlayerCombat>();
 
             var interactor = playerGo.AddComponent<Interactor>();
             SetRef(interactor, "cam", cam);
@@ -1293,6 +1469,20 @@ namespace Planetcraft.EditorTools
             var root = new GameObject(label);
             root.transform.SetParent(parent, false);
             var wander = root.AddComponent<AnimalWander>();
+            if (id == "wolf")
+            {
+                var body = root.AddComponent<CapsuleCollider>();
+                body.radius = 0.45f;
+                body.height = 1.4f;
+                body.center = new Vector3(0f, 0.7f, 0f);
+                body.direction = 2;
+                var health = root.AddComponent<Planetcraft.Combat.Health>();
+                var hso = new SerializedObject(health);
+                hso.FindProperty("max").floatValue = 70f;
+                hso.FindProperty("team").enumValueIndex = (int)Planetcraft.Combat.Team.Hostile;
+                hso.ApplyModifiedPropertiesWithoutUndo();
+                root.AddComponent<Planetcraft.Enemies.WolfAggro>();
+            }
             var so = new SerializedObject(wander);
             so.FindProperty("speed").floatValue = speed;
             so.FindProperty("wanderRadius").floatValue = wanderRadius;
@@ -1316,6 +1506,12 @@ namespace Planetcraft.EditorTools
             animator.cullingMode = AnimatorCullingMode.CullCompletely;
             so.FindProperty("animator").objectReferenceValue = animator;
             so.ApplyModifiedPropertiesWithoutUndo();
+            if (root.TryGetComponent<Planetcraft.Enemies.WolfAggro>(out var aggro))
+            {
+                var aso = new SerializedObject(aggro);
+                aso.FindProperty("animator").objectReferenceValue = animator;
+                aso.ApplyModifiedPropertiesWithoutUndo();
+            }
             return root;
         }
 

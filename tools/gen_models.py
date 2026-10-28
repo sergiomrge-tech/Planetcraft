@@ -1788,6 +1788,897 @@ def shipyard():
 
 
 # =============================================================================
+# Máquinas de terraformação por nível (aquecedor 1-4, perfuratriz 1-3, filtro 1-3)
+# Convenções de animação (lidas por MachineFx no Unity): objetos "Spin_<eixo>_nome" giram, "Bob_Y_nome" sobem e
+# descem, "Drill_Y_nome" giram e descem, "Fx_<tipo>" marcam onde nascem partículas. Eixos em coordenadas do Unity
+# (Blender Z -> Y, Blender Y -> Z, Blender X -> X). Materiais "glow_*" pulsam com a máquina ligada.
+# =============================================================================
+def _mats(m):
+    m.material("body", (0.30, 0.31, 0.34), 0.55, 0.3)
+    m.material("body_light", (0.74, 0.75, 0.73), 0.5, 0.25)
+    m.material("dark", (0.12, 0.12, 0.14), 0.6, 0.3)
+    m.material("steel", (0.62, 0.64, 0.68), 0.35, 0.85)
+    m.material("pipe", (0.62, 0.45, 0.3), 0.4, 0.7)
+    m.material("rust_edge", (0.4, 0.22, 0.12), 0.8, 0.5)
+    m.material("yellow", (0.92, 0.7, 0.14), 0.55)
+    m.material("rubber", (0.06, 0.06, 0.06), 0.9)
+    m.material("glow_heat", (1.0, 0.42, 0.1), 0.5)
+    m.material("glow_core", (0.5, 0.85, 1.0), 0.4)
+    m.material("glow_filter", (0.3, 1.0, 0.65), 0.4)
+    m.material("glow_screen", (0.4, 0.95, 0.6), 0.4)
+    m.material("gauge_face", (0.9, 0.9, 0.84), 0.5)
+    m.material("glass_tube", (0.75, 0.9, 1.0), 0.05, 0.0)
+
+
+def _plinth(m, w, d, h=0.14, feet=True):
+    m.box("dark", (0, 0, h / 2), (w, d, h), bevel=0.03)
+    if feet:
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                m.box("steel", (sx * (w / 2 - 0.12), sy * (d / 2 - 0.12), 0.02), (0.22, 0.22, 0.04), bevel=0.01)
+                bolt_ring(m, "steel", (sx * (w / 2 - 0.12), sy * (d / 2 - 0.12), h + 0.01), 0.07, 4, size=0.02)
+    hazard_strip(m, (0, d / 2 + 0.008, h * 0.5), w * 0.92, "x", height=min(0.1, h * 0.8))
+
+
+def _gauge(m, pos, r=0.07):
+    x, y, z = pos
+    m.cyl("dark", (x, y, z), r * 1.25, r * 1.25, 0.03, rot=(90, 0, 0))
+    m.cyl("gauge_face", (x, y + 0.018, z), r, r, 0.012, rot=(90, 0, 0))
+    m.box("glow_heat", (x + r * 0.2, y + 0.026, z + r * 0.25), (r * 0.9, 0.006, 0.008), rot=(0, 35, 0))
+
+
+def _valve(m, pos, r=0.1):
+    x, y, z = pos
+    m.tube("steel", (x, y - 0.1, z), (x, y, z), 0.02, seg=6)
+    base = T(x, y, z) @ R(90, 0, 0)
+    m.lathe("rust_edge", (0, 0, 0), [(r, -0.015), (r, 0.015)], seg=12, caps=False, base=base)
+    for a in (0, 60, 120):
+        m.box("rust_edge", (0, 0, 0), (r * 2, 0.018, 0.018), rot=(0, 0, a), base=base)
+
+
+def _ctrl_cabinet(m, pos, w=0.5, h=0.45):
+    x, y, z = pos
+    m.box("body", (x, y, z), (w, 0.16, h), bevel=0.02)
+    m.box("dark", (x, y + 0.085, z + h * 0.15), (w * 0.72, 0.012, h * 0.4))
+    m.box("glow_screen", (x - w * 0.12, y + 0.093, z + h * 0.15), (w * 0.38, 0.006, h * 0.28))
+    for k in range(4):
+        m.cyl("steel", (x - w * 0.3 + k * w * 0.2, y + 0.09, z - h * 0.3), 0.018, 0.018, 0.025, rot=(90, 0, 0), seg=8)
+    m.box("yellow", (x + w * 0.3, y + 0.09, z - h * 0.3), (0.08, 0.02, 0.05))
+
+
+def _ladder(m, x, y, z0, z1, side="x", width=0.42):
+    h = z1 - z0
+    for s in (-1, 1):
+        dx, dy = (0, s * width / 2) if side == "x" else (s * width / 2, 0)
+        m.box("steel", (x + dx, y + dy, z0 + h / 2), (0.035, 0.035, h))
+    for k in range(int(h / 0.28)):
+        zz = z0 + 0.2 + k * 0.28
+        m.box("steel", (x, y, zz), (0.03, width, 0.03) if side == "x" else (width, 0.03, 0.03))
+
+
+def _railing(m, a, b, z, h=0.55, posts=4, mat="yellow"):
+    a, b = Vector(a), Vector(b)
+    for k in range(posts + 1):
+        p = a + (b - a) * (k / posts)
+        m.tube(mat, (p.x, p.y, z), (p.x, p.y, z + h), 0.02, seg=6)
+    m.tube(mat, (a.x, a.y, z + h), (b.x, b.y, z + h), 0.02, seg=6)
+    m.tube(mat, (a.x, a.y, z + h * 0.5), (b.x, b.y, z + h * 0.5), 0.015, seg=6)
+
+
+def _fan(m, name, center, r, blades=7, mat="steel", axis="z", shroud=True, hub=0.1):
+    """Ventoinha: pás numa peça própria (gira no centro), dentro de um aro fixo."""
+    c = Vector(center)
+    rax = {"z": I4, "y": R(-90, 0, 0), "x": R(0, 90, 0)}[axis]
+    base = T(*c) @ rax
+    m.origins[name] = tuple(c)
+    for i in range(blades):
+        a = 360 * i / blades
+        px, py = r * 0.52 * math.cos(math.radians(a)), r * 0.52 * math.sin(math.radians(a))
+        m.box(mat, (px, py, 0), (r * 0.82, r * 0.28, 0.012), rot=(0, 0, a + 14), base=base, obj=name)
+        m.box(mat, (px, py, 0), (r * 0.82, r * 0.2, 0.012), rot=(22, 0, a + 14), base=base, obj=name)
+    m.cyl("dark", (0, 0, 0), hub, hub, 0.1, seg=10, base=base, obj=name)
+    if shroud:
+        m.lathe("dark", (0, 0, 0), [(r * 1.08, -0.07), (r * 1.08, 0.07)], seg=24, caps=False, base=base)
+        m.lathe("steel", (0, 0, 0), [(r * 1.12, -0.08), (r * 1.12, -0.05)], seg=24, caps=False, base=base)
+        for a in (0, 90):
+            m.box("dark", (0, 0, 0.06), (r * 2.1, 0.03, 0.02), rot=(0, 0, a), base=base)
+
+
+def _viewport(m, pos, r=0.1, glow="glow_heat"):
+    x, y, z = pos
+    m.cyl("steel", (x, y, z), r * 1.3, r * 1.3, 0.04, rot=(90, 0, 0), seg=12)
+    m.cyl(glow, (x, y + 0.022, z), r, r, 0.012, rot=(90, 0, 0), seg=12)
+    for i in range(8):
+        a = 2 * math.pi * i / 8
+        m.cyl("steel", (x + math.cos(a) * r * 1.15, y + 0.03, z + math.sin(a) * r * 1.15), 0.016, 0.016, 0.013, seg=6, rot=(90, 0, 0))
+
+
+def _fx(m, name, pos):
+    m.origins[name] = tuple(pos)
+    m.box("dark", pos, (0.02, 0.02, 0.02), obj=name)
+
+
+def _stack(m, x, y, z0, r, h, flare=False):
+    """Chaminé com flange, cintas e boca (glow_heat se `flare`)."""
+    m.cyl("pipe", (x, y, z0 + h / 2), r, r * 0.9, h, seg=14)
+    m.cyl("dark", (x, y, z0 + 0.04), r * 1.5, r * 1.5, 0.08, seg=14)
+    bolt_ring(m, "steel", (x, y, z0 + 0.09), r * 1.3, 8, size=0.018)
+    for t in (0.35, 0.65):
+        m.cyl("rust_edge", (x, y, z0 + h * t), r * 1.06, r * 1.06, 0.05, seg=14)
+    m.cyl("dark", (x, y, z0 + h + 0.03), r * 1.3, r * 1.3, 0.07, seg=14)
+    if flare:
+        m.cyl("glow_heat", (x, y, z0 + h + 0.075), r * 0.85, r * 0.85, 0.02, seg=14)
+
+
+def _lattice(m, half0, half1, z0, z1, levels=3, mat="yellow", r=0.06):
+    """Torre de treliça de quatro pernas com travessas e diagonais em X."""
+    legs = [Vector((sx * half0, sy * half0, z0)) for sx in (-1, 1) for sy in (-1, 1)]
+    tops = [Vector((sx * half1, sy * half1, z1)) for sx in (-1, 1) for sy in (-1, 1)]
+    for a, b in zip(legs, tops):
+        m.tube(mat, a, b, r, r * 0.85, seg=8)
+
+    def at(i, t):
+        return legs[i] + (tops[i] - legs[i]) * t
+    faces = [(0, 1), (1, 3), (3, 2), (2, 0)]
+    for k in range(levels):
+        t0, t1 = k / levels, (k + 1) / levels
+        for i, j in faces:
+            m.tube(mat, at(i, t1), at(j, t1), r * 0.65, seg=6)
+            m.tube(mat, at(i, t0), at(j, t1), r * 0.4, seg=5)
+            m.tube(mat, at(j, t0), at(i, t1), r * 0.4, seg=5)
+    return at
+
+
+# ------------------------------------------------------------------ aquecedor
+def heater_tier(tier):
+    """Aquecedor, 4 níveis: forno elétrico compacto -> torre térmica -> forno industrial duplo -> núcleo de plasma."""
+    m = Model(f"heater_{tier}", "Machines")
+    m.greeble = False
+    _mats(m)
+    if tier == 1:
+        _plinth(m, 1.7, 1.7, 0.2)
+        m.box("body", (0, 0, 0.68), (1.5, 1.5, 0.9), bevel=0.06)
+        m.box("dark", (0, 0, 1.15), (1.56, 1.56, 0.06))
+        for side in (-1, 1):
+            for i in range(9):
+                m.box("dark", (-0.64 + i * 0.16, side * 0.79, 0.68), (0.04, 0.09, 0.72))
+                m.box("dark", (side * 0.79, -0.64 + i * 0.16, 0.68), (0.09, 0.04, 0.72))
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                m.box("steel", (sx * 0.74, sy * 0.74, 0.68), (0.08, 0.08, 0.94), bevel=0.01)
+        m.cyl("dark", (0, 0, 1.24), 0.64, 0.64, 0.12, seg=24)
+        m.cyl("glow_heat", (0, 0, 1.29), 0.54, 0.54, 0.04, seg=24)
+        for i in range(9):
+            m.box("steel", (-0.48 + i * 0.12, 0, 1.34),
+                  (0.025, 1.08 * math.sqrt(max(0.05, 1 - ((-0.48 + i * 0.12) / 0.54) ** 2)), 0.03))
+        bolt_ring(m, "steel", (0, 0, 1.31), 0.6, 16, size=0.025)
+        _stack(m, 0.55, -0.45, 1.24, 0.13, 1.0, flare=True)
+        _stack(m, -0.45, -0.52, 1.24, 0.09, 0.6)
+        _fx(m, "Fx_Smoke", (0.55, -0.45, 2.3))
+        _ctrl_cabinet(m, (0, 0.84, 0.82), 0.55, 0.42)
+        _gauge(m, (-0.5, 0.92, 0.55))
+        _valve(m, (0.5, 0.9, 0.5), 0.09)
+        _fan(m, "Spin_Y_Fan", (-0.35, 0.3, 1.31), 0.22, blades=6, axis="z", shroud=False)
+        cable(m, "dark", (0.2, 0.86, 0.6), (0.7, 1.7, 0.03), sag=0.1, r=0.025)
+        indicator(m, (-0.6, 0.8, 1.22))
+    elif tier == 2:
+        _plinth(m, 2.4, 2.0, 0.22)
+        m.cyl("body", (0, 0, 1.15), 0.62, 0.62, 1.8, seg=22)
+        for z in (0.5, 1.15, 1.8):
+            m.cyl("steel", (0, 0, z), 0.66, 0.66, 0.06, seg=22)
+            bolt_ring(m, "steel", (0, 0, z + 0.04), 0.62, 14, size=0.02)
+        m.lathe("body", (0, 0, 2.05), [(0.62, 0), (0.55, 0.14), (0.3, 0.28), (0.22, 0.34)], seg=22)
+        _stack(m, 0, 0, 2.38, 0.2, 1.3, flare=True)
+        _fx(m, "Fx_Smoke", (0, 0, 3.8))
+        for side in (-1, 1):
+            x = side * 1.02
+            m.box("body", (x, 0, 0.78), (0.5, 1.3, 1.16), bevel=0.04)
+            for iz in range(5):
+                for iy in range(6):
+                    m.tube("pipe", (x - 0.26, -0.55 + iy * 0.22, 0.4 + iz * 0.2),
+                           (x + 0.26, -0.55 + iy * 0.22, 0.4 + iz * 0.2), 0.035, seg=8)
+            m.box("dark", (x, 0, 1.4), (0.56, 1.36, 0.08))
+            m.box("glow_heat", (x, 0.66, 0.78), (0.36, 0.01, 0.7))
+        m.tube("pipe", (-0.76, 0, 1.4), (-0.3, 0, 1.55), 0.07, seg=10)
+        m.tube("pipe", (0.76, 0, 1.4), (0.3, 0, 1.55), 0.07, seg=10)
+        m.box("dark", (1.02, 0, 1.5), (0.6, 1.0, 0.04))
+        _fan(m, "Spin_Y_Fan", (1.02, 0, 1.6), 0.4, blades=8, axis="z")
+        _ctrl_cabinet(m, (0, 1.06, 0.82), 0.7, 0.5)
+        _gauge(m, (-0.5, 1.16, 0.5), 0.08)
+        _gauge(m, (0.5, 1.16, 0.5), 0.08)
+        _valve(m, (0.0, 1.14, 0.4), 0.1)
+        _ladder(m, -1.28, 0.5, 0.2, 1.45, side="y")
+        _viewport(m, (0, 0.64, 1.1), 0.12)
+        _viewport(m, (0, 0.64, 1.55), 0.12)
+        cable(m, "dark", (-0.2, 1.1, 0.5), (-0.9, 2.0, 0.03), sag=0.1, r=0.03)
+        indicator(m, (0.8, 1.0, 1.5))
+    elif tier == 3:
+        _plinth(m, 3.4, 2.6, 0.25)
+        m.box("body", (0, 0, 0.55), (3.2, 2.4, 0.6), bevel=0.05)
+        for side in (-1, 1):
+            x = side * 0.85
+            m.lathe("body", (x, 0, 0.85), [(0.7, 0), (0.7, 1.6), (0.6, 1.85), (0.3, 2.0), (0.0, 2.05)], seg=22)
+            for z in (0.3, 0.9, 1.5):
+                m.cyl("steel", (x, 0, 0.85 + z), 0.73, 0.73, 0.06, seg=22)
+                bolt_ring(m, "steel", (x, 0, 0.85 + z + 0.04), 0.68, 14, size=0.02)
+            for a in (-35, 0, 35):
+                ar = math.radians(a)
+                m.cyl("steel", (x + 0.7 * math.sin(ar), 0.7 * math.cos(ar), 2.35), 0.15, 0.15, 0.05, rot=(90, 0, -a), seg=12)
+                m.cyl("glow_heat", (x + 0.74 * math.sin(ar), 0.74 * math.cos(ar), 2.35), 0.11, 0.11, 0.012, rot=(90, 0, -a), seg=12)
+            m.tube("pipe", (x, 0, 2.85), (x * 0.2, 0, 3.4), 0.12, seg=12)
+        m.box("pipe", (0, 0, 3.4), (0.7, 0.5, 0.35), bevel=0.05)
+        _stack(m, 0, 0, 3.55, 0.28, 1.5, flare=True)
+        _fx(m, "Fx_Smoke", (0, 0, 5.2))
+        for sx in (-1, 1):
+            m.box("steel", (sx * 1.65, 0, 1.0), (0.14, 2.2, 0.06))
+        m.box("steel", (0, -1.28, 1.0), (3.1, 0.5, 0.06))
+        _railing(m, (-1.55, -1.5, 0), (1.55, -1.5, 0), 1.03, posts=7)
+        _ladder(m, 1.72, -1.1, 0.25, 1.05, side="y", width=0.45)
+        for k, y in enumerate((-0.6, 0.6)):
+            m.box("dark", (1.72, y, 0.58), (0.08, 0.95, 0.9))
+            _fan(m, f"Spin_X_Fan{k}", (1.78, y, 0.58), 0.4, blades=7, axis="x")
+        for i in range(12):
+            m.box("dark", (-1.4 + i * 0.255, -1.22, 0.55), (0.06, 0.1, 0.55))
+        _ctrl_cabinet(m, (0, 1.28, 0.62), 0.9, 0.5)
+        for k in range(3):
+            _gauge(m, (-1.0 + k * 0.28, 1.36, 0.82), 0.075)
+        _valve(m, (1.0, 1.34, 0.55), 0.11)
+        pipe_run(m, "pipe", "rust_edge", (-1.1, 1.25, 0.32), (1.1, 1.25, 0.32), 0.06, clamps=4)
+        cable(m, "dark", (-0.9, 1.3, 0.5), (-1.7, 2.4, 0.03), sag=0.12, r=0.04)
+        indicator(m, (1.5, 1.1, 0.95))
+    else:
+        _plinth(m, 4.2, 4.2, 0.28)
+        m.cyl("body", (0, 0, 0.45), 2.0, 2.0, 0.34, seg=28)
+        m.cyl("dark", (0, 0, 0.64), 1.7, 1.7, 0.06, seg=28)
+        m.lathe("steel", (0, 0, 0.67), [(0.95, 0), (0.95, 0.25), (0.7, 0.4)], seg=26)
+        m.cyl("glass_tube", (0, 0, 2.15), 0.62, 0.62, 2.7, seg=24)
+        m.cyl("glow_core", (0, 0, 2.15), 0.28, 0.28, 2.3, seg=18)
+        m.blob("glow_heat", (0, 0, 2.15), (0.4, 0.4, 0.5), sub=2, noise=0.05, seed=2, smooth=True)
+        m.lathe("steel", (0, 0, 3.5), [(0.7, 0), (0.7, 0.1), (0.45, 0.3), (0.2, 0.4)], seg=26)
+        for k, (z, rr) in enumerate(((1.55, 0.82), (2.15, 0.9), (2.75, 0.82))):
+            name = f"Spin_Y_Ring{k}"
+            m.origins[name] = (0, 0, z)
+            m.lathe("glow_heat", (0, 0, z), [(rr, -0.03), (rr, 0.03)], seg=30, caps=False, obj=name)
+            m.lathe("steel", (0, 0, z), [(rr + 0.02, -0.05), (rr + 0.02, -0.03)], seg=30, caps=False, obj=name)
+            for a in (0, 120, 240):
+                r = math.radians(a + k * 40)
+                m.box("steel", (rr * math.cos(r), rr * math.sin(r), z), (0.12, 0.12, 0.14), obj=name)
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                x, y = sx * 1.55, sy * 1.55
+                m.box("body", (x, y, 1.15), (0.5, 0.5, 2.0), bevel=0.04)
+                for i in range(10):
+                    m.box("dark", (x + sx * 0.28, y, 0.4 + i * 0.19), (0.05, 0.42, 0.1))
+                    m.box("dark", (x, y + sy * 0.28, 0.4 + i * 0.19), (0.42, 0.05, 0.1))
+                m.box("glow_heat", (x, y, 2.18), (0.36, 0.36, 0.04))
+                m.tube("pipe", (x * 0.82, y * 0.82, 1.55), (x * 0.4, y * 0.4, 2.5), 0.07, seg=10)
+                m.cyl("steel", (x, y, 2.22), 0.1, 0.1, 0.22, seg=8)
+        _stack(m, 0, 0, 3.9, 0.3, 0.6, flare=True)
+        _fx(m, "Fx_Smoke", (0, 0, 4.7))
+        _fx(m, "Fx_Spark", (0, 0, 3.6))
+        _ctrl_cabinet(m, (0, 2.22, 0.75), 1.1, 0.6)
+        for k in range(4):
+            _gauge(m, (-0.9 + k * 0.5, 2.32, 1.08), 0.09)
+        _ladder(m, 2.2, 0.0, 0.3, 1.2, side="y", width=0.5)
+        cable(m, "dark", (0.3, 2.2, 0.5), (0.8, 3.2, 0.03), sag=0.1, r=0.05)
+        indicator(m, (0.9, 2.18, 1.2))
+    return m
+
+
+# ------------------------------------------------------------------ perfuratriz
+def _bit(m, name, z_tip, r):
+    """Broca tricônica: corpo cônico e três cones de dentes."""
+    m.cyl("steel", (0, 0, z_tip + r * 0.9), r * 0.95, r * 0.35, r * 1.8, seg=12, obj=name)
+    for k in range(3):
+        a = math.radians(k * 120 + 20)
+        c = (math.cos(a) * r * 0.55, math.sin(a) * r * 0.55, z_tip + r * 0.5)
+        m.cyl("dark", c, r * 0.5, r * 0.12, r * 0.9, seg=8, obj=name)
+        for t in range(4):
+            aa = math.radians(t * 90)
+            m.box("steel", (c[0] + math.cos(aa) * r * 0.3, c[1] + math.sin(aa) * r * 0.3, c[2] - 0.02),
+                  (0.03, 0.03, 0.05), obj=name)
+
+
+def drill_tier(tier):
+    """Perfuratriz, 3 níveis: sonda compacta -> torre de perfuração com pistões -> plataforma pesada de pressão."""
+    m = Model(f"drill_{tier}", "Machines")
+    m.greeble = False
+    _mats(m)
+    if tier == 1:
+        _plinth(m, 2.4, 2.4, 0.24)
+        m.box("steel", (0, 0, 0.27), (0.8, 0.8, 0.04))
+        at = _lattice(m, 0.85, 0.28, 0.24, 3.15, levels=3)
+        m.box("yellow", (0, 0, 3.4), (0.95, 0.95, 0.6), bevel=0.06)
+        for i in range(6):
+            m.box("dark", (0.49, -0.3 + i * 0.12, 3.4), (0.03, 0.05, 0.45))
+            m.box("dark", (-0.49, -0.3 + i * 0.12, 3.4), (0.03, 0.05, 0.45))
+        m.cyl("dark", (0, 0, 3.8), 0.32, 0.32, 0.22, seg=16)
+        bolt_ring(m, "steel", (0, 0, 3.92), 0.26, 10, size=0.02)
+        m.origins["Drill_Y_Stem"] = (0, 0, 1.6)
+        m.cyl("steel", (0, 0, 1.75), 0.12, 0.12, 3.2, seg=14, obj="Drill_Y_Stem")
+        for z in (0.9, 1.7, 2.5):
+            m.cyl("dark", (0, 0, z), 0.17, 0.17, 0.08, seg=14, obj="Drill_Y_Stem")
+        for i in range(8):
+            a = i * 0.7
+            m.box("steel", (math.cos(a) * 0.13, math.sin(a) * 0.13, 0.4 + i * 0.12), (0.12, 0.04, 0.06), rot=(0, 0, math.degrees(a)), obj="Drill_Y_Stem")
+        _bit(m, "Drill_Y_Stem", 0.12, 0.22)
+        _fx(m, "Fx_Dust", (0, 0, 0.15))
+        m.box("dark", (0.9, -0.9, 0.5), (0.5, 0.5, 0.5), bevel=0.03)
+        m.cyl("steel", (0.9, -0.9, 0.8), 0.12, 0.12, 0.1, seg=10)
+        cable(m, "rubber", (0.9, -0.9, 0.85), (0.25, -0.25, 3.25), sag=0.35, r=0.04, segments=8)
+        _ctrl_cabinet(m, (-0.8, 1.2, 0.8), 0.6, 0.55)
+        _gauge(m, (-0.5, 1.29, 0.5), 0.07)
+        _railing(m, (-1.1, 1.15, 0.24), (-0.3, 1.15, 0.24), 0.24, posts=3)
+        indicator(m, (0.1, 1.2, 0.3))
+    elif tier == 2:
+        _plinth(m, 3.2, 3.2, 0.28)
+        m.box("steel", (0, 0, 0.32), (1.2, 1.2, 0.05))
+        at = _lattice(m, 1.15, 0.4, 0.28, 5.0, levels=5)
+        # Coroa com duas roldanas giratórias
+        m.box("yellow", (0, 0, 5.15), (1.2, 0.9, 0.3), bevel=0.04)
+        for k, x in enumerate((-0.28, 0.28)):
+            nm = f"Spin_X_Sheave{k}"
+            m.origins[nm] = (x, 0, 5.4)
+            m.lathe("steel", (0, 0, 0), [(0.3, -0.05), (0.3, 0.05)], seg=20, base=T(x, 0, 5.4) @ R(0, 90, 0), obj=nm)
+            m.lathe("dark", (0, 0, 0), [(0.26, -0.07), (0.26, 0.07)], seg=20, caps=False, base=T(x, 0, 5.4) @ R(0, 90, 0), obj=nm)
+            for a in (0, 60, 120):
+                m.box("steel", (0, 0, 0), (0.5, 0.02, 0.06), rot=(0, a, 0), base=T(x, 0, 5.4) @ R(0, 90, 0), obj=nm)
+        m.box("steel", (0, 0, 5.62), (0.9, 0.5, 0.06))
+        # Cabeçote giratório e haste com roscas
+        m.box("dark", (0, 0, 3.5), (0.9, 0.9, 0.55), bevel=0.05)
+        m.cyl("yellow", (0, 0, 3.95), 0.36, 0.36, 0.3, seg=16)
+        bolt_ring(m, "steel", (0, 0, 4.12), 0.3, 12, size=0.02)
+        m.origins["Drill_Y_Stem"] = (0, 0, 1.8)
+        m.cyl("steel", (0, 0, 1.85), 0.15, 0.15, 3.4, seg=14, obj="Drill_Y_Stem")
+        for z in (0.9, 1.5, 2.1, 2.7):
+            m.cyl("dark", (0, 0, z), 0.2, 0.2, 0.1, seg=14, obj="Drill_Y_Stem")
+            bolt_ring(m, "steel", (0, 0, z + 0.06), 0.17, 8, size=0.015, obj="Drill_Y_Stem")
+        for i in range(10):
+            a = i * 0.65
+            m.box("steel", (math.cos(a) * 0.17, math.sin(a) * 0.17, 0.5 + i * 0.13), (0.14, 0.05, 0.07), rot=(0, 0, math.degrees(a)), obj="Drill_Y_Stem")
+        _bit(m, "Drill_Y_Stem", 0.1, 0.28)
+        _fx(m, "Fx_Dust", (0, 0, 0.15))
+        # Pistões hidráulicos dos dois lados
+        for k, sx in enumerate((-1, 1)):
+            x = sx * 0.62
+            m.cyl("dark", (x, 0.0, 3.0), 0.1, 0.1, 1.4, seg=12)
+            m.cyl("steel", (x, 0.0, 3.75), 0.12, 0.12, 0.06, seg=12)
+            nm = f"Bob_Y_Piston{k}"
+            m.origins[nm] = (x, 0, 3.4)
+            m.cyl("steel", (x, 0.0, 3.4), 0.05, 0.05, 1.2, seg=10, obj=nm)
+            m.cyl("rust_edge", (x, 0.0, 3.95), 0.08, 0.08, 0.08, seg=10, obj=nm)
+        # Casa de máquinas: gerador com chaminé, tanque de lama e cabine de comando
+        m.box("body", (1.9, -0.9, 0.75), (1.2, 1.5, 1.0), bevel=0.05)
+        for i in range(5):
+            m.box("dark", (2.52, -0.9 + (i - 2) * 0.22, 0.75), (0.04, 0.12, 0.7))
+        _stack(m, 1.5, -1.3, 1.25, 0.1, 0.9)
+        _fx(m, "Fx_Smoke", (1.5, -1.3, 2.4))
+        m.cyl("body_light", (-1.95, -0.7, 0.55), 0.55, 0.55, 0.9, seg=20)
+        m.lathe("body_light", (-1.95, -0.7, 1.0), [(0.55, 0), (0.45, 0.14), (0.15, 0.2)], seg=20)
+        m.cyl("steel", (-1.95, -0.7, 0.8), 0.58, 0.58, 0.06, seg=20)
+        _ladder(m, -1.95, -1.3, 0.2, 1.05, side="y", width=0.4)
+        m.box("body", (-1.7, 1.3, 0.8), (1.3, 0.9, 1.1), bevel=0.05)
+        m.box("dark", (-1.7, 1.77, 1.0), (0.9, 0.02, 0.4))
+        m.box("glow_screen", (-1.7, 1.78, 1.0), (0.84, 0.005, 0.34))
+        m.box("steel", (-1.7, 1.3, 1.4), (1.4, 1.0, 0.06))
+        _ctrl_cabinet(m, (0.4, 1.7, 0.7), 0.7, 0.5)
+        _gauge(m, (0.7, 1.79, 0.95), 0.07)
+        pipe_run(m, "pipe", "rust_edge", (-1.4, -0.4, 0.4), (-0.3, -0.4, 0.4), 0.07, clamps=3)
+        pipe_run(m, "pipe", "rust_edge", (1.3, -0.4, 0.4), (0.3, -0.4, 0.4), 0.07, clamps=3)
+        _railing(m, (-1.5, 1.6, 0.28), (1.5, 1.6, 0.28), 0.28, posts=6)
+        cable(m, "rubber", (1.9, -0.2, 1.2), (0.5, -0.2, 3.3), sag=0.4, r=0.05, segments=8)
+        indicator(m, (0.3, 1.4, 0.3))
+    else:
+        _plinth(m, 4.4, 4.4, 0.3, feet=False)
+        m.cyl("body", (0, 0, 0.4), 2.2, 2.2, 0.22, seg=28)
+        # Quatro estabilizadores hidráulicos com sapatas
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                x, y = sx * 1.9, sy * 1.9
+                m.tube("steel", (x * 0.7, y * 0.7, 1.0), (x, y, 0.3), 0.12, seg=10)
+                m.cyl("dark", (x, y, 0.2), 0.34, 0.34, 0.12, seg=14)
+                m.cyl("steel", (x, y, 0.3), 0.14, 0.14, 0.3, seg=10)
+                bolt_ring(m, "steel", (x, y, 0.27), 0.28, 8, size=0.02)
+        at = _lattice(m, 1.2, 0.45, 0.3, 6.4, levels=6, mat="steel", r=0.08)
+        # Condutos de energia azuis ao longo das quatro pernas
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                m.tube("glow_core", (sx * 1.1, sy * 1.1, 0.5), (sx * 0.5, sy * 0.5, 6.1), 0.025, seg=6)
+        # Cabeça giratória brilhante
+        m.origins["Spin_Y_Head"] = (0, 0, 3.4)
+        m.lathe("glow_core", (0, 0, 3.4), [(0.75, -0.04), (0.75, 0.04)], seg=28, caps=False, obj="Spin_Y_Head")
+        m.lathe("steel", (0, 0, 3.4), [(0.78, -0.08), (0.78, -0.05)], seg=28, caps=False, obj="Spin_Y_Head")
+        for a in (0, 90, 180, 270):
+            r = math.radians(a)
+            m.box("steel", (0.75 * math.cos(r), 0.75 * math.sin(r), 3.4), (0.14, 0.14, 0.18), obj="Spin_Y_Head")
+        m.box("dark", (0, 0, 3.75), (1.0, 1.0, 0.5), bevel=0.05)
+        m.cyl("yellow", (0, 0, 4.15), 0.42, 0.42, 0.3, seg=16)
+        # Coroa e roldanas
+        m.box("yellow", (0, 0, 6.55), (1.3, 1.0, 0.3), bevel=0.05)
+        for k, x in enumerate((-0.32, 0.32)):
+            nm = f"Spin_X_Sheave{k}"
+            m.origins[nm] = (x, 0, 6.85)
+            B = T(x, 0, 6.85) @ R(0, 90, 0)
+            m.lathe("steel", (0, 0, 0), [(0.34, -0.05), (0.34, 0.05)], seg=20, base=B, obj=nm)
+            for a in (0, 60, 120):
+                m.box("glow_core", (0, 0, 0), (0.55, 0.02, 0.06), rot=(0, a, 0), base=B, obj=nm)
+        # Haste grossa com aletas helicoidais e broca
+        m.origins["Drill_Y_Stem"] = (0, 0, 2.2)
+        m.cyl("steel", (0, 0, 2.3), 0.22, 0.22, 4.2, seg=16, obj="Drill_Y_Stem")
+        for i in range(18):
+            a = i * 0.7
+            m.box("dark", (math.cos(a) * 0.28, math.sin(a) * 0.28, 0.4 + i * 0.2), (0.2, 0.06, 0.1), rot=(0, 0, math.degrees(a)), obj="Drill_Y_Stem")
+        for z in (1.2, 2.2, 3.2):
+            m.cyl("rust_edge", (0, 0, z), 0.27, 0.27, 0.1, seg=16, obj="Drill_Y_Stem")
+        _bit(m, "Drill_Y_Stem", 0.1, 0.4)
+        _fx(m, "Fx_Dust", (0, 0, 0.15))
+        # Dois pistões grandes e tanques de pressão com visores
+        for k, sx in enumerate((-1, 1)):
+            x = sx * 0.9
+            m.cyl("dark", (x, 0, 4.4), 0.14, 0.14, 1.8, seg=12)
+            nm = f"Bob_Y_Piston{k}"
+            m.origins[nm] = (x, 0, 4.9)
+            m.cyl("steel", (x, 0, 4.9), 0.07, 0.07, 1.4, seg=10, obj=nm)
+            m.cyl("glow_core", (x, 0, 5.62), 0.1, 0.1, 0.05, seg=10, obj=nm)
+        for k, (x, y) in enumerate(((1.7, -0.6), (1.7, 0.6))):
+            m.lathe("body_light", (x, y, 0.3), [(0.42, 0), (0.42, 1.6), (0.3, 1.85), (0.0, 1.9)], seg=20)
+            m.lathe("glow_core", (x, y, 0.8), [(0.43, -0.03), (0.43, 0.03)], seg=20, caps=False)
+            _gauge(m, (x, y + 0.42, 1.2), 0.07)
+            m.tube("steel", (x, y, 2.1), (0.5, y * 0.4, 3.0), 0.07, seg=8)
+        _stack(m, -1.7, -1.1, 0.3, 0.12, 2.2)
+        _fx(m, "Fx_Smoke", (-1.7, -1.1, 2.7))
+        m.box("body", (-1.7, 0.7, 0.9), (1.2, 1.2, 1.2), bevel=0.05)
+        m.box("dark", (-1.7, 1.31, 1.1), (0.9, 0.02, 0.5))
+        m.box("glow_core", (-1.7, 1.32, 1.1), (0.84, 0.005, 0.44))
+        _ctrl_cabinet(m, (0.0, 2.35, 0.9), 1.2, 0.7)
+        for k in range(3):
+            _gauge(m, (-0.5 + k * 0.5, 2.45, 1.3), 0.08)
+        _ladder(m, 2.3, 0.0, 0.3, 2.0, side="y", width=0.5)
+        _railing(m, (-1.9, 2.1, 0.3), (1.9, 2.1, 0.3), 0.3, posts=8)
+        hazard_strip(m, (0, -2.22, 0.15), 4.0, "x", height=0.14)
+        cable(m, "rubber", (-1.2, 0.5, 1.3), (-0.4, 0.2, 3.4), sag=0.5, r=0.06, segments=8)
+        indicator(m, (0.2, 2.3, 0.4))
+    return m
+
+
+# ------------------------------------------------------------------ filtro de radiação
+def decon_tier(tier):
+    """Filtro de radiação, 3 níveis: depurador compacto -> unidade de quatro filtros -> torre ionizadora."""
+    m = Model(f"decon_{tier}", "Machines")
+    m.greeble = False
+    _mats(m)
+    if tier == 1:
+        m.box("dark", (0, 0, 0.1), (2.4, 1.8, 0.2), bevel=0.04)
+        m.box("body_light", (0, 0, 0.95), (1.2, 1.3, 1.5), bevel=0.08)
+        hazard_strip(m, (0, 0.67, 0.3), 1.1, "x", height=0.12)
+        for sx in (-1, 1):
+            x = sx * 0.85
+            m.lathe("body_light", (x, 0, 0.2), [(0.42, 0), (0.42, 2.3), (0.3, 2.55), (0, 2.6)], seg=20)
+            for z in (0.7, 1.3, 1.9):
+                m.lathe("glow_filter", (x, 0, z), [(0.43, -0.06), (0.43, 0.06)], seg=20, caps=False)
+                bolt_ring(m, "steel", (x, 0, z + 0.07), 0.4, 12, size=0.016)
+            m.tube("pipe", (x, 0, 2.8), (sx * 0.35, 0, 2.0), 0.08, seg=8)
+        m.lathe("dark", (0, 0, 1.7), [(0.28, 0), (0.24, 1.4), (0.3, 1.5), (0.3, 1.55)], seg=16, caps=False)
+        _fan(m, "Spin_Z_Fan", (0, 0.7, 1.05), 0.44, blades=6, axis="y")
+        _fx(m, "Fx_Mist", (0, 0, 3.2))
+        _ctrl_cabinet(m, (0, 0.72, 0.45), 0.6, 0.35)
+        _gauge(m, (-0.35, 0.8, 1.7), 0.07)
+        indicator(m, (0.45, 0.66, 1.65))
+    elif tier == 2:
+        _plinth(m, 3.2, 2.4, 0.2)
+        m.box("body_light", (0, 0, 1.05), (1.4, 1.5, 1.7), bevel=0.08)
+        for k in range(4):
+            sx, y = (-1, 1)[k % 2], (-0.45, 0.45)[k // 2]
+            x = sx * 1.05
+            m.lathe("body_light", (x, y, 0.2), [(0.4, 0), (0.4, 2.5), (0.3, 2.75), (0, 2.8)], seg=20)
+            for z in (0.6, 1.2, 1.8, 2.3):
+                m.lathe("glow_filter", (x, y, z), [(0.41, -0.05), (0.41, 0.05)], seg=20, caps=False)
+                bolt_ring(m, "steel", (x, y, z + 0.06), 0.37, 12, size=0.014)
+            m.tube("pipe", (x, y, 3.0), (sx * 0.4, y * 0.3, 2.15), 0.08, seg=8)
+        m.box("steel", (0, 0, 2.2), (1.5, 1.6, 0.12))
+        _stack(m, 0, -0.35, 2.28, 0.26, 1.2)
+        m.cyl("glow_filter", (0, -0.35, 3.52), 0.2, 0.2, 0.03, seg=14)
+        _fx(m, "Fx_Mist", (0, -0.35, 3.7))
+        _fan(m, "Spin_Z_Fan", (0, 0.76, 1.2), 0.56, blades=8, axis="y")
+        _ctrl_cabinet(m, (0, 1.1, 0.55), 0.8, 0.45)
+        for k in range(3):
+            _gauge(m, (-0.5 + k * 0.5, 0.82, 1.95), 0.07)
+        _ladder(m, -1.6, 0.0, 0.2, 2.4, side="y", width=0.42)
+        pipe_run(m, "pipe", "rust_edge", (-1.05, -1.0, 0.45), (1.05, -1.0, 0.45), 0.07, clamps=4)
+        indicator(m, (0.55, 0.78, 1.95))
+    else:
+        _plinth(m, 4.6, 4.0, 0.24)
+        m.cyl("body", (0, 0, 0.5), 1.7, 1.7, 0.5, seg=28)
+        # Coluna central ionizadora com três anéis giratórios
+        m.cyl("glass_tube", (0, 0, 2.5), 0.5, 0.5, 4.0, seg=22)
+        m.cyl("glow_filter", (0, 0, 2.5), 0.2, 0.2, 3.7, seg=14)
+        m.lathe("steel", (0, 0, 4.5), [(0.58, 0), (0.58, 0.1), (0.3, 0.35), (0.12, 0.5)], seg=22)
+        for k, z in enumerate((1.4, 2.5, 3.6)):
+            nm = f"Spin_Y_Ring{k}"
+            m.origins[nm] = (0, 0, z)
+            m.lathe("glow_filter", (0, 0, z), [(0.72, -0.03), (0.72, 0.03)], seg=28, caps=False, obj=nm)
+            m.lathe("steel", (0, 0, z), [(0.74, -0.05), (0.74, -0.03)], seg=28, caps=False, obj=nm)
+            for a in (0, 120, 240):
+                r = math.radians(a + k * 40)
+                m.box("steel", (0.72 * math.cos(r), 0.72 * math.sin(r), z), (0.1, 0.1, 0.12), obj=nm)
+        for k in range(6):
+            a = math.radians(30 + k * 60)
+            x, y = math.cos(a) * 1.5, math.sin(a) * 1.5
+            m.lathe("body_light", (x, y, 0.24), [(0.38, 0), (0.38, 2.2), (0.28, 2.45), (0, 2.5)], seg=18)
+            for z in (0.7, 1.3, 1.9):
+                m.lathe("glow_filter", (x, y, z), [(0.39, -0.05), (0.39, 0.05)], seg=18, caps=False)
+            m.tube("pipe", (x, y, 2.6), (x * 0.3, y * 0.3, 3.4), 0.07, seg=8)
+        m.lathe("steel", (0, 0, 2.7), [(1.9, 0), (1.9, 0.05)], seg=32, caps=False)
+        _stack(m, 0, 0, 5.0, 0.3, 0.7)
+        m.cyl("glow_filter", (0, 0, 5.77), 0.24, 0.24, 0.03, seg=14)
+        _fx(m, "Fx_Spark", (0, 0, 5.9))
+        _fx(m, "Fx_Mist", (0, 0, 2.0))
+        for k, x in enumerate((-0.55, 0.55)):
+            _fan(m, f"Spin_Z_Fan{k}", (x, 1.82, 0.95), 0.46, blades=8, axis="y")
+        _ctrl_cabinet(m, (0, 2.1, 0.45), 1.2, 0.5)
+        for k in range(4):
+            _gauge(m, (-0.9 + k * 0.6, 2.2, 1.45), 0.08)
+        _ladder(m, 2.4, 0.0, 0.24, 2.5, side="y", width=0.5)
+        hazard_strip(m, (0, -2.02, 0.12), 4.2, "x", height=0.12)
+        pipe_run(m, "pipe", "rust_edge", (-1.8, -1.6, 0.45), (1.8, -1.6, 0.45), 0.08, clamps=5)
+        indicator(m, (1.0, 2.05, 1.5))
+    return m
+
+
+# =============================================================================
+# Kit de construção de base (grade de 4 m, pé-direito de 3 m), mobília, defesas e sentinela hostil.
+# Origem dos pisos/fundações = face SUPERIOR (z=0). Paredes: origem no centro da base, 4 m de largura ao longo de X,
+# 0,2 m de espessura em Y. Interior de uma sala = lado +Y da parede (frente do Blender).
+# =============================================================================
+def _kit_mats(m):
+    _mats(m)
+    m.material("panel", (0.64, 0.67, 0.70), 0.55, 0.3)
+    m.material("panel_dark", (0.22, 0.24, 0.27), 0.6, 0.3)
+    m.material("concrete", (0.52, 0.52, 0.5), 0.92, 0.0)
+    m.material("alloy", (0.42, 0.46, 0.52), 0.35, 0.8)
+    m.material("glass_win", (0.6, 0.8, 0.9), 0.05, 0.0)
+    m.material("glow_light", (1.0, 0.95, 0.8), 0.4)
+    m.material("glow_red", (1.0, 0.2, 0.15), 0.4)
+    m.material("cloth", (0.35, 0.4, 0.3), 0.95, 0.0)
+
+
+def _panel_face(m, mat_in, w, h, y, z0, sign=1, ribs=3):
+    """Painéis em relevo numa face da parede (y = posição da face, sign = lado)."""
+    pw = (w - 0.3) / ribs
+    for i in range(ribs):
+        x = -w / 2 + 0.15 + pw * (i + 0.5)
+        m.box(mat_in, (x, y + sign * 0.012, z0 + h / 2), (pw - 0.12, 0.024, h - 0.5), bevel=0.01)
+    for z in (0.7, 1.55, 2.4):
+        m.box("detail_seam" if "detail_seam" in m.mats else "panel_dark", (0, y + sign * 0.01, z0 + z), (w - 0.1, 0.02, 0.035))
+
+
+def _wall_shell(m, mat="panel", heavy=False, door=False, window=False, hatch=False):
+    t = 0.3 if heavy else 0.2
+    body = "alloy" if heavy else mat
+    _kit_mats(m)
+    # Montantes das extremidades, rodapé e viga superior
+    for x in (-1.95, 1.95):
+        m.box("panel_dark", (x, 0, 1.5), (0.1, t + 0.04, 3.0), bevel=0.01)
+    m.box("panel_dark", (0, 0, 0.09), (4.0, t + 0.06, 0.18))
+    m.box("panel_dark", (0, 0, 2.93), (4.0, t + 0.05, 0.14))
+    if not (door or hatch):
+        lo, hi = (0.18, 2.86)
+        if window:
+            m.box(body, (0, 0, 0.5), (3.8, t, 0.64), bevel=0.01)       # peitoril
+            m.box(body, (0, 0, 2.62), (3.8, t, 0.5), bevel=0.01)       # verga
+            m.box("panel_dark", (-1.0, 0, 1.55), (0.1, t, 1.5)); m.box("panel_dark", (1.0, 0, 1.55), (0.1, t, 1.5))
+            m.box("body", (-1.5, 0, 1.55), (1.0, t, 1.5), bevel=0.01); m.box("body", (1.5, 0, 1.55), (1.0, t, 1.5), bevel=0.01)
+            m.box("glass_win", (0, 0, 1.55), (1.95, 0.04, 1.42))
+            m.box("steel", (0, 0.03, 1.55), (0.04, 0.05, 1.42)); m.box("steel", (0, 0.03, 1.55), (1.95, 0.05, 0.04))
+            for dz in (-0.72, 0.72):
+                m.box("steel", (0, 0, 1.55 + dz), (2.05, t + 0.03, 0.05))
+        else:
+            m.box(body, (0, 0, 1.5), (3.8, t, 2.68), bevel=0.012)
+            _panel_face(m, "panel_dark", 3.8, 2.68, t / 2, 0.18, 1)
+            _panel_face(m, "panel_dark", 3.8, 2.68, -t / 2, 0.18, -1)
+            for x in (-1.2, 1.2):
+                m.box("glow_screen", (x, t / 2 + 0.03, 1.6), (0.18, 0.012, 0.1))
+    else:
+        ow = 1.5 if door else 1.3
+        side = (4.0 - ow) / 2
+        for sgn in (-1, 1):
+            m.box(body, (sgn * (ow / 2 + side / 2), 0, 1.5), (side - 0.1, t, 2.68), bevel=0.012)
+            _panel_face(m, "panel_dark", side - 0.1, 2.68, t / 2, 0.18, 1, ribs=1)
+        m.box(body, (0, 0, 2.7), (ow + 0.2, t, 0.35), bevel=0.012)
+        for sgn in (-1, 1):
+            m.box("steel", (sgn * (ow / 2 + 0.05), 0, 1.25), (0.1, t + 0.08, 2.3), bevel=0.01)
+        m.box("steel", (0, 0, 2.38), (ow, t + 0.08, 0.1))
+        hazard_strip(m, (0, t / 2 + 0.05, 2.5), ow, "x", height=0.08)
+        if door:
+            m.box("panel_dark", (ow * 0.28, -0.02, 1.2), (ow * 0.5, 0.07, 2.2), bevel=0.01)   # folha meio aberta
+            m.box("glow_screen", (ow * 0.28, 0.02, 1.9), (0.4, 0.012, 0.08))
+        else:
+            m.cyl("steel", (0, 0, 1.2), 0.62, 0.62, 0.12, rot=(90, 0, 0), seg=20)          # escotilha redonda
+            m.cyl("panel_dark", (0, 0.07, 1.2), 0.52, 0.52, 0.03, rot=(90, 0, 0), seg=20)
+            _valve(m, (0, 0.1, 1.2), 0.2)
+            for k in range(8):
+                a = k * math.pi / 4
+                m.cyl("steel", (math.cos(a) * 0.57, 0.07, 1.2 + math.sin(a) * 0.57), 0.025, 0.025, 0.03, rot=(90, 0, 0), seg=8)
+            m.box("glow_red", (0, t / 2 + 0.04, 2.55), (0.24, 0.015, 0.07))
+            m.box("glow_screen", (0.78, t / 2 + 0.03, 1.35), (0.1, 0.012, 0.1))
+    # Rebites no rodapé e na viga
+    for z in (0.09, 2.93):
+        for k in range(14):
+            for sgn in (-1, 1):
+                m.cyl("steel", (-1.8 + k * 0.28, sgn * (t / 2 + 0.035), z), 0.018, 0.018, 0.02, rot=(90, 0, 0), seg=6)
+
+
+def kit_wall(variant):
+    m = Model(variant, "Base")
+    m.greeble = False
+    if variant == "base_wall":
+        _wall_shell(m)
+    elif variant == "base_wall_heavy":
+        _wall_shell(m, heavy=True)
+        for k in range(5):
+            m.box("panel_dark", (-1.6 + k * 0.8, 0.18, 1.5), (0.06, 0.04, 2.6))
+        hazard_strip(m, (0, 0.17, 0.3), 3.6, "x", height=0.1)
+    elif variant == "base_wall_door":
+        _wall_shell(m, door=True)
+    elif variant == "base_wall_window":
+        _wall_shell(m, window=True)
+    else:
+        _wall_shell(m, hatch=True)
+    return m
+
+
+def kit_floor(foundation):
+    m = Model("base_foundation" if foundation else "base_floor", "Base")
+    m.greeble = False
+    _kit_mats(m)
+    th = 0.5 if foundation else 0.22
+    m.box("panel_dark", (0, 0, -th / 2 - 0.0), (4.0, 4.0, th), bevel=0.02)
+    m.box("panel", (0, 0, -0.03), (3.8, 3.8, 0.06), bevel=0.01)
+    for k in range(1, 4):
+        m.box("panel_dark", (-2.0 + k, 0, 0.002), (0.025, 3.8, 0.008))
+        m.box("panel_dark", (0, -2.0 + k, 0.002), (3.8, 0.025, 0.008))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            m.box("steel", (sx * 1.93, sy * 1.93, -th / 2), (0.14, 0.14, th + 0.02), bevel=0.01)
+    for i in range(4):
+        hazard_strip(m, (0, -1.99 if i % 2 == 0 else 1.99, -0.02), 1.0, "x", height=0.04, depth=0.012)
+    for k in range(8):
+        for sgn in (-1, 1):
+            m.cyl("steel", (-1.75 + k * 0.5, sgn * 1.85, 0.004), 0.02, 0.02, 0.015, seg=6)
+    if foundation:
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                x, y = sx * 1.6, sy * 1.6
+                m.cyl("concrete", (x, y, -1.8), 0.19, 0.19, 2.6, seg=12)
+                m.cyl("steel", (x, y, -0.55), 0.27, 0.27, 0.1, seg=12)
+                bolt_ring(m, "steel", (x, y, -0.49), 0.22, 6, size=0.018)
+        m.box("steel", (0, 0, -0.51), (1.0, 1.0, 0.02))
+    else:
+        m.box("glow_light", (0, 0, -th - 0.01), (1.2, 0.5, 0.02))
+        m.box("steel", (0, 0, -th - 0.03), (1.3, 0.6, 0.02))
+    return m
+
+
+def kit_pillar():
+    m = Model("base_pillar", "Base")
+    m.greeble = False
+    _kit_mats(m)
+    m.cyl("panel_dark", (0, 0, 1.5), 0.17, 0.17, 3.0, seg=14)
+    for z in (0.1, 1.5, 2.9):
+        m.cyl("steel", (0, 0, z), 0.22, 0.22, 0.12, seg=14)
+        bolt_ring(m, "steel", (0, 0, z + 0.07), 0.18, 8, size=0.015)
+    m.box("hazard_y", (0, 0, 0.55), (0.35, 0.35, 0.05)) if "hazard_y" in m.mats else None
+    return m
+
+
+def kit_stairs():
+    m = Model("base_stairs", "Base")
+    m.greeble = False
+    _kit_mats(m)
+    n = 12
+    for i in range(n):
+        m.box("panel", (0, -1.8 + i * 0.3 + 0.15, 0.125 * (i + 1) * 2 - 0.125 + 0.0), (1.5, 0.3, 0.25), bevel=0.01) if False else None
+    steps = 12
+    for i in range(steps):
+        z = 3.0 * (i + 0.5) / steps
+        m.box("panel", (0, -1.85 + 3.7 * (i + 0.5) / steps, z / 2), (1.5, 3.7 / steps + 0.01, z), bevel=0.008)
+        m.box("steel", (0, -1.85 + 3.7 * (i + 0.5) / steps, z - 0.005), (1.5, 3.7 / steps, 0.02))
+    for sx in (-1, 1):
+        m.tube("yellow", (sx * 0.82, -1.85, 1.0), (sx * 0.82, 1.85, 4.0), 0.025, seg=8)
+        for k in range(5):
+            t = k / 4
+            m.tube("yellow", (sx * 0.82, -1.85 + 3.7 * t, 3.0 * t), (sx * 0.82, -1.85 + 3.7 * t, 3.0 * t + 1.0), 0.02, seg=6)
+    return m
+
+
+# ------------------------------------------------------------------ mobília e utilidades
+def furniture(name):
+    m = Model(name, "Base")
+    m.greeble = False
+    _kit_mats(m)
+    if name == "base_bunk":
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                m.box("steel", (sx * 0.95, sy * 0.4, 0.9), (0.06, 0.06, 1.8))
+        for z in (0.4, 1.3):
+            m.box("panel_dark", (0, 0, z), (2.0, 0.86, 0.1), bevel=0.01)
+            m.box("cloth", (-0.05, 0, z + 0.12), (1.85, 0.8, 0.16), bevel=0.03)
+            m.box("body_light", (-0.78, 0, z + 0.25), (0.4, 0.5, 0.1), bevel=0.04)
+        _ladder(m, 1.0, 0.0, 0.1, 1.5, side="y", width=0.4)
+        m.box("glow_light", (0, 0.43, 1.65), (0.5, 0.02, 0.05))
+    elif name == "base_locker":
+        for k in range(2):
+            x = -0.2 + k * 0.42
+            m.box("panel", (x, 0, 1.0), (0.4, 0.55, 2.0), bevel=0.015)
+            m.box("panel_dark", (x, 0.28, 1.5), (0.3, 0.012, 0.5))
+            for z in (1.7, 1.78, 1.86):
+                m.box("dark", (x, 0.285, z), (0.2, 0.01, 0.02))
+            m.box("steel", (x + 0.1, 0.29, 1.0), (0.03, 0.03, 0.2))
+            m.box("yellow", (x, 0.285, 0.35), (0.3, 0.01, 0.1))
+    elif name == "base_workbench":
+        m.box("panel_dark", (0, 0, 0.45), (2.0, 0.8, 0.08), bevel=0.01) if False else None
+        m.box("steel", (0, 0, 0.9), (2.0, 0.8, 0.07), bevel=0.01)
+        for sx in (-1, 1):
+            m.box("panel_dark", (sx * 0.9, 0, 0.45), (0.08, 0.7, 0.9)); m.box("panel_dark", (sx * 0.9, 0, 0.14), (0.2, 0.7, 0.08))
+        m.box("panel", (0.45, 0, 0.45), (0.8, 0.7, 0.8), bevel=0.01)
+        for z in (0.2, 0.45, 0.7):
+            m.box("panel_dark", (0.45, 0.36, z), (0.7, 0.012, 0.16)); m.box("steel", (0.45, 0.375, z), (0.2, 0.02, 0.025))
+        m.box("body", (-0.55, 0.0, 1.0), (0.3, 0.16, 0.12), bevel=0.02)
+        m.cyl("steel", (-0.55, 0, 1.1), 0.05, 0.05, 0.12, seg=8)
+        m.box("dark", (0.2, -0.3, 1.45), (0.7, 0.04, 0.5)); m.box("glow_screen", (0.2, -0.275, 1.45), (0.62, 0.01, 0.42))
+        m.box("dark", (-0.5, -0.38, 1.4), (0.02, 0.02, 0.9))
+        for k in range(5):
+            m.tube("steel", (-0.8 + k * 0.1, -0.38, 1.0), (-0.8 + k * 0.1, -0.38, 1.25 - (k % 2) * 0.1), 0.012, seg=6)
+    elif name == "base_kitchen":
+        m.box("panel", (0, 0, 0.45), (1.8, 0.7, 0.9), bevel=0.015)
+        m.box("steel", (0, 0, 0.92), (1.84, 0.74, 0.05))
+        for k in range(2):
+            for j in range(2):
+                m.cyl("dark", (-0.45 + k * 0.38, -0.1 + j * 0.3, 0.955), 0.12, 0.12, 0.015, seg=14)
+                m.cyl("glow_heat", (-0.45 + k * 0.38, -0.1 + j * 0.3, 0.965), 0.09, 0.09, 0.008, seg=14)
+        m.box("steel", (0.5, 0.0, 0.94), (0.5, 0.45, 0.08)); m.box("dark", (0.5, 0, 0.97), (0.44, 0.38, 0.02))
+        m.tube("steel", (0.5, 0.3, 0.97), (0.5, 0.3, 1.25), 0.02, seg=8); m.tube("steel", (0.5, 0.3, 1.25), (0.5, 0.12, 1.25), 0.02, seg=8)
+        m.box("panel", (0, 0.2, 1.7), (1.8, 0.3, 0.6), bevel=0.015)
+        for x in (-0.5, 0.0, 0.5):
+            m.box("panel_dark", (x, 0.36, 1.7), (0.5, 0.012, 0.5))
+        m.box("body_light", (-0.5, 0, 1.15), (0.3, 0.2, 0.3), bevel=0.03)
+    elif name == "base_medbay":
+        m.box("panel", (0, 0, 0.35), (2.0, 0.9, 0.7), bevel=0.03)
+        m.box("body_light", (0, 0, 0.8), (1.9, 0.8, 0.12), bevel=0.04)
+        m.box("body_light", (-0.7, 0, 0.95), (0.5, 0.5, 0.12), bevel=0.05)
+        m.tube("steel", (0.85, -0.5, 0.0), (0.85, -0.5, 2.0), 0.05, seg=8)
+        m.tube("steel", (0.85, -0.5, 2.0), (0.2, -0.1, 1.55), 0.04, seg=8)
+        m.box("dark", (0.2, -0.1, 1.45), (0.5, 0.35, 0.12), bevel=0.03)
+        m.box("glow_screen", (0.2, -0.1, 1.38), (0.44, 0.3, 0.012))
+        m.box("dark", (-0.8, -0.5, 1.5), (0.6, 0.04, 0.4)); m.box("glow_screen", (-0.8, -0.475, 1.5), (0.52, 0.01, 0.32))
+        m.box("red" if False else "glow_red", (0.0, 0.46, 0.45), (0.3, 0.012, 0.3)); m.box("body_light", (0.0, 0.47, 0.45), (0.1, 0.012, 0.26)); m.box("body_light", (0.0, 0.47, 0.45), (0.26, 0.012, 0.1))
+    elif name == "base_o2gen":
+        m.box("dark", (0, 0, 0.08), (1.3, 1.3, 0.16), bevel=0.03)
+        m.cyl("body_light", (0, 0, 1.0), 0.5, 0.5, 1.7, seg=22)
+        m.lathe("body_light", (0, 0, 1.85), [(0.5, 0), (0.4, 0.15), (0.12, 0.25)], seg=22)
+        for z in (0.5, 1.1, 1.7):
+            m.lathe("glow_core", (0, 0, z), [(0.51, -0.03), (0.51, 0.03)], seg=22, caps=False)
+            bolt_ring(m, "steel", (0, 0, z + 0.05), 0.46, 12, size=0.014)
+        _fan(m, "Spin_Y_Fan", (0, 0, 2.15), 0.42, blades=6, axis="z")
+        m.box("dark", (0, 0, 2.08), (1.0, 1.0, 0.03))
+        _ctrl_cabinet(m, (0, 0.62, 0.7), 0.7, 0.45)
+        _fx(m, "Fx_Mist", (0, 0, 2.5))
+        indicator(m, (0.5, 0.55, 1.95))
+        hazard_strip(m, (0, 0.67, 0.08), 1.1, "x", height=0.1)
+    elif name == "base_battery":
+        m.box("dark", (0, 0, 0.08), (1.2, 0.8, 0.16), bevel=0.02)
+        for k in range(4):
+            m.box("panel", (-0.45 + k * 0.3, 0, 0.7), (0.26, 0.7, 1.0), bevel=0.02)
+            m.box("dark", (-0.45 + k * 0.3, 0.355, 0.7), (0.2, 0.012, 0.8))
+            for j in range(5):
+                m.box("glow_screen", (-0.45 + k * 0.3, 0.362, 0.4 + j * 0.15), (0.16, 0.008, 0.07))
+            m.cyl("steel", (-0.45 + k * 0.3, 0, 1.24), 0.07, 0.07, 0.06, seg=8)
+        m.box("yellow", (0, 0.36, 0.18), (1.1, 0.01, 0.08))
+        indicator(m, (0.5, 0.3, 1.3))
+    elif name == "base_purifier":
+        m.box("dark", (0, 0, 0.08), (1.4, 1.0, 0.16), bevel=0.02)
+        m.cyl("glass_tube", (-0.35, 0, 0.9), 0.38, 0.38, 1.5, seg=20)
+        m.cyl("glow_core", (-0.35, 0, 0.8), 0.3, 0.3, 1.1, seg=16)
+        m.lathe("steel", (-0.35, 0, 1.65), [(0.4, 0), (0.4, 0.06), (0.2, 0.15)], seg=20)
+        m.box("body", (0.4, 0, 0.6), (0.5, 0.6, 1.0), bevel=0.03)
+        for k in range(3):
+            m.cyl("pipe", (0.4, 0.31, 0.3 + k * 0.28), 0.06, 0.06, 0.04, rot=(90, 0, 0), seg=10)
+        pipe_run(m, "pipe", "rust_edge", (-0.35, 0, 1.7), (0.4, 0, 1.3), 0.05, clamps=2)
+        _gauge(m, (0.4, 0.32, 0.95), 0.07)
+        indicator(m, (0.6, 0.3, 1.15))
+    return m
+
+
+# ------------------------------------------------------------------ defesas
+def defense(name):
+    m = Model(name, "Base")
+    m.greeble = False
+    _kit_mats(m)
+    if name == "base_turret_1":
+        m.cyl("dark", (0, 0, 0.05), 0.5, 0.5, 0.1, seg=16)
+        for k in range(3):
+            a = math.radians(k * 120 + 30)
+            m.tube("steel", (0, 0, 0.9), (math.cos(a) * 0.5, math.sin(a) * 0.5, 0.05), 0.04, seg=8)
+        m.cyl("panel_dark", (0, 0, 0.95), 0.18, 0.18, 0.3, seg=12)
+        m.origins["Aim_Y_Head"] = (0, 0, 1.2)
+        B = I4
+        m.box("panel", (0, 0, 1.2), (0.42, 0.5, 0.34), bevel=0.04, obj="Aim_Y_Head")
+        m.cyl("steel", (0, 0.45, 1.22), 0.06, 0.06, 0.6, rot=(90, 0, 0), seg=10, obj="Aim_Y_Head")
+        m.cyl("glow_core", (0, 0.76, 1.22), 0.05, 0.05, 0.02, rot=(90, 0, 0), seg=10, obj="Aim_Y_Head")
+        m.box("glow_red", (0, 0.26, 1.34), (0.14, 0.02, 0.05), obj="Aim_Y_Head")
+        for sx in (-1, 1):
+            m.box("steel", (sx * 0.24, 0.05, 1.2), (0.05, 0.3, 0.2), obj="Aim_Y_Head")
+        _fx(m, "Fx_Muzzle", (0, 0.8, 1.22))
+        indicator(m, (0.0, -0.2, 0.7))
+    elif name == "base_turret_2":
+        m.cyl("dark", (0, 0, 0.1), 0.85, 0.85, 0.2, seg=22)
+        bolt_ring(m, "steel", (0, 0, 0.22), 0.75, 14, size=0.03)
+        m.cyl("alloy", (0, 0, 0.55), 0.55, 0.45, 0.7, seg=20)
+        m.cyl("panel_dark", (0, 0, 1.0), 0.5, 0.5, 0.2, seg=20)
+        m.origins["Aim_Y_Head"] = (0, 0, 1.4)
+        m.box("alloy", (0, 0, 1.4), (0.9, 0.9, 0.55), bevel=0.08, obj="Aim_Y_Head")
+        m.box("panel_dark", (0, 0.05, 1.78), (0.7, 0.6, 0.12), bevel=0.04, obj="Aim_Y_Head")
+        for sx in (-1, 1):
+            m.cyl("steel", (sx * 0.22, 0.85, 1.4), 0.075, 0.075, 1.0, rot=(90, 0, 0), seg=12, obj="Aim_Y_Head")
+            m.cyl("glow_core", (sx * 0.22, 1.38, 1.4), 0.06, 0.06, 0.02, rot=(90, 0, 0), seg=12, obj="Aim_Y_Head")
+            for t in range(3):
+                m.lathe("glow_core", (sx * 0.22, 0.5 + t * 0.25, 1.4), [(0.095, -0.02), (0.095, 0.02)], seg=12, caps=False, base=T(sx * 0.22, 0.5 + t * 0.25, 1.4) @ R(90, 0, 0) @ T(-sx * 0.22, -(0.5 + t * 0.25), -1.4), obj="Aim_Y_Head") if False else None
+            m.box("glow_core", (sx * 0.4, 0.2, 1.4), (0.04, 0.5, 0.06), obj="Aim_Y_Head")
+        m.box("glow_red", (0, 0.47, 1.55), (0.3, 0.02, 0.08), obj="Aim_Y_Head")
+        _fx(m, "Fx_Muzzle", (0, 1.4, 1.4))
+        _ladder(m, 0, -0.9, 0.1, 0.9, side="y", width=0.3) if False else None
+        indicator(m, (0.4, -0.4, 0.6))
+    elif name == "base_floodlight":
+        m.cyl("dark", (0, 0, 0.06), 0.3, 0.3, 0.12, seg=14)
+        m.tube("steel", (0, 0, 0.1), (0, 0, 3.4), 0.05, 0.035, seg=10)
+        for z in (0.5, 1.5, 2.5):
+            m.cyl("panel_dark", (0, 0, z), 0.07, 0.07, 0.06, seg=10)
+        m.box("panel_dark", (0, 0.1, 3.55), (0.9, 0.3, 0.55), bevel=0.04)
+        for sx in (-1, 0, 1):
+            for sz in (-1, 1):
+                m.cyl("steel", (sx * 0.27, 0.27, 3.55 + sz * 0.14), 0.1, 0.1, 0.06, rot=(90, 0, 0), seg=14)
+                m.cyl("glow_light", (sx * 0.27, 0.3, 3.55 + sz * 0.14), 0.085, 0.085, 0.015, rot=(90, 0, 0), seg=14)
+        m.tube("steel", (0, 0.0, 3.4), (0, 0.1, 3.55), 0.03, seg=6)
+        cable(m, "dark", (0.05, 0, 0.4), (0.8, 0.8, 0.02), sag=0.05, r=0.02)
+    else:  # base_shock_fence
+        for sx in (-1, 1):
+            m.cyl("dark", (sx * 1.9, 0, 0.05), 0.2, 0.2, 0.1, seg=10)
+            m.tube("panel_dark", (sx * 1.9, 0, 0.05), (sx * 1.9, 0, 1.9), 0.06, seg=10)
+            for z in (0.5, 1.0, 1.5):
+                m.cyl("body_light", (sx * 1.9, 0, z), 0.09, 0.09, 0.1, rot=(0, 90, 0), seg=8)
+            m.cyl("glow_core", (sx * 1.9, 0, 1.95), 0.07, 0.07, 0.1, seg=8)
+        for z in (0.5, 1.0, 1.5):
+            m.tube("glow_core", (-1.9, 0, z), (1.9, 0, z), 0.012, seg=6)
+        _fx(m, "Fx_Spark", (0, 0, 1.0))
+        indicator(m, (-1.9, 0.0, 2.1))
+    return m
+
+
+# ------------------------------------------------------------------ inimigo: sentinela do velho mundo
+def sentinel():
+    m = Model("sentinel", "Fauna")
+    m.greeble = False
+    _kit_mats(m)
+    m.blob("alloy", (0, 0, 0), (0.42, 0.42, 0.22), sub=2, noise=0.0, seed=1, smooth=True)
+    m.lathe("panel_dark", (0, 0, 0), [(0.46, -0.03), (0.46, 0.03)], seg=24, caps=False)
+    m.blob("glow_red", (0, 0.36, 0.02), (0.14, 0.05, 0.14), sub=2, noise=0.0, seed=2, smooth=True)
+    m.cyl("dark", (0, 0.34, 0.02), 0.19, 0.19, 0.04, rot=(90, 0, 0), seg=14)
+    m.origins["Spin_Y_Ring"] = (0, 0, 0.0)
+    m.lathe("steel", (0, 0, 0), [(0.62, 0.0), (0.62, 0.05)], seg=26, caps=False, obj="Spin_Y_Ring")
+    for k in range(4):
+        a = math.radians(k * 90 + 45)
+        m.box("panel_dark", (math.cos(a) * 0.62, math.sin(a) * 0.62, 0.02), (0.16, 0.16, 0.1), obj="Spin_Y_Ring")
+        m.cyl("glow_core", (math.cos(a) * 0.62, math.sin(a) * 0.62, -0.05), 0.06, 0.06, 0.02, seg=8, obj="Spin_Y_Ring")
+    for sx in (-1, 1):
+        m.box("alloy", (sx * 0.34, 0.15, -0.16), (0.1, 0.4, 0.1), bevel=0.02)
+        m.cyl("steel", (sx * 0.34, 0.4, -0.16), 0.03, 0.03, 0.3, rot=(90, 0, 0), seg=8)
+    m.tube("steel", (0, 0, 0.2), (0, -0.1, 0.5), 0.015, seg=6)
+    m.blob("glow_red", (0, -0.1, 0.52), (0.04, 0.04, 0.04), sub=1, noise=0, seed=3)
+    _fx(m, "Fx_Muzzle", (0, 0.58, -0.16))
+    return m
+
+
+# =============================================================================
 BUILDERS = {
     "tree_broad_0": lambda: tree_broad(0), "tree_broad_1": lambda: tree_broad(1), "tree_broad_2": lambda: tree_broad(2),
     "tree_conifer_0": lambda: tree_conifer(0), "tree_conifer_1": lambda: tree_conifer(1),
@@ -1814,6 +2705,16 @@ BUILDERS = {
     "wreck_pod": wreck_pod, "chip_crate": chip_crate, "log_terminal": log_terminal,
     "ruin_bunker": ruin_bunker, "decontaminator": decontaminator,
     "mothership": mothership, "shipyard": shipyard, "station": station,
+    **{f"heater_{t}": (lambda t=t: heater_tier(t)) for t in (1, 2, 3, 4)},
+    **{f"drill_{t}": (lambda t=t: drill_tier(t)) for t in (1, 2, 3)},
+    **{f"decon_{t}": (lambda t=t: decon_tier(t)) for t in (1, 2, 3)},
+    **{n: (lambda n=n: kit_wall(n)) for n in ("base_wall", "base_wall_heavy", "base_wall_door", "base_wall_window", "base_airlock")},
+    "base_foundation": lambda: kit_floor(True), "base_floor": lambda: kit_floor(False),
+    "base_pillar": kit_pillar, "base_stairs": kit_stairs,
+    **{n: (lambda n=n: furniture(n)) for n in ("base_bunk", "base_locker", "base_workbench", "base_kitchen", "base_medbay",
+                                               "base_o2gen", "base_battery", "base_purifier")},
+    **{n: (lambda n=n: defense(n)) for n in ("base_turret_1", "base_turret_2", "base_floodlight", "base_shock_fence")},
+    "sentinel": sentinel,
 }
 
 
