@@ -919,6 +919,7 @@ namespace Planetcraft.EditorTools
             }
             Probe("Reflexo cabine", new Vector3(0f, 1.6f, 3.5f), new Vector3(6.4f, 3.6f, 7.4f));
             Probe("Reflexo corredor", new Vector3(0f, 1.5f, 17f), new Vector3(4f, 3.4f, 20.4f));
+            Probe("Reflexo hangar", new Vector3(0f, 5f, 39f), new Vector3(20.6f, 10.4f, 24.6f));
 
             // Armário do traje (corredor, parede -X, de frente para o corredor) e nave de descida no pad do hangar.
             var locker = Model("Station/suit_locker", station.transform);

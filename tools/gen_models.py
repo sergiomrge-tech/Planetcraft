@@ -2966,40 +2966,69 @@ def station_interior():
             m.tube("steel", (side * 1.7, -8.6 - k * 1.95, 1.15), (side * 1.52, -8.6 - k * 1.95, 1.15), 0.02, seg=6)
     hazard_strip(m, (0, -7.2, 2.7), 3.4, "x", height=0.08)
     _door_frame(m, 0, -27, "x", 2.0, 2.6)
-    # --- Hangar (20 x 24 x 10)
-    _shell_box(m, -10, 10, -51, -27, 0, 10, t=0.35, openings=[("y-", 0, 14, 1.2, 8.2), ("y+", 0, 2.0, 0, 2.6)])
+    # --- Hangar (20 x 24 x 10) no mesmo estilo claro: alumínio polido, teto em abóbada com cantos de 3 m,
+    # arcos estruturais a cada 4 m, painéis brancos, portal de lançamento arredondado e pad de pouso.
+    _shell_box(m, -10, 10, -51, -27, 0, 10, t=0.35, openings=[("y-", 0, 14, 1.2, 8.2), ("y+", 0, 2.0, 0, 2.6)],
+               mat="alu_panel", ceil_mat="alu_panel")
+    HR, HF, HV = 3.0, 0.6, 1.5
+    for sx in (-1, 1):
+        _fillet(m, "alu_panel", "y", (sx * (10 - HR), 10 - HR), HR, 0 if sx > 0 else 90, -51, -27, seg=16)
+        _fillet(m, "alu_panel", "y", (sx * (10 - HF), HF), HF, 270 if sx > 0 else 180, -51, -27)
+    _fillet(m, "alu_panel", "x", (-27 - HR, 10 - HR), HR, 0, -10 + HR, 10 - HR, seg=16)        # abóbada na parede do fundo
+    for lo, hi in ((-10, -1.2), (1.2, 10)):
+        _fillet(m, "alu_panel", "x", (-27 - HF, HF), HF, 270, lo, hi)
+    for sx in (-1, 1):
+        _fillet(m, "alu_panel", "z", (sx * (10 - HV), -27 - HV), HV, 0 if sx > 0 else 90, 0, 10 - HR)
+    # Arcos estruturais: coluna, curva da abóbada e viga, com friso de luz em cada coluna.
+    for k in range(7):
+        yy = -28.5 - k * 3.6
+        for sx in (-1, 1):
+            m.box("alu_rib", (sx * 9.85, yy, (10 - HR) / 2), (0.3, 0.5, 10 - HR), bevel=0.06)
+            _fillet(m, "alu_rib", "y", (sx * (10 - HR), 10 - HR), HR - 0.3, 0 if sx > 0 else 90, yy - 0.25, yy + 0.25, t=0.3, seg=16)
+            m.box("glow_blue", (sx * 9.68, yy, 3.4), (0.03, 0.12, 4.2))
+        m.box("alu_rib", (0, yy, 9.82), (20 - 2 * HR, 0.5, 0.3), bevel=0.06)
+        if k < 6:                                          # painéis brancos e faixa verde-azulada entre os arcos
+            for sx in (-1, 1):
+                m.box("white_panel", (sx * 9.92, yy - 1.8, 3.6), (0.08, 3.0, 5.6), bevel=0.12)
+                m.box("teal_accent", (sx * 9.86, yy - 1.8, 0.9), (0.04, 3.0, 0.12))
+    for k in range(4):                                     # faixas de luz no teto, entre os arcos
+        m.box("alu_rib", (-4.5 + k * 3.0, -39, 9.9), (1.0, 20.0, 0.12))
+        m.box("glow_light", (-4.5 + k * 3.0, -39, 9.83), (0.8, 19.6, 0.03))
+    # Portal de lançamento: moldura grossa de alumínio com cantos arredondados, campo de força azul e luzes.
+    for sx in (-1, 1):
+        m.box("alu_rib", (sx * 7.25, -50.9, 4.7), (0.5, 0.6, 7.4), bevel=0.08)
+        m.box("glow_red", (sx * 6.95, -50.55, 4.7), (0.1, 0.05, 6.4))
+    for zz in (1.0, 8.4):
+        m.box("alu_rib", (0, -50.9, zz), (15.0, 0.6, 0.5), bevel=0.08)
+    for sx in (-1, 1):
+        for sz, zc in ((1, 8.2 - 1.2), (-1, 1.2 + 1.2)):
+            a0 = {(1, 1): 0, (-1, 1): 90, (-1, -1): 180, (1, -1): 270}[(sx, sz)]
+            _fillet(m, "alu_rib", "y", (sx * (7.0 - 1.2), zc), 1.2, a0, -51.2, -50.6, t=0.4, seg=10)
     m.box("glass_shield", (0, -51.1, 4.7), (14, 0.05, 7.0))
-    for s in (-1, 1):
-        m.box("steel", (s * 7.2, -51.0, 4.7), (0.4, 0.5, 7.2)); m.box("glow_red", (s * 7.2, -50.7, 4.7), (0.12, 0.05, 6.8))
-    m.box("steel", (0, -51.0, 8.3), (14.8, 0.5, 0.4)); m.box("steel", (0, -51.0, 1.1), (14.8, 0.5, 0.4))
-    # Pad de pouso: anel e faixas de alerta no piso
+    # Pad de pouso: anel e faixas de alerta no piso, com luzes de borda.
     m.material("pad_mark", (0.95, 0.72, 0.08), 0.6)
     m.lathe("pad_mark", (0, -39, 0.012), [(5.7, 0), (6.1, 0.0)], seg=48, caps=False)
     for a in range(0, 360, 45):
         r = math.radians(a)
         m.box("pad_mark", (math.cos(r) * 4.2, -39 + math.sin(r) * 4.2, 0.012), (0.18, 1.4, 0.01), rot=(0, 0, a))
-    for yy in (-30, -34, -44, -48):
-        for s in (-1, 1):
-            m.box("glow_light", (s * 9.9, yy, 6.0), (0.08, 1.4, 1.4))
-            m.box("glow_blue", (s * 9.4, yy, 0.05), (0.06, 2.0, 0.02))
-    for k in range(5):
-        m.box("glow_light_dim", (-6 + k * 3.0, -39, 9.95), (1.4, 5.0, 0.04))
-    # Passarela lateral com guarda-corpo, cabine de controle e portões de carga
-    m.box("steel", (-9.0, -38, 3.2), (1.8, 14, 0.12))
-    _railing(m, (-8.1, -31.0, 0), (-8.1, -45.0, 0), 3.26, posts=7)
-    for k in range(8):
-        m.box("hull_dark_metal", (-9.7, -30.5 - k * 2.0, 1.6), (0.3, 0.2, 3.2))
-    m.box("hull_metal", (8.6, -33, 4.6), (2.6, 4.0, 2.4), bevel=0.04)
-    m.box("glass_win", (7.28, -33, 4.7), (0.04, 3.4, 1.2))
-    m.box("glow_screen", (8.6, -33, 3.5), (2.2, 3.6, 0.04))
-    for k, (x, y) in enumerate(((-7.4, -29.5), (-7.4, -31.0), (7.8, -46.0), (8.8, -46.0), (8.3, -44.5))):
-        m.box("orange" if k % 2 == 0 else "panel", (x, y, 0.55), (1.2, 1.2, 1.1), bevel=0.03)
-        m.box("steel", (x, y, 1.12), (1.24, 1.24, 0.05))
-    m.cyl("panel", (7.6, -29.0, 1.6), 0.7, 0.7, 3.2, seg=16)
-    m.cyl("steel", (7.6, -29.0, 3.25), 0.75, 0.75, 0.1, seg=16)
-    for s in (-1, 1):
-        m.tube("pipe", (s * 9.5, -27.5, 8.8), (s * 9.5, -50.5, 8.8), 0.14, seg=12)
-        m.tube("steel", (s * 9.1, -27.5, 8.4), (s * 9.1, -50.5, 8.4), 0.07, seg=10)
+        m.cyl("glow_blue", (math.cos(r) * 6.4, -39 + math.sin(r) * 6.4, 0.02), 0.12, 0.12, 0.03, seg=10)
+    for sx in (-1, 1):
+        m.box("glow_blue", (sx * 9.2, -39, 0.04), (0.06, 23.0, 0.02))
+    # Passarela lateral com guarda-corpo, sala de controle arredondada e caixas de carga.
+    m.box("alu_rib", (-8.6, -38, 3.2), (2.2, 14, 0.14), bevel=0.04)
+    _railing(m, (-7.5, -31.0, 0), (-7.5, -45.0, 0), 3.26, posts=7)
+    for k in range(4):
+        m.box("alu_rib", (-8.0, -32.0 - k * 4.0, 1.6), (0.2, 0.2, 3.2), bevel=0.03)
+    m.box("white_panel", (8.4, -33, 4.6), (3.0, 4.4, 2.6), bevel=0.5)
+    m.box("glass_win", (6.92, -33, 4.75), (0.04, 3.4, 1.2))
+    m.box("alu_rib", (8.4, -33, 3.3), (3.1, 4.5, 0.12), bevel=0.04)
+    m.box("glow_screen", (8.4, -33, 3.22), (2.4, 3.8, 0.03))
+    for k, (x, y) in enumerate(((-7.0, -29.6), (-7.0, -31.0), (7.6, -46.0), (8.8, -46.0), (8.2, -44.6))):
+        m.box("orange" if k % 2 == 0 else "white_panel", (x, y, 0.55), (1.2, 1.2, 1.1), bevel=0.12)
+        m.box("alu_rib", (x, y, 1.12), (1.1, 1.1, 0.05), bevel=0.02)
+    m.cyl("white_panel", (7.4, -29.2, 1.6), 0.7, 0.7, 3.2, seg=20)
+    m.cyl("alu_rib", (7.4, -29.2, 3.25), 0.75, 0.75, 0.1, seg=20)
+    m.cyl("teal_accent", (7.4, -29.2, 1.0), 0.72, 0.72, 0.12, seg=20)
     return m
 
 
